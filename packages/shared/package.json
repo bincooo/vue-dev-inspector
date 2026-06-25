@@ -1,0 +1,11 @@
+{
+  "name": "@vue-dev-inspector/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared types and utilities",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'Source-only package'"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@vue-dev-inspector/overlay",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser overlay script for vue-dev-inspector — compiles to a single IIFE JS file",
+  "main": "dist/overlay.iife.js",
+  "scripts": {
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "7.3.2",
+    "vite-plugin-singlefile": "2.3.0"
+  }
+}

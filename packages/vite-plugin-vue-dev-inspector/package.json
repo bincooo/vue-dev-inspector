@@ -1,0 +1,15 @@
+{
+  "name": "vite-plugin-vue-dev-inspector",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "基于 AST 的 Vue 编译插件，在 dev 模式下为每个 DOM 元素注入源码文件信息",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'Source-only package'"
+  },
+  "dependencies": {
+    "@vue-dev-inspector/overlay": "workspace:*",
+    "@vue-dev-inspector/client": "workspace:*"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "vue-dev-inspector-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "dev:demo": "pnpm -C packages/overlay build && pnpm -C packages/demo dev",
+    "build:overlay": "pnpm -C packages/overlay build"
+  },
+  "dependencies": {
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/compiler-core": "^3.5.38",
+    "@vue/compiler-dom": "^3.5.38",
+    "@vue/compiler-sfc": "^3.5.38",
+    "magic-string": "^0.30.21",
+    "vue": "^3.5.38"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.17",
+    "@types/node": "22.19.17",
+    "tailwindcss": "4.1.17",
+    "typescript": "5.9.3",
+    "vite": "7.3.2",
+    "vite-plugin-singlefile": "2.3.0"
+  }
+}
