@@ -116,5 +116,5 @@ export function init(): void {
     s.gearBtn = gear
   }
 
-  console.log('%c[Vue DevInspector]%c Ready — Alt+Shift+I to inspect', 'color:#10b981;font-weight:bold', 'color:inherit')
+  console.log('%c[Vue Dev Inspector]%c Ready — Alt+Shift+I to inspect', 'color:#10b981;font-weight:bold', 'color:inherit')
 }
