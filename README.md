@@ -12,6 +12,11 @@ demo:
 pnpm run dev:demo
 ```
 
+使用：
+> 1. 组合键 `Ctrl+Alt+i` 进入审查模式
+> 2. 右下角的齿轮按钮点击进入审查模式
+> 3. 进入审查模式后可通过Esc按键退出模式
+
 [在线体验](https://1i0k2-loc.hf.space/)
 
 ![](./public/2026-06-26_07-19.png)
