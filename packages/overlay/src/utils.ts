@@ -1,52 +1,63 @@
 /**
  * 纯计算工具函数——无 DOM 副作用。
  */
-import { s } from './state'
+import { state } from './state'
 
-export function pa(v: string): { f: string; l: string; c: string } {
-  const b = v.lastIndexOf(':')
-  const a = v.lastIndexOf(':', b - 1)
-  return { f: v.substring(0, a), l: v.substring(a + 1, b), c: v.substring(b + 1) }
+/** 解析形如 `path/file.vue:line:col` 的位置串。 */
+export function parsePosition(value: string): { file: string; line: string; col: string } {
+  const lastColon = value.lastIndexOf(':')
+  const prevColon = value.lastIndexOf(':', lastColon - 1)
+  return {
+    file: value.substring(0, prevColon),
+    line: value.substring(prevColon + 1, lastColon),
+    col: value.substring(lastColon + 1),
+  }
 }
 
-export function api(p: string, o?: RequestInit): Promise<any> {
-  return fetch(s.API + p, Object.assign({ headers: { 'Content-Type': 'application/json' } }, o || {}))
-    .then(function (r) { return r.json() })
+/** 调用插件提供的服务端 API。 */
+export function apiRequest(path: string, init?: RequestInit): Promise<any> {
+  return fetch(state.apiPrefix + path, Object.assign({ headers: { 'Content-Type': 'application/json' } }, init || {}))
+    .then(function (response) { return response.json() })
 }
 
-export function tagName(el: HTMLElement): string {
-  return el.getAttribute(s.TAG_ATTR) || el.tagName.toLowerCase()
+/** 读取元素的展示标签（优先取注入的 tag 属性，否则取小写标签名）。 */
+export function getElementTagName(element: HTMLElement): string {
+  return element.getAttribute(state.tagAttr) || element.tagName.toLowerCase()
 }
 
-export function mk(tag: string, css?: string, txt?: string): HTMLDivElement {
-  const e = document.createElement(tag) as HTMLDivElement
-  if (css) e.style.cssText = css
-  if (txt) e.textContent = txt
-  return e
+/** 创建 DOM 元素，可附带 class 名与初始文本。 */
+export function createElement(tag: string, className?: string, textContent?: string): HTMLDivElement {
+  const element = document.createElement(tag) as HTMLDivElement
+  if (className) element.className = className
+  if (textContent) element.textContent = textContent
+  return element
 }
 
-export function find(el: EventTarget | null): HTMLElement | null {
-  let node = el as HTMLElement | null
+/** 从事件目标向上查找带审查属性的可审查元素。 */
+export function findInspectableElement(target: EventTarget | null): HTMLElement | null {
+  let node = target as HTMLElement | null
   while (node && node !== document.documentElement) {
-    if ((node as HTMLElement).getAttribute && (node as HTMLElement).getAttribute(s.A)) return node
+    if ((node as HTMLElement).getAttribute && (node as HTMLElement).getAttribute(state.attrName)) return node
     node = (node as HTMLElement).parentElement
   }
   return null
 }
 
-export function boxOf(el: HTMLElement | null): HTMLElement | null {
-  if (el && getComputedStyle(el).display === 'contents' && el.firstElementChild)
-    return el.firstElementChild as HTMLElement
-  return el
+/** 对 `display:contents` 元素取首个子元素作为定位盒。 */
+export function getLayoutBox(element: HTMLElement | null): HTMLElement | null {
+  if (element && getComputedStyle(element).display === 'contents' && element.firstElementChild)
+    return element.firstElementChild as HTMLElement
+  return element
 }
 
-export function pos(overlay: HTMLDivElement, el: HTMLElement, d: number): void {
-  const r = boxOf(el)!.getBoundingClientRect()
+/** 按目标元素盒形定位 overlay 并扩展外边距 d 像素。 */
+export function positionOverlay(overlay: HTMLDivElement, element: HTMLElement, margin: number): void {
+  const rect = getLayoutBox(element)!.getBoundingClientRect()
   Object.assign(overlay.style, {
     display: 'block',
-    left: (r.left - d) + 'px',
-    top: (r.top - d) + 'px',
-    width: (r.width + d * 2) + 'px',
-    height: (r.height + d * 2) + 'px',
+    left: (rect.left - margin) + 'px',
+    top: (rect.top - margin) + 'px',
+    width: (rect.width + margin * 2) + 'px',
+    height: (rect.height + margin * 2) + 'px',
   })
 }

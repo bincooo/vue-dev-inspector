@@ -2,84 +2,82 @@
  * 组件抽屉（右侧滑入面板）。
  *
  * 搜索 → 分组列表 → 点击插入组件。
- * 插入方向由 s.insertDirection 决定：
+ * 插入方向由 state.insertDirection 决定：
  *   'inside' (默认) 插入选中元素内部末尾
  *   'before'          插入选中元素同级上方
  *   'after'           插入选中元素同级下方
  */
-import { s } from './state'
-import { pa, api, mk } from './utils'
-import { drawSel } from './inspector'
+import { state } from './state'
+import { parsePosition, apiRequest, createElement } from './utils'
+import { redrawSelection } from './inspector'
+
+/** 抽屉遮罩（点击非面板区域关闭） */
+let drawerBackdrop: HTMLDivElement | null = null
 
 /** 关闭抽屉（先动画滑出，200ms 后移除 DOM；同时移除遮罩） */
 export function closeDrawer(): void {
-  if (!s.drawer) return
-  s.drawer.style.transform = 'translateX(100%)'
-  const d = s.drawer; s.drawer = null
-  if (_backdrop) { _backdrop.remove(); _backdrop = null }
-  setTimeout(function () { d.remove() }, 200)
+  if (!state.componentDrawer) return
+  state.componentDrawer.style.transform = 'translateX(100%)'
+  const drawer = state.componentDrawer; state.componentDrawer = null
+  if (drawerBackdrop) { drawerBackdrop.remove(); drawerBackdrop = null }
+  setTimeout(function () { drawer.remove() }, 200)
 }
-
-/** 抽屉遮罩（点击非面板区域关闭） */
-let _backdrop: HTMLDivElement | null = null
 
 /** 打开抽屉（已打开则关闭） */
 export function openDrawer(): void {
-  s.menu!.style.display = 'none'
-  if (s.drawer) { closeDrawer(); return }
-  const direction = s.insertDirection
-  buildDrawer(direction, direction === 'inside' ? '选中元素后点击组件插入到其内部' : direction === 'before' ? '插入到选中元素的同级上方' : '插入到选中元素的同级下方')
+  state.contextMenu!.style.display = 'none'
+  if (state.componentDrawer) { closeDrawer(); return }
+  const direction = state.insertDirection
+  buildDrawer(direction, direction === 'before' ? '插入到选中元素的同级上方' : '插入到选中元素的同级下方')
 }
 
 /** 由 + 按钮调用：设定方向后打开抽屉 */
 export function openDrawerFor(direction: 'before' | 'after'): void {
-  s.menu!.style.display = 'none'
-  if (s.drawer) { closeDrawer(); return }
-  s.insertDirection = direction
+  state.contextMenu!.style.display = 'none'
+  if (state.componentDrawer) { closeDrawer(); return }
+  state.insertDirection = direction
   buildDrawer(direction, direction === 'before' ? '插入到选中元素的同级上方' : '插入到选中元素的同级下方')
 }
 
 /** 构造抽屉。direction 决定「点击组件」时的插入语义 */
 function buildDrawer(direction: 'inside' | 'before' | 'after', hint: string): void {
   // 遮罩：覆盖全屏、位于抽屉之下；点击非面板区域（即遮罩本身）关闭抽屉
-  const backdrop = mk('div', 'position:fixed;inset:0;z-index:9998;background:rgba(15,23,42,.18);backdrop-filter:blur(1px)')
+  const backdrop = createElement('div', '__vdi-backdrop')
   backdrop.onclick = function (e) {
     // 仅响应点击遮罩本身（点抽屉内部由抽屉的 stopPropagation 处理）
     if (e.target === backdrop) closeDrawer()
   }
   document.body.appendChild(backdrop)
-  _backdrop = backdrop
+  drawerBackdrop = backdrop
 
-  const drawer = mk('div', 'position:fixed;top:0;right:0;height:100vh;width:320px;max-width:90vw;z-index:9999;background:#fff;box-shadow:-8px 0 32px rgba(0,0,0,.15);display:flex;flex-direction:column;font-family:system-ui,sans-serif;transform:translateX(100%);transition:transform .2s ease-out')
+  const drawer = createElement('div', '__vdi-drawer')
   // 点击抽屉内部不冒泡到遮罩的关闭逻辑
   drawer.onclick = function (e) { e.stopPropagation() }
   document.body.appendChild(drawer)
-  s.drawer = drawer
+  state.componentDrawer = drawer
   requestAnimationFrame(function () { drawer.style.transform = 'translateX(0)' })
 
   // 头部
-  const head = mk('div', 'display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f1f5f9')
-  const htitle = mk('div', 'font-size:14px;font-weight:600;color:#1e293b', '🧩 组件面板')
-  const hintWrap = mk('div', 'font-size:10px;color:#94a3b8;margin-top:2px', hint)
-  const xbd = mk('button', 'border:none;background:none;font-size:16px;color:#94a3b8;cursor:pointer;padding:4px 8px;border-radius:3px', '✕') as any
-  xbd.onclick = closeDrawer
-  const tl = mk('div'); tl.append(htitle, hintWrap); head.append(tl, xbd)
-  drawer.appendChild(head)
+  const header = createElement('div', '__vdi-drawer-header')
+  const drawerTitle = createElement('div', '__vdi-drawer-title', '🧩 组件面板')
+  const hintWrap = createElement('div', '__vdi-drawer-hint', hint)
+  const closeButton = createElement('button', '__vdi-close-btn', '✕') as any
+  closeButton.onclick = closeDrawer
+  const titleWrap = createElement('div'); titleWrap.append(drawerTitle, hintWrap); header.append(titleWrap, closeButton)
+  drawer.appendChild(header)
 
   // 搜索
-  const searchWrap = mk('div', 'padding:12px 18px;border-bottom:1px solid #f8fafc')
-  const search = mk('input', 'width:100%;box-sizing:border-box;padding:7px 10px;font-size:12px;border:1px solid #e2e8f0;border-radius:3px;background:#f8fafc;outline:none') as HTMLInputElement
-  search.placeholder = '搜索组件…'
-  searchWrap.appendChild(search)
+  const searchWrap = createElement('div', '__vdi-drawer-search')
+  const searchInput = createElement('input', '__vdi-drawer-search-input') as HTMLInputElement
+  searchInput.placeholder = '搜索组件…'
+  searchWrap.appendChild(searchInput)
   drawer.appendChild(searchWrap)
 
   // 列表
-  const list = mk('div', 'flex:1;overflow-y:auto;padding:8px')
+  const list = createElement('div', '__vdi-drawer-list')
   drawer.appendChild(list)
 
-  const footer = mk('div', 'display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid #f1f5f9;background:#f8fafc;font-size:11px;color:#94a3b8')
-
-  api('/list-components', { method: 'POST', body: JSON.stringify({}) }).then(function () {}).catch(function () {})
+  const footer = createElement('div', '__vdi-drawer-footer')
 
   // 内置组件目录
   const catalog = [
@@ -111,45 +109,45 @@ function buildDrawer(direction: 'inside' | 'before' | 'after', hint: string): vo
   function render(filter: string) {
     list.innerHTML = ''
     let any = false
-    catalog.forEach(function (g) {
-      const matched = g.items.filter(function (it) {
-        return !filter || it.label.toLowerCase().indexOf(filter) >= 0 || it.tag.indexOf(filter) >= 0
+    catalog.forEach(function (group) {
+      const matched = group.items.filter(function (item) {
+        return !filter || item.label.toLowerCase().indexOf(filter) >= 0 || item.tag.indexOf(filter) >= 0
       })
       if (!matched.length) return
       any = true
-      const gt = mk('div', 'padding:8px 10px 4px;font-size:11px;font-weight:600;color:#94a3b8;letter-spacing:.5px', g.group)
-      list.appendChild(gt)
-      matched.forEach(function (it) {
-        const row = mk('div', 'display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:3px;cursor:pointer;transition:background .12s')
+      const groupTitle = createElement('div', '__vdi-drawer-group', group.group)
+      list.appendChild(groupTitle)
+      matched.forEach(function (item) {
+        const row = createElement('div', '__vdi-drawer-item')
         row.onmouseenter = function () { row.style.background = '#f1f5f9' }
         row.onmouseleave = function () { row.style.background = 'transparent' }
 
-        const icon = mk('div', 'width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;border-radius:3px;font-size:13px;color:#475569;flex-shrink:0;font-family:monospace', it.tag.substring(0, 2))
-        const tx = mk('div', 'flex:1;min-width:0')
-        const t1 = mk('div', 'font-size:12px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', it.label)
-        const t2 = mk('div', 'font-size:10px;color:#94a3b8;font-family:monospace;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', it.tag)
-        tx.append(t1, t2); row.append(icon, tx)
+        const icon = createElement('div', '__vdi-drawer-item-icon', item.tag.substring(0, 2))
+        const textWrap = createElement('div', '__vdi-drawer-item-text')
+        const titleLabel = createElement('div', '__vdi-drawer-item-label', item.label)
+        const tagLabel = createElement('div', '__vdi-drawer-item-tag', item.tag)
+        textWrap.append(titleLabel, tagLabel); row.append(icon, textWrap)
 
         row.onclick = function () {
-          if (!s.sel) { footer.textContent = '请先选中一个元素再插入'; return }
-          const d = pa(s.sel.getAttribute(s.A)!)
-          const dir = s.insertDirection === 'before' ? 'before' : s.insertDirection === 'after' ? 'after' : 'inside'
-          api('/insert-component', { method: 'POST', body: JSON.stringify({ file: d.f, line: +d.l, col: +d.c, componentTag: it.tag, direction: dir }) })
-            .then(function (r: any) {
-              if (r && r.success) { footer.textContent = '已插入 ' + it.tag + '（HMR 刷新中）' }
-              else footer.textContent = (r && r.error) || '插入失败'
+          if (!state.selectedElement) { footer.textContent = '请先选中一个元素再插入'; return }
+          const pos = parsePosition(state.selectedElement.getAttribute(state.attrName)!)
+          const dir = state.insertDirection === 'before' ? 'before' : state.insertDirection === 'after' ? 'after' : 'inside'
+          apiRequest('/insert-component', { method: 'POST', body: JSON.stringify({ file: pos.file, line: +pos.line, col: +pos.col, componentTag: item.tag, direction: dir }) })
+            .then(function (response: any) {
+              if (response && response.success) { footer.textContent = '已插入 ' + item.tag + '（HMR 刷新中）' }
+              else footer.textContent = (response && response.error) || '插入失败'
             })
         }
         list.appendChild(row)
       })
     })
-    if (!any) list.appendChild(mk('div', 'text-align:center;color:#cbd5e1;font-size:12px;padding:24px 0', '无匹配组件'))
+    if (!any) list.appendChild(createElement('div', '__vdi-drawer-empty', '无匹配组件'))
   }
 
   render('')
-  search.oninput = function () { render(search.value.trim().toLowerCase()) }
+  searchInput.oninput = function () { render(searchInput.value.trim().toLowerCase()) }
   drawer.appendChild(footer)
 }
 
-// keep drawSel referenced (drawer triggers HMR; selection may re-render)
-void drawSel
+// keep redrawSelection referenced (drawer triggers HMR; selection may re-render)
+void redrawSelection

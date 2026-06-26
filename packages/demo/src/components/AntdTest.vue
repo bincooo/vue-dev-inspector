@@ -24,7 +24,7 @@
 
     <!-- 输入与选择 -->
     <a-divider style="margin: 16px 0" />
-    <a-space direction="vertical" style="width: 320px">
+        <a-space direction="vertical" style="width: 320px">
       <a-input v-model:value="text" placeholder="请输入文本" />
       <a-input-password v-model:value="pwd" placeholder="密码输入框" />
       <a-select
@@ -40,7 +40,7 @@
     <a-divider style="margin: 16px 0" />
     <a-space wrap>
       <a-switch v-model:checked="checked" />
-                  <a-checkbox v-model:checked="checked">同步勾选</a-checkbox>
+      <a-checkbox v-model:checked="checked">同步勾选</a-checkbox>
       <a-radio-group v-model:value="radio">
         <a-radio value="a">A</a-radio>
         <a-radio value="b">B</a-radio>

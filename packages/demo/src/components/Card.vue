@@ -1,8 +1,8 @@
 <template>
   <div class="card" :class="[shadow && `shadow-${shadow}`]">
-    <div class="card-icon" title="测试">{{ icon }}</div>
+    <div class="card-icon">{{ icon }}</div>
     <h3 class="card-title">{{ title }}</h3>
-      </div>
+  </div>
 </template>
 
 <script setup>

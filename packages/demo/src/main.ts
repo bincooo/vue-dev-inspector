@@ -1,11 +1,14 @@
 import { createApp } from 'vue'
-import Antd from 'antdv-next'
+import Antd, { Modal } from 'antdv-next'
 import 'antdv-next/dist/reset.css'
 import App from './App.vue'
 
 const app = createApp(App)
 app.use(Antd)
 app.mount('#app')
+
+app.config.globalProperties.$modal = Modal
+app.config.globalProperties.window = window
 
 // 在控制台中提示用户如何使用 DevInspector
 console.log(

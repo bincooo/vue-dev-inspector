@@ -175,9 +175,6 @@ function init() {
       expandedFaq = expandedFaq === idx ? null : idx
       updateFaq()
     })
-
-    const demoRoot = document.getElementById('demo-root')
-    if (demoRoot) new DemoApp(demoRoot)
   }
 
   function updateTabs() {
