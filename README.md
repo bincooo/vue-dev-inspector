@@ -7,4 +7,11 @@
 pnpm add -D vite-plugin-vue-dev-inspector
 ```
 
+demo:
+```
+pnpm run dev:demo
+```
+
+[在线体验](https://1i0k2-loc.hf.space/)
+
 ![](./public/2026-06-26_07-19.png)
