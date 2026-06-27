@@ -1,10 +1,12 @@
 import './index.css'
-import { esc } from './helpers'
 import {
-  vitePluginCode, optionsCode, astTransformCode, overlayCode, serverCode, editorCode, sharedCode,
-  compiledOutputCode, monorepoStructureCode, demoViteConfigCode,
-  usageCode, installCode, workspaceCode,
+  usageCode, installCode
 } from './data/pluginCode'
+
+/** Escape HTML */
+export function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
 
 /* ──────── Code block renderer ──────── */
 function codeBlock(code: string, title?: string): string {
@@ -16,22 +18,6 @@ function codeBlock(code: string, title?: string): string {
     ${title ? `<div class="flex items-center gap-2 px-4 py-3 bg-[#181825] border-b border-slate-700/50"><div class="flex gap-1.5"><div class="w-3 h-3 rounded-full bg-red-500/80"></div><div class="w-3 h-3 rounded-full bg-yellow-500/80"></div><div class="w-3 h-3 rounded-full bg-green-500/80"></div></div><span class="text-xs text-slate-400 ml-2 font-mono">${esc(title)}</span></div>` : ''}
     <pre class="p-4 overflow-x-auto text-sm leading-relaxed text-slate-300 font-mono">${numbered}</pre>
   </div>`
-}
-
-/* ──────── Tab data ──────── */
-interface TabInfo { code: string; title: string; hint: string; hintBg: string; hintBorder: string; hintText: string }
-const TABS: Record<string, TabInfo> = {
-  structure: { code: monorepoStructureCode, title: 'Monorepo 项目结构 (pnpm workspace)', hint: '📁 <strong>Monorepo 结构：</strong>pnpm-workspace.yaml 管理多包项目。新增 <code class="bg-slate-200 px-1 rounded text-xs">packages/overlay/</code> 浏览器审查 UI 子工程（编译为单文件 IIFE），<code class="bg-slate-200 px-1 rounded text-xs">packages/client/</code> 服务端 AST 操作，<code class="bg-slate-200 px-1 rounded text-xs">packages/demo/</code> 是接入插件的完整 Vue 3 项目。', hintBg: 'bg-slate-50', hintBorder: 'border-slate-200', hintText: 'text-slate-700' },
-  demo: { code: demoViteConfigCode, title: 'packages/demo/vite.config.ts — 插件接入', hint: '🎯 <strong>插件接入点：</strong>Demo 引入 <code class="bg-rose-100 px-1 rounded text-xs">vite-plugin-vue-dev-inspector</code>，配置 attrName / editor / toggleBtn 等选项，放在 <code class="bg-rose-100 px-1 rounded text-xs">vue()</code> 之前。运行 <code class="bg-rose-100 px-1 rounded text-xs">pnpm dev:demo</code> 后按 Alt+Shift+I 或点⚙齿轮即可审查。', hintBg: 'bg-rose-50', hintBorder: 'border-rose-100', hintText: 'text-rose-700' },
-  plugin: { code: vitePluginCode, title: 'packages/vite-plugin-vue-dev-inspector/src/plugin.ts', hint: '💡 <strong>核心插件：</strong>transformIndexHtml 读取 <code class="bg-blue-100 px-1 rounded text-xs">overlay/dist/overlay.iife.js</code> 单文件，注入 <code class="bg-blue-100 px-1 rounded text-xs">window.__DEV_INSPECTOR_CFG__</code> + overlay 脚本，避免字符串拼脚本。', hintBg: 'bg-blue-50', hintBorder: 'border-blue-100', hintText: 'text-blue-700' },
-  options: { code: optionsCode, title: 'packages/vite-plugin-vue-dev-inspector/src/options.ts', hint: '⚙️ <strong>配置：</strong>DevInspectorOptions 含 <code class="bg-cyan-100 px-1 rounded text-xs">toggleBtn</code>（右下角齿轮按钮）、wrapComponents、shortcut、editor 等。', hintBg: 'bg-cyan-50', hintBorder: 'border-cyan-100', hintText: 'text-cyan-700' },
-  overlay: { code: overlayCode, title: 'packages/overlay/src/ — 浏览器审查 UI', hint: '👁 <strong>overlay 子工程：</strong>独立 TS 模块（不再是字符串），Vite 编译为单文件 IIFE。<code class="bg-fuchsia-100 px-1 rounded text-xs">state.ts</code> 共享可变状态、<code class="bg-fuchsia-100 px-1 rounded text-xs">inspector.ts</code> overlay 状态机（含±同级插入按钮）、<code class="bg-fuchsia-100 px-1 rounded text-xs">events.ts</code> 绑定事件+齿轮按钮。', hintBg: 'bg-fuchsia-50', hintBorder: 'border-fuchsia-100', hintText: 'text-fuchsia-700' },
-  server: { code: serverCode, title: 'packages/client/src/server.ts — dev 中间件', hint: '🖥️ <strong>服务端 API：</strong>Vite dev server 中间件，路由 <code class="bg-orange-100 px-1 rounded text-xs">/get-props</code> / <code class="bg-orange-100 px-1 rounded text-xs">/insert-component</code>（支持 before/after/inside）/ <code class="bg-orange-100 px-1 rounded text-xs">/delete-element</code> 等，AST 操作后写回文件触发 HMR。', hintBg: 'bg-orange-50', hintBorder: 'border-orange-100', hintText: 'text-orange-700' },
-  editor: { code: editorCode, title: 'packages/client/src/editor.ts — AST 编辑', hint: '✏️ <strong>源码编辑：</strong>AST 定位 + MagicString 原子替换。<code class="bg-lime-100 px-1 rounded text-xs">deleteElement</code> 用 AST 精确删除（解决同行内嵌子元素误删问题）；<code class="bg-lime-100 px-1 rounded text-xs">insertComponent</code> 支持 inside/before/after 三种方向。', hintBg: 'bg-lime-50', hintBorder: 'border-lime-100', hintText: 'text-lime-700' },
-  ast: { code: astTransformCode, title: 'packages/ast-walker/src/walker.ts', hint: '🌳 <strong>AST 遍历器：</strong>独立包，baseParse() + 递归 walkNode() 遍历 ELEMENT/IF/FOR/ROOT 节点。', hintBg: 'bg-purple-50', hintBorder: 'border-purple-100', hintText: 'text-purple-700' },
-  shared: { code: sharedCode, title: 'packages/shared/src/index.ts', hint: '📦 <strong>共享工具包：</strong>parseSourceAttr()、编辑器 Protocol 映射、内置标签列表等常量。', hintBg: 'bg-indigo-50', hintBorder: 'border-indigo-100', hintText: 'text-indigo-700' },
-  output: { code: compiledOutputCode, title: '编译前后 DOM 对比', hint: '📄 <strong>编译对比：</strong>每个 DOM 元素带 data-source-file="path:line:col" 属性，v-if 分支也被正确标记。', hintBg: 'bg-amber-50', hintBorder: 'border-amber-100', hintText: 'text-amber-700' },
-  ws: { code: workspaceCode, title: 'pnpm-workspace.yaml + root package.json', hint: '🧩 <strong>workspace：</strong><code class="bg-emerald-100 px-1 rounded text-xs">dev:demo</code> 自动先构建 overlay 再启动 demo，保证 overlay iife 产物就绪。', hintBg: 'bg-emerald-50', hintBorder: 'border-emerald-100', hintText: 'text-emerald-700' },
 }
 
 const FEATURES = [
@@ -56,7 +42,6 @@ const FAQS = [
 /* ══════════════════════════════════════════ */
 function init() {
   const root = document.getElementById('root')!
-  let activeTab = 'structure'
   let expandedFaq: number | null = null
 
   function renderPage() {
@@ -94,7 +79,7 @@ function init() {
     <div class="max-w-5xl mx-auto px-6">
       <div class="text-center mb-10"><h2 class="text-2xl font-bold text-slate-900 mb-2">AST 编译管线</h2></div>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        ${['📄 parse() 解析 SFC|使用 @vue/compiler-sfc 将 .vue 文件解析为 descriptor|border-blue-200 bg-blue-50/50','🌳 baseParse() 生成 AST|将模板解析为 RootNode AST 树|border-purple-200 bg-purple-50/50','🔍 walkNode() 遍历注入|递归遍历 AST，通过 MagicString 注入属性|border-emerald-200 bg-emerald-50/50','👁 overlay 审查 UI|独立子工程编译单文件 IIFE，悬停高亮 / 可视编辑 / HMR|border-amber-200 bg-amber-50/50'].map((s,i)=>{const[t,d,c]=s.split('|');return`<div class="relative p-5 rounded-xl border ${c} hover:shadow-md"><div class="absolute -top-3 left-4 bg-white px-2 py-0.5 rounded-full text-xs font-bold text-slate-400 border border-slate-200">Step ${i+1}</div><h3 class="font-semibold text-slate-800 text-sm mb-1.5 mt-1">${t}</h3><p class="text-xs text-slate-500 leading-relaxed">${d}</p>${i<3?'<span class="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 text-slate-300 z-10">→</span>':''}</div>`;}).join('')}
+        ${['📄 parse() 解析 SFC|使用 @vue/compiler-sfc 将 .vue 文件解析为 descriptor|border-blue-200 bg-blue-50/50', '🌳 baseParse() 生成 AST|将模板解析为 RootNode AST 树|border-purple-200 bg-purple-50/50', '🔍 walkNode() 遍历注入|递归遍历 AST，通过 MagicString 注入属性|border-emerald-200 bg-emerald-50/50', '👁 overlay 审查 UI|独立子工程编译单文件 IIFE，悬停高亮 / 可视编辑 / HMR|border-amber-200 bg-amber-50/50'].map((s, i) => { const [t, d, c] = s.split('|'); return `<div class="relative p-5 rounded-xl border ${c} hover:shadow-md"><div class="absolute -top-3 left-4 bg-white px-2 py-0.5 rounded-full text-xs font-bold text-slate-400 border border-slate-200">Step ${i + 1}</div><h3 class="font-semibold text-slate-800 text-sm mb-1.5 mt-1">${t}</h3><p class="text-xs text-slate-500 leading-relaxed">${d}</p>${i < 3 ? '<span class="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 text-slate-300 z-10">→</span>' : ''}</div>`; }).join('')}
       </div>
     </div>
   </section>
@@ -103,7 +88,7 @@ function init() {
     <div class="max-w-6xl mx-auto px-6">
       <div class="text-center mb-14"><h2 class="text-3xl font-bold text-slate-900 mb-3">核心特性</h2><p class="text-slate-500">基于 AST 的编译时分析，pnpm monorepo 多包架构</p></div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        ${FEATURES.map(f=>`<div class="p-6 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 hover:shadow-lg transition-all"><div class="w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br ${f.gradient} shadow-lg text-2xl">${f.icon}</div><h3 class="text-lg font-semibold text-slate-800 mb-2">${f.title}</h3><p class="text-sm text-slate-500 leading-relaxed">${f.desc}</p></div>`).join('')}
+        ${FEATURES.map(f => `<div class="p-6 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 hover:shadow-lg transition-all"><div class="w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br ${f.gradient} shadow-lg text-2xl">${f.icon}</div><h3 class="text-lg font-semibold text-slate-800 mb-2">${f.title}</h3><p class="text-sm text-slate-500 leading-relaxed">${f.desc}</p></div>`).join('')}
       </div>
     </div>
   </section>
@@ -117,16 +102,16 @@ function init() {
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         ${[
-          '⚙ 齿轮按钮|右下角固定圆形按钮，点击开启审查；审查开启后隐藏，按 Esc 或快捷键关闭后恢复显示；可在插件配置中关闭 (toggleBtn:false)',
-          '🖱️ 悬停高亮|鼠标悬停元素时显示虚线高亮框与组件标签名（优先取 data-inspector-tag），离开自动收起',
-          '🎯 选中状态|单击元素选中，蓝色实线选中框；选中框右下角出现 ⧉ 复制 / × 删除两个操作按钮',
-          '➕ 同级插入|选中元素后选中框上 / 下边框中点出现 + 按钮，点击在同级上方 / 下方插入组件并打开组件面板',
-          '🧩 组件面板|右侧滑入抽屉，搜索 + 分组列表，点击组件插入到选中元素内部 / 同级上 / 同级下方',
-          '⚙️ 编辑属性|右键菜单 → 编辑属性：弹窗拉取 /get-props，可视化增删改属性后基于 AST 回写 /update-props，触发 Vite HMR',
-          '🗑️ 删除元素|× 按钮或右键菜单 → 删除：基于 AST 精确定位元素源码区间删除，正确处理同行内嵌子元素',
-          '⧉ 复制元素|⧉ 按钮：基于 AST 复制完整源码区间并在同级紧随其后插入副本，保留原行缩进',
-          '📦 在编辑器中打开|右键 → 在编辑器中打开：调用 /open-in-editor，按 vscode / webstorm 等协议定位行号',
-        ].map(s=>{const[t,d]=s.split('|');return`<div class="p-5 rounded-xl bg-white border border-slate-100 hover:border-slate-200 hover:shadow-md transition-all"><h3 class="font-semibold text-slate-800 text-sm mb-2">${t}</h3><p class="text-xs text-slate-500 leading-relaxed">${d}</p></div>`;}).join('')}
+        '⚙ 齿轮按钮|右下角固定圆形按钮，点击开启审查；审查开启后隐藏，按 Esc 或快捷键关闭后恢复显示；可在插件配置中关闭 (toggleBtn:false)',
+        '🖱️ 悬停高亮|鼠标悬停元素时显示虚线高亮框与组件标签名（优先取 data-inspector-tag），离开自动收起',
+        '🎯 选中状态|单击元素选中，蓝色实线选中框；选中框右下角出现 ⧉ 复制 / × 删除两个操作按钮',
+        '➕ 同级插入|选中元素后选中框上 / 下边框中点出现 + 按钮，点击在同级上方 / 下方插入组件并打开组件面板',
+        '🧩 组件面板|右侧滑入抽屉，搜索 + 分组列表，点击组件插入到选中元素内部 / 同级上 / 同级下方',
+        '⚙️ 编辑属性|右键菜单 → 编辑属性：弹窗拉取 /get-props，可视化增删改属性后基于 AST 回写 /update-props，触发 Vite HMR',
+        '🗑️ 删除元素|× 按钮或右键菜单 → 删除：基于 AST 精确定位元素源码区间删除，正确处理同行内嵌子元素',
+        '⧉ 复制元素|⧉ 按钮：基于 AST 复制完整源码区间并在同级紧随其后插入副本，保留原行缩进',
+        '📦 在编辑器中打开|右键 → 在编辑器中打开：调用 /open-in-editor，按 vscode / webstorm 等协议定位行号',
+      ].map(s => { const [t, d] = s.split('|'); return `<div class="p-5 rounded-xl bg-white border border-slate-100 hover:border-slate-200 hover:shadow-md transition-all"><h3 class="font-semibold text-slate-800 text-sm mb-2">${t}</h3><p class="text-xs text-slate-500 leading-relaxed">${d}</p></div>`; }).join('')}
       </div>
       <div class="mt-8 p-5 bg-amber-50 rounded-xl border border-amber-100">
         <p class="text-sm text-amber-700 leading-relaxed">💡 <strong>触发方式：</strong>审查模式可通过右下角⚙齿轮按钮或快捷键 <kbd class="px-2 py-1 bg-white rounded border border-amber-200 text-xs font-mono">Alt+Shift+I</kbd> 开关；快速插入只读末尾「内联 + 按钮 / 齿轮 / 抽屉」交互入口。</p>
@@ -138,8 +123,8 @@ function init() {
     <div class="max-w-4xl mx-auto px-6">
       <div class="text-center mb-14"><div class="inline-flex items-center gap-2 px-3 py-1 bg-teal-50 text-teal-600 text-xs font-medium rounded-full mb-4 border border-teal-100">⚡ 快速开始</div><h2 class="text-3xl font-bold text-slate-900 mb-3">三步接入</h2></div>
       <div class="max-w-2xl mx-auto space-y-8">
-        <div><div class="flex items-center gap-3 mb-3"><div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-emerald-200">1</div><h4 class="font-semibold text-slate-800">安装依赖</h4></div>${codeBlock(installCode,'Terminal')}</div>
-        <div><div class="flex items-center gap-3 mb-3"><div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-emerald-200">2</div><h4 class="font-semibold text-slate-800">配置 Vite 插件</h4></div>${codeBlock(usageCode,'vite.config.ts')}</div>
+        <div><div class="flex items-center gap-3 mb-3"><div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-emerald-200">1</div><h4 class="font-semibold text-slate-800">安装依赖</h4></div>${codeBlock(installCode, 'Terminal')}</div>
+        <div><div class="flex items-center gap-3 mb-3"><div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-emerald-200">2</div><h4 class="font-semibold text-slate-800">配置 Vite 插件</h4></div>${codeBlock(usageCode, 'vite.config.ts')}</div>
         <div><div class="flex items-center gap-3 mb-3"><div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-emerald-200">3</div><h4 class="font-semibold text-slate-800">启动开发服务器</h4></div>
           <div class="flex flex-wrap gap-2 mt-3"><kbd class="px-2.5 py-1.5 bg-white rounded-lg border border-slate-200 text-xs text-slate-600 font-mono shadow-sm">Alt</kbd><span class="text-slate-400 self-center">+</span><kbd class="px-2.5 py-1.5 bg-white rounded-lg border border-slate-200 text-xs text-slate-600 font-mono shadow-sm">Shift</kbd><span class="text-slate-400 self-center">+</span><kbd class="px-2.5 py-1.5 bg-white rounded-lg border border-slate-200 text-xs text-slate-600 font-mono shadow-sm">I</kbd><span class="text-sm text-slate-400 self-center ml-2">开启/关闭审查模式</span></div>
         </div>
@@ -151,7 +136,7 @@ function init() {
     <div class="max-w-3xl mx-auto px-6">
       <div class="text-center mb-12"><h2 class="text-3xl font-bold text-slate-900 mb-3">常见问题</h2></div>
       <div class="space-y-3" id="faq-list">
-        ${FAQS.map((f,i)=>`<div class="bg-white rounded-xl border border-slate-100 overflow-hidden hover:border-slate-200 transition-colors"><button data-faq="${i}" class="w-full flex items-center justify-between p-5 text-left"><span class="text-sm font-medium text-slate-700 pr-4">${esc(f.q)}</span><span class="text-slate-400 flex-shrink-0">${expandedFaq===i?'▾':'▸'}</span></button>${expandedFaq===i?`<div class="px-5 pb-5 -mt-1"><p class="text-sm text-slate-500 leading-relaxed">${esc(f.a)}</p></div>`:''}</div>`).join('')}
+        ${FAQS.map((f, i) => `<div class="bg-white rounded-xl border border-slate-100 overflow-hidden hover:border-slate-200 transition-colors"><button data-faq="${i}" class="w-full flex items-center justify-between p-5 text-left"><span class="text-sm font-medium text-slate-700 pr-4">${esc(f.q)}</span><span class="text-slate-400 flex-shrink-0">${expandedFaq === i ? '▾' : '▸'}</span></button>${expandedFaq === i ? `<div class="px-5 pb-5 -mt-1"><p class="text-sm text-slate-500 leading-relaxed">${esc(f.a)}</p></div>` : ''}</div>`).join('')}
       </div>
     </div>
   </section>
@@ -161,13 +146,6 @@ function init() {
   <footer class="py-10 border-t border-slate-100"><div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-sm">👁</div><span class="text-sm font-semibold text-slate-700">Vue Dev Inspector</span><span class="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100 font-bold">AST + pnpm</span></div><p class="text-xs text-slate-400">基于 @vue/compiler-sfc AST 遍历 · pnpm monorepo · 零生产影响</p><div class="flex items-center gap-4 text-xs text-slate-400"><span>MIT License</span><span>·</span><span>Vue 3</span><span>·</span><span>Vite 5+</span></div></div></footer>
 </div>`
 
-    document.getElementById('code-tabs')?.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest('button[data-tab]') as HTMLElement | null
-      if (!btn) return
-      activeTab = btn.dataset.tab!
-      updateTabs()
-    })
-
     document.getElementById('faq-list')?.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest('button[data-faq]') as HTMLElement | null
       if (!btn) return
@@ -175,18 +153,6 @@ function init() {
       expandedFaq = expandedFaq === idx ? null : idx
       updateFaq()
     })
-  }
-
-  function updateTabs() {
-    const tab = TABS[activeTab]
-    document.querySelectorAll('#code-tabs button').forEach(btn => {
-      const key = (btn as HTMLElement).dataset.tab
-      btn.className = `px-4 py-2 text-sm font-medium rounded-lg transition-all ${key === activeTab ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`
-    })
-    const cc = document.getElementById('code-content')
-    if (cc) cc.innerHTML = codeBlock(tab.code, tab.title)
-    const ch = document.getElementById('code-hint')
-    if (ch) { ch.className = `mt-6 p-4 ${tab.hintBg} rounded-xl border ${tab.hintBorder}`; ch.innerHTML = `<p class="text-sm ${tab.hintText} leading-relaxed">${tab.hint}</p>`; }
   }
 
   function updateFaq() {

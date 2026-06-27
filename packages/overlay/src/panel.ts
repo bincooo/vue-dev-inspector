@@ -42,9 +42,9 @@ export function openPanel(el: HTMLElement): void {
   const header = createElement("div", "__vdi-prop-header");
   header.innerHTML =
     '<div><div class="__vdi-prop-title">⚙️ 编辑属性</div>' +
-    '<div class="__vdi-prop-subtitle">' +
+    '<div class="__vdi-prop-subtitle"><span>' +
     escapeHtml(getElementTagName(el)) +
-    " · " +
+    "</span> - " +
     escapeHtml(pos.file) +
     ":" +
     pos.line +
