@@ -6,32 +6,32 @@
  * overlay IIFE 启动时读取。
  */
 export interface ClientCfg {
-  attrName: string
-  protocol: string
-  editor: string
-  apiPrefix: string
-  tagAttr: string
-  projectRoot: string
+  attrName: string;
+  protocol: string;
+  editor: string;
+  apiPrefix: string;
+  tagAttr: string;
+  projectRoot: string;
   shortcut: {
-    altKey: boolean
-    shiftKey: boolean
-    ctrlKey: boolean
-    metaKey: boolean
-    code: string
-  }
+    altKey: boolean;
+    shiftKey: boolean;
+    ctrlKey: boolean;
+    metaKey: boolean;
+    code: string;
+  };
   /** 是否显示右下角齿轮按钮 */
-  toggleBtn: boolean
+  toggleBtn: boolean;
 }
 
 export interface PropEntry {
-  key: string
-  value: string
+  key: string;
+  value: string;
 }
 
 export interface PanelData {
-  file: string
-  line: number
-  col: number
-  tag: string
-  entries: PropEntry[]
+  file: string;
+  line: number;
+  col: number;
+  tag: string;
+  entries: PropEntry[];
 }

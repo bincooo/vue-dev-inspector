@@ -1,4 +1,4 @@
-import type { ClientCfg, PanelData, PropEntry } from './types'
+import type { ClientCfg, PanelData, PropEntry } from "./types";
 
 /**
  * 所有跨模块共享的可变状态集中在一个对象上。
@@ -8,10 +8,10 @@ import type { ClientCfg, PanelData, PropEntry } from './types'
  */
 
 declare global {
-  var __DEV_INSPECTOR_CFG__: ClientCfg
+  var __DEV_INSPECTOR_CFG__: ClientCfg;
 }
 
-export const clientConfig: ClientCfg = window.__DEV_INSPECTOR_CFG__
+export const clientConfig: ClientCfg = window.__DEV_INSPECTOR_CFG__;
 
 /** 全局可变状态 — 各模块通过 state.xxx 读写 */
 export const state = {
@@ -43,7 +43,13 @@ export const state = {
 
   /** 属性编辑面板 */
   propPanel: null as HTMLDivElement | null,
-  panelData: { file: '', line: 0, col: 0, tag: '', entries: [] as PropEntry[] } as PanelData,
+  panelData: {
+    file: "",
+    line: 0,
+    col: 0,
+    tag: "",
+    entries: [] as PropEntry[],
+  } as PanelData,
 
   /** 右下角齿轮按钮（点击开启审查，开启后隐藏） */
   gearButton: null as HTMLDivElement | null,
@@ -51,5 +57,4 @@ export const state = {
   /** 选中框上方/下方的 + 按钮（同级插入） */
   insertBeforeButton: null as HTMLDivElement | null,
   insertAfterButton: null as HTMLDivElement | null,
-
-}
+};

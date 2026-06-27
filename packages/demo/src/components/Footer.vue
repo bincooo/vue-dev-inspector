@@ -10,6 +10,6 @@
 
 <script setup>
 defineProps({
-  copyright: { type: String, default: '2024' },
-})
+  copyright: { type: String, default: "2024" },
+});
 </script>

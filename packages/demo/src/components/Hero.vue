@@ -7,10 +7,6 @@
 
 <script setup>
 defineProps({
-  height: { type: String, default: '300px' },
-})
-
-function onClick() {
-  alert('click');
-}
+  height: { type: String, default: "300px" },
+});
 </script>

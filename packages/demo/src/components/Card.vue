@@ -8,8 +8,8 @@
 <script setup>
 defineProps({
   title: { type: String, required: true },
-  icon: { type: String, default: '📦' },
-  shadow: { type: String, default: 'none' },
-  desc: { type: String, default: '' },
-})
+  icon: { type: String, default: "📦" },
+  shadow: { type: String, default: "none" },
+  desc: { type: String, default: "" },
+});
 </script>

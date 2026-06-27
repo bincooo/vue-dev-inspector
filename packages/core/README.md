@@ -20,27 +20,24 @@ pnpm add -D vite-plugin-vue-dev-inspector
 
 ```ts
 // vite.config.ts
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import vueDevInspector from 'vite-plugin-vue-dev-inspector'
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+import vueDevInspector from "vite-plugin-vue-dev-inspector";
 
 export default defineConfig({
-  plugins: [
-    vueDevInspector(),
-    vue(),
-  ],
-})
+  plugins: [vueDevInspector(), vue()],
+});
 ```
 
 ## 配置选项
 
-| 选项 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `enabled` | `boolean` | `true` | 是否启用 |
-| `exclude` | `RegExp[]` | `[/node_modules/, /\.d\.ts$/]` | 排除文件 |
-| `attrName` | `string` | `'data-source-file'` | 注入的属性名 |
-| `openInEditor` | `boolean` | `true` | 点击是否跳转编辑器 |
-| `editor` | `string` | `'vscode'` | 编辑器类型 |
+| 选项           | 类型       | 默认值                         | 说明               |
+| -------------- | ---------- | ------------------------------ | ------------------ |
+| `enabled`      | `boolean`  | `true`                         | 是否启用           |
+| `exclude`      | `RegExp[]` | `[/node_modules/, /\.d\.ts$/]` | 排除文件           |
+| `attrName`     | `string`   | `'data-source-file'`           | 注入的属性名       |
+| `openInEditor` | `boolean`  | `true`                         | 点击是否跳转编辑器 |
+| `editor`       | `string`   | `'vscode'`                     | 编辑器类型         |
 
 ## 工作原理
 

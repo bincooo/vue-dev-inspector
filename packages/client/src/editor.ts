@@ -1,6 +1,6 @@
-import { parse as parseSFC } from '@vue/compiler-sfc'
-import { baseParse, NodeTypes } from '@vue/compiler-core'
-import MagicString from 'magic-string'
+import { parse as parseSFC } from "@vue/compiler-sfc";
+import { baseParse, NodeTypes } from "@vue/compiler-core";
+import MagicString from "magic-string";
 import type {
   ElementNode,
   RootNode,
@@ -8,7 +8,7 @@ import type {
   AttributeNode,
   DirectiveNode,
   SimpleExpressionNode,
-} from '@vue/compiler-core'
+} from "@vue/compiler-core";
 
 /**
  * 一条属性（保持源码书写形式）
@@ -18,81 +18,103 @@ import type {
  * - 结构指令: { key: 'v-if',  value: 'show' }
  */
 export interface PropEntry {
-  key: string
-  value: string
+  key: string;
+  value: string;
 }
 
 export interface ElementProps {
-  tag: string
-  selfClosing: boolean
-  props: PropEntry[]
+  tag: string;
+  selfClosing: boolean;
+  props: PropEntry[];
 }
 
 /** 指令名 → 源码前缀（bind/on 需再拼接参数名） */
 const DIRECTIVE_PREFIX: Record<string, string> = {
-  bind: ':', on: '@', model: 'v-model', for: 'v-for',
-  if: 'v-if', 'else-if': 'v-else-if', else: 'v-else',
-  html: 'v-html', text: 'v-text', show: 'v-show',
-}
+  bind: ":",
+  on: "@",
+  model: "v-model",
+  for: "v-for",
+  if: "v-if",
+  "else-if": "v-else-if",
+  else: "v-else",
+  html: "v-html",
+  text: "v-text",
+  show: "v-show",
+};
 
 const isSimpleExp = (n: unknown): n is SimpleExpressionNode =>
-  !!n && typeof n === 'object' && (n as { type?: number }).type === 4
+  !!n && typeof n === "object" && (n as { type?: number }).type === 4;
 
 /** 解析 SFC，返回模板 AST、模板内容、模板在 SFC 中的字符偏移 */
 function parseTemplate(sfcSource: string, filePath: string) {
-  const { descriptor, errors } = parseSFC(sfcSource, { filename: filePath })
-  if (errors.length || !descriptor.template) return null
-  const tpl = descriptor.template
+  const { descriptor, errors } = parseSFC(sfcSource, { filename: filePath });
+  if (errors.length || !descriptor.template) return null;
+  const tpl = descriptor.template;
   return {
     ast: baseParse(tpl.content, { comments: false }),
     offset: tpl.loc.start.offset,
-  }
+  };
 }
 
 /** 取一个节点的可递归子节点（覆盖 ROOT/ELEMENT/IF/FOR） */
 function childrenOf(node: RootNode | TemplateChildNode): TemplateChildNode[] {
   switch (node.type) {
-    case NodeTypes.ROOT: return (node as RootNode).children
-    case NodeTypes.ELEMENT: return (node as ElementNode).children
-    case NodeTypes.IF: return (node as unknown as { branches: { children: TemplateChildNode[] }[] })
-      .branches.flatMap(b => b.children)
-    case NodeTypes.FOR: return (node as unknown as { children: TemplateChildNode[] }).children
-    default: return []
+    case NodeTypes.ROOT:
+      return (node as RootNode).children;
+    case NodeTypes.ELEMENT:
+      return (node as ElementNode).children;
+    case NodeTypes.IF:
+      return (
+        node as unknown as { branches: { children: TemplateChildNode[] }[] }
+      ).branches.flatMap((b) => b.children);
+    case NodeTypes.FOR:
+      return (node as unknown as { children: TemplateChildNode[] }).children;
+    default:
+      return [];
   }
 }
 
 /** 在模板 AST 中查找位于 (line, col) 的元素节点（line 1-based，column 0-based） */
-function findElementAtLoc(ast: RootNode, line: number, col: number): ElementNode | null {
-  const stack: (RootNode | TemplateChildNode)[] = [ast]
+function findElementAtLoc(
+  ast: RootNode,
+  line: number,
+  col: number,
+): ElementNode | null {
+  const stack: (RootNode | TemplateChildNode)[] = [ast];
   while (stack.length) {
-    const node = stack.pop()!
+    const node = stack.pop()!;
     if (node.type === NodeTypes.ELEMENT) {
-      const el = node as ElementNode
-      if (el.loc.start.line === line && el.loc.start.column === col) return el
+      const el = node as ElementNode;
+      if (el.loc.start.line === line && el.loc.start.column === col) return el;
     }
-    stack.push(...childrenOf(node))
+    stack.push(...childrenOf(node));
   }
-  return null
+  return null;
 }
 
 /** 从 AST 元素节点提取属性列表，还原源码书写形式 */
 function extractProps(el: ElementNode): PropEntry[] {
-  return el.props.map(p => {
-    if (p.type === 6 /* ATTRIBUTE */) {
-      const a = p as AttributeNode
-      return { key: a.name, value: a.value?.content ?? '' }
-    }
-    if (p.type === 7 /* DIRECTIVE */) {
-      const d = p as DirectiveNode
-      const prefix = DIRECTIVE_PREFIX[d.name] ?? `v-${d.name}`
-      const exp = isSimpleExp(d.exp) ? d.exp.content : ''
-      if (d.name === 'bind' || d.name === 'on') {
-        return { key: prefix + (isSimpleExp(d.arg) ? d.arg.content : ''), value: exp }
+  return el.props
+    .map((p) => {
+      if (p.type === 6 /* ATTRIBUTE */) {
+        const a = p as AttributeNode;
+        return { key: a.name, value: a.value?.content ?? "" };
       }
-      return { key: prefix, value: d.name === 'else' ? '' : exp }
-    }
-    return null
-  }).filter((p): p is PropEntry => p !== null)
+      if (p.type === 7 /* DIRECTIVE */) {
+        const d = p as DirectiveNode;
+        const prefix = DIRECTIVE_PREFIX[d.name] ?? `v-${d.name}`;
+        const exp = isSimpleExp(d.exp) ? d.exp.content : "";
+        if (d.name === "bind" || d.name === "on") {
+          return {
+            key: prefix + (isSimpleExp(d.arg) ? d.arg.content : ""),
+            value: exp,
+          };
+        }
+        return { key: prefix, value: d.name === "else" ? "" : exp };
+      }
+      return null;
+    })
+    .filter((p): p is PropEntry => p !== null);
 }
 
 /**
@@ -101,18 +123,18 @@ function extractProps(el: ElementNode): PropEntry[] {
  */
 function findOpenTagEnd(source: string, from: number): number {
   for (let i = from; i < source.length; i++) {
-    const ch = source[i]
+    const ch = source[i];
     if (ch === '"' || ch === "'") {
-      const close = source.indexOf(ch, i + 1)
-      if (close === -1) return -1
-      i = close
-    } else if (ch === '/' && source[i + 1] === '>') {
-      return i
-    } else if (ch === '>') {
-      return i
+      const close = source.indexOf(ch, i + 1);
+      if (close === -1) return -1;
+      i = close;
+    } else if (ch === "/" && source[i + 1] === ">") {
+      return i;
+    } else if (ch === ">") {
+      return i;
     }
   }
-  return -1
+  return -1;
 }
 
 /** 读取位于 (line, col) 的元素的当前属性（基于 AST 读取磁盘源码） */
@@ -120,12 +142,14 @@ export function getElementProps(
   sfcSource: string,
   filePath: string,
   line: number,
-  col: number
+  col: number,
 ): ElementProps | null {
-  const t = parseTemplate(sfcSource, filePath)
-  if (!t) return null
-  const el = findElementAtLoc(t.ast, line, col)
-  return el ? { tag: el.tag, selfClosing: !!el.isSelfClosing, props: extractProps(el) } : null
+  const t = parseTemplate(sfcSource, filePath);
+  if (!t) return null;
+  const el = findElementAtLoc(t.ast, line, col);
+  return el
+    ? { tag: el.tag, selfClosing: !!el.isSelfClosing, props: extractProps(el) }
+    : null;
 }
 
 /** 用 AST 定位目标元素，原子替换其属性段 [tagNameEnd, openTagEnd) */
@@ -134,27 +158,37 @@ export function editElementProps(
   filePath: string,
   line: number,
   col: number,
-  newProps: PropEntry[]
+  newProps: PropEntry[],
 ): string {
-  const t = parseTemplate(sfcSource, filePath)
-  if (!t) return sfcSource
-  const el = findElementAtLoc(t.ast, line, col)
-  if (!el) return sfcSource
+  const t = parseTemplate(sfcSource, filePath);
+  if (!t) return sfcSource;
+  const el = findElementAtLoc(t.ast, line, col);
+  if (!el) return sfcSource;
 
-  const tagNameEnd = t.offset + el.loc.start.offset + 1 + el.tag.length
-  const openTagEnd = findOpenTagEnd(sfcSource, tagNameEnd)
-  if (openTagEnd === -1) return sfcSource
+  const tagNameEnd = t.offset + el.loc.start.offset + 1 + el.tag.length;
+  const openTagEnd = findOpenTagEnd(sfcSource, tagNameEnd);
+  if (openTagEnd === -1) return sfcSource;
 
   const attrs = newProps
-    .map(p => ({ k: p.key.trim(), v: p.value }))
-    .filter(x => x.k !== '')
-    .map(x => x.v === '' ? ` ${x.k}` : ` ${x.k}="${x.v}"`)
-    .join('')
+    .map((p) => ({ k: p.key.trim(), v: p.value }))
+    .filter((x) => x.k !== "")
+    .map((x) => (x.v === "" ? ` ${x.k}` : ` ${x.k}="${x.v}"`))
+    .join("");
 
-  const s = new MagicString(sfcSource)
-  if (attrs) s.overwrite(tagNameEnd, openTagEnd, attrs)
-  else s.remove(tagNameEnd, openTagEnd)
-  return s.toString()
+  const s = new MagicString(sfcSource);
+  /* 1. 当 openTagEnd 紧贴 tagNameEnd（自闭合标签无任何现有属性），
+        MagicString 不允许 overwrite 空区间，改用 prependRight。
+     2. 当 attrs 为空（用户清空所有属性）但区间非空时，原地 remove。 */
+  if (attrs) {
+    if (openTagEnd === tagNameEnd) {
+      s.prependRight(tagNameEnd, attrs);
+    } else {
+      s.overwrite(tagNameEnd, openTagEnd, attrs);
+    }
+  } else if (openTagEnd !== tagNameEnd) {
+    s.remove(tagNameEnd, openTagEnd);
+  }
+  return s.toString();
 }
 
 /** 用 AST 定位目标元素，删除其完整源码区间（含尾部换行） */
@@ -162,18 +196,18 @@ export function deleteElement(
   sfcSource: string,
   filePath: string,
   line: number,
-  col: number
+  col: number,
 ): string {
-  const t = parseTemplate(sfcSource, filePath)
-  if (!t) return sfcSource
-  const el = findElementAtLoc(t.ast, line, col)
-  if (!el) return sfcSource
+  const t = parseTemplate(sfcSource, filePath);
+  if (!t) return sfcSource;
+  const el = findElementAtLoc(t.ast, line, col);
+  if (!el) return sfcSource;
 
-  const start = t.offset + el.loc.start.offset
-  const end = start + el.loc.source.length
-  const s = new MagicString(sfcSource)
-  s.remove(start, sfcSource[end] === '\n' ? end + 1 : end)
-  return s.toString()
+  const start = t.offset + el.loc.start.offset;
+  const end = start + el.loc.source.length;
+  const s = new MagicString(sfcSource);
+  s.remove(start, sfcSource[end] === "\n" ? end + 1 : end);
+  return s.toString();
 }
 
 /**
@@ -189,47 +223,124 @@ export function deleteElement(
  * - props:    预填默认属性列表（不设 snippet 时使用）
  */
 export interface ComponentSchema {
-  tag: string
-  label: string
-  group: string
-  selfClosing?: boolean
-  snippet?: string
-  props?: PropEntry[]
+  tag: string;
+  label: string;
+  group: string;
+  selfClosing?: boolean;
+  snippet?: string;
+  props?: PropEntry[];
 }
 
 /** 内置组件目录（antdv 基础组件，后续可扩展） */
 export const COMPONENT_CATALOG: ComponentSchema[] = [
   // ── 通用 ──
-  { tag: 'a-button', label: 'Button 按钮', group: 'antdv/通用', snippet: '<a-button type="primary">按钮</a-button>' },
-  { tag: 'a-tag', label: 'Tag 标签', group: 'antdv/通用', snippet: '<a-tag color="blue">标签</a-tag>' },
-  { tag: 'a-badge', label: 'Badge 徽标', group: 'antdv/通用', selfClosing: false, snippet: '<a-badge count={5}><a-button>消息</a-button></a-badge>' },
+  {
+    tag: "a-button",
+    label: "Button 按钮",
+    group: "antdv/通用",
+    snippet: '<a-button type="primary">按钮</a-button>',
+  },
+  {
+    tag: "a-tag",
+    label: "Tag 标签",
+    group: "antdv/通用",
+    snippet: '<a-tag color="blue">标签</a-tag>',
+  },
+  {
+    tag: "a-badge",
+    label: "Badge 徽标",
+    group: "antdv/通用",
+    selfClosing: false,
+    snippet: "<a-badge count={5}><a-button>消息</a-button></a-badge>",
+  },
   // ── 布局 ──
-  { tag: 'a-divider', label: 'Divider 分割线', group: 'antdv/布局', selfClosing: true, snippet: '<a-divider />' },
-  { tag: 'a-space', label: 'Space 间距', group: 'antdv/布局', snippet: '<a-space><span>项</span></a-space>' },
+  {
+    tag: "a-divider",
+    label: "Divider 分割线",
+    group: "antdv/布局",
+    selfClosing: true,
+    snippet: "<a-divider />",
+  },
+  {
+    tag: "a-space",
+    label: "Space 间距",
+    group: "antdv/布局",
+    snippet: "<a-space><span>项</span></a-space>",
+  },
   // ── 表单 ──
-  { tag: 'a-input', label: 'Input 输入框', group: 'antdv/表单', selfClosing: true, snippet: '<a-input placeholder="请输入" />' },
-  { tag: 'a-input-password', label: 'InputPassword 密码框', group: 'antdv/表单', selfClosing: true, snippet: '<a-input-password placeholder="请输入密码" />' },
-  { tag: 'a-select', label: 'Select 选择器', group: 'antdv/表单', selfClosing: true, snippet: '<a-select placeholder="请选择" style="width:100%" />' },
-  { tag: 'a-date-picker', label: 'DatePicker 日期', group: 'antdv/表单', selfClosing: true, snippet: '<a-date-picker style="width:100%" />' },
-  { tag: 'a-switch', label: 'Switch 开关', group: 'antdv/表单', selfClosing: true, snippet: '<a-switch />' },
-  { tag: 'a-checkbox', label: 'Checkbox 复选', group: 'antdv/表单', snippet: '<a-checkbox>复选框</a-checkbox>' },
-  { tag: 'a-radio', label: 'Radio 单选', group: 'antdv/表单', snippet: '<a-radio value="a">选项</a-radio>' },
+  {
+    tag: "a-input",
+    label: "Input 输入框",
+    group: "antdv/表单",
+    selfClosing: true,
+    snippet: '<a-input placeholder="请输入" />',
+  },
+  {
+    tag: "a-input-password",
+    label: "InputPassword 密码框",
+    group: "antdv/表单",
+    selfClosing: true,
+    snippet: '<a-input-password placeholder="请输入密码" />',
+  },
+  {
+    tag: "a-select",
+    label: "Select 选择器",
+    group: "antdv/表单",
+    selfClosing: true,
+    snippet: '<a-select placeholder="请选择" style="width:100%" />',
+  },
+  {
+    tag: "a-date-picker",
+    label: "DatePicker 日期",
+    group: "antdv/表单",
+    selfClosing: true,
+    snippet: '<a-date-picker style="width:100%" />',
+  },
+  {
+    tag: "a-switch",
+    label: "Switch 开关",
+    group: "antdv/表单",
+    selfClosing: true,
+    snippet: "<a-switch />",
+  },
+  {
+    tag: "a-checkbox",
+    label: "Checkbox 复选",
+    group: "antdv/表单",
+    snippet: "<a-checkbox>复选框</a-checkbox>",
+  },
+  {
+    tag: "a-radio",
+    label: "Radio 单选",
+    group: "antdv/表单",
+    snippet: '<a-radio value="a">选项</a-radio>',
+  },
   // ── 反馈 ──
-  { tag: 'a-alert', label: 'Alert 提示', group: 'antdv/反馈', snippet: '<a-alert message="提示信息" type="info" show-icon />' },
+  {
+    tag: "a-alert",
+    label: "Alert 提示",
+    group: "antdv/反馈",
+    snippet: '<a-alert message="提示信息" type="info" show-icon />',
+  },
   // ── 数据展示 ──
-  { tag: 'a-card', label: 'Card 卡片', group: 'antdv/数据展示', snippet: '<a-card title="标题"><p>内容</p></a-card>' },
-]
+  {
+    tag: "a-card",
+    label: "Card 卡片",
+    group: "antdv/数据展示",
+    snippet: '<a-card title="标题"><p>内容</p></a-card>',
+  },
+];
 
 /**
  * 生成组件的模板片段。
  * 优先用 schema.snippet；否则按 tag + selfClosing 生成。
  */
 function componentSnippet(schema: ComponentSchema): string {
-  if (schema.snippet) return schema.snippet
-  const indent = '' // 调用方负责缩进
+  if (schema.snippet) return schema.snippet;
+  const indent = ""; // 调用方负责缩进
   return schema.selfClosing
     ? `${indent}<${schema.tag} />`
-    : `${indent}<${schema.tag}></${schema.tag}>`
+    : `${indent}<${schema.tag}></${schema.tag}>`;
 }
 
 /**
@@ -256,53 +367,53 @@ export function insertComponent(
   line: number,
   col: number,
   componentTag: string,
-  direction: 'inside' | 'before' | 'after' = 'inside',
+  direction: "inside" | "before" | "after" = "inside",
 ): string | null {
-  const t = parseTemplate(sfcSource, filePath)
-  if (!t) return null
-  const el = findElementAtLoc(t.ast, line, col)
-  if (!el) return null
+  const t = parseTemplate(sfcSource, filePath);
+  if (!t) return null;
+  const el = findElementAtLoc(t.ast, line, col);
+  if (!el) return null;
 
   // 查组件 schema；没有则按 tag 生成默认片段
-  const schema = COMPONENT_CATALOG.find(c => c.tag === componentTag)
-  const snippet = schema ? componentSnippet(schema) : `<${componentTag} />`
+  const schema = COMPONENT_CATALOG.find((c) => c.tag === componentTag);
+  const snippet = schema ? componentSnippet(schema) : `<${componentTag} />`;
 
-  const s = new MagicString(sfcSource)
+  const s = new MagicString(sfcSource);
 
   // 同级插入：在元素完整源码区间前/后插入，继承缩进
-  if (direction === 'before' || direction === 'after') {
-    const start = t.offset + el.loc.start.offset
-    const end = start + el.loc.source.length
+  if (direction === "before" || direction === "after") {
+    const start = t.offset + el.loc.start.offset;
+    const end = start + el.loc.source.length;
     // 取元素原行缩进
-    const lineStart = sfcSource.lastIndexOf('\n', start) + 1
-    const indentMatch = sfcSource.slice(lineStart, start).match(/^[ \t]*/u)
-    const indent = indentMatch ? indentMatch[0] : ''
-    const insertion = indent + snippet
-    if (direction === 'before') {
+    const lineStart = sfcSource.lastIndexOf("\n", start) + 1;
+    const indentMatch = sfcSource.slice(lineStart, start).match(/^[ \t]*/u);
+    const indent = indentMatch ? indentMatch[0] : "";
+    const insertion = indent + snippet;
+    if (direction === "before") {
       // 插到行首缩进之前，使新组件独占一行并保留原行缩进
-      s.appendLeft(lineStart, insertion + '\n')
+      s.appendLeft(lineStart, insertion + "\n");
     } else {
-      s.appendRight(end, '\n' + insertion)
+      s.appendRight(end, "\n" + insertion);
     }
-    return s.toString()
+    return s.toString();
   }
 
   // 内部插入
-  const tagNameEnd = t.offset + el.loc.start.offset + 1 + el.tag.length
-  const openTagEnd = findOpenTagEnd(sfcSource, tagNameEnd)
-  if (openTagEnd === -1) return null
+  const tagNameEnd = t.offset + el.loc.start.offset + 1 + el.tag.length;
+  const openTagEnd = findOpenTagEnd(sfcSource, tagNameEnd);
+  if (openTagEnd === -1) return null;
 
   if (el.isSelfClosing) {
     // 自闭合目标：`.../>` → `...>`（开标签转为未闭合），其后补 snippet + 目标注入闭合标签
     // openTagEnd 指向 '/'；overwrite [slash, '>'] 为 '>'
-    s.overwrite(openTagEnd, openTagEnd + 2, '>')
-    s.appendLeft(openTagEnd + 2, `\n    ${snippet}\n  </${el.tag}>`)
+    s.overwrite(openTagEnd, openTagEnd + 2, ">");
+    s.appendLeft(openTagEnd + 2, `\n    ${snippet}\n  </${el.tag}>`);
   } else {
     // 配对标签：在 > 后插入 snippet
-    s.appendLeft(openTagEnd + 1, `\n    ${snippet}`)
+    s.appendLeft(openTagEnd + 1, `\n    ${snippet}`);
   }
 
-  return s.toString()
+  return s.toString();
 }
 
 /**
@@ -316,22 +427,22 @@ export function duplicateElement(
   sfcSource: string,
   filePath: string,
   line: number,
-  col: number
+  col: number,
 ): string | null {
-  const t = parseTemplate(sfcSource, filePath)
-  if (!t) return null
-  const el = findElementAtLoc(t.ast, line, col)
-  if (!el) return null
+  const t = parseTemplate(sfcSource, filePath);
+  if (!t) return null;
+  const el = findElementAtLoc(t.ast, line, col);
+  if (!el) return null;
 
-  const start = t.offset + el.loc.start.offset
-  const end = start + el.loc.source.length
+  const start = t.offset + el.loc.start.offset;
+  const end = start + el.loc.source.length;
 
   // 取元素原行的缩进，让副本保持同样的缩进
-  const lineStart = sfcSource.lastIndexOf('\n', start) + 1
-  const indentMatch = sfcSource.slice(lineStart, start).match(/^[ \t]*/)
-  const indent = indentMatch ? indentMatch[0] : ''
+  const lineStart = sfcSource.lastIndexOf("\n", start) + 1;
+  const indentMatch = sfcSource.slice(lineStart, start).match(/^[ \t]*/);
+  const indent = indentMatch ? indentMatch[0] : "";
 
-  const s = new MagicString(sfcSource)
-  s.appendRight(end, '\n' + indent + el.loc.source)
-  return s.toString()
+  const s = new MagicString(sfcSource);
+  s.appendRight(end, "\n" + indent + el.loc.source);
+  return s.toString();
 }

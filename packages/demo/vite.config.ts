@@ -8,11 +8,11 @@
  *   npx vite          # 启动 dev server
  *   # 浏览器中按 Alt+Shift+I 开启审查模式
  */
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
 // 在 monorepo 中直接引用本地插件源码
 // 发布后用户只需: import vueDevInspector from 'vite-plugin-vue-dev-inspector'
-import { vueDevInspector } from '@vue-dev-inspector/core'
+import { vueDevInspector } from "@vue-dev-inspector/core";
 
 export default defineConfig({
   plugins: [
@@ -26,14 +26,14 @@ export default defineConfig({
 
       // 注入的属性名
       // 格式: data-source-file="src/components/Card.vue:3:5"
-      attrName: 'data-source-file',
+      attrName: "data-source-file",
 
       // 这些组件因 inheritAttrs:false / Teleport 等导致 fallthrough attrs
       // 丢失审查标记，改用 display:contents 的 span 包裹，标记挂 span
-      wrapComponents: ['a-date-picker', 'a-input-password'],
+      wrapComponents: ["a-date-picker", "a-input-password"],
 
       // 编辑器类型
-      editor: 'vscode',
+      editor: "vscode",
 
       // 默认启用齿轮按钮
       toggleBtn: true,
@@ -41,4 +41,4 @@ export default defineConfig({
 
     vue(),
   ],
-})
+});

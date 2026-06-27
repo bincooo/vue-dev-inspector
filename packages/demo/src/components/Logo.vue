@@ -7,7 +7,7 @@
 
 <script setup>
 defineProps({
-  size: { type: String, default: 'medium' },
-  href: { type: String, default: '/' },
-})
+  size: { type: String, default: "medium" },
+  href: { type: String, default: "/" },
+});
 </script>

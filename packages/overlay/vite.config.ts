@@ -1,16 +1,16 @@
-import { defineConfig } from 'vite'
-import { viteSingleFile } from 'vite-plugin-singlefile'
+import { defineConfig } from "vite";
+import { viteSingleFile } from "vite-plugin-singlefile";
 
 export default defineConfig({
   plugins: [viteSingleFile()],
   build: {
     lib: {
-      entry: 'src/index.ts',
-      name: 'VueDevInspectorOverlay',
-      formats: ['iife'],
-      fileName: () => 'overlay.iife.js',
+      entry: "src/index.ts",
+      name: "VueDevInspectorOverlay",
+      formats: ["iife"],
+      fileName: () => "overlay.iife.js",
     },
-    outDir: 'dist',
+    outDir: "dist",
     minify: false,
     rollupOptions: {
       output: {
@@ -19,4 +19,4 @@ export default defineConfig({
       },
     },
   },
-})
+});

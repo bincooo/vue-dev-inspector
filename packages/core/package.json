@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -12,12 +11,12 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
-
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc  --external @vue-dev-inspector/client"
   },
-
   "dependencies": {
     "@vue-dev-inspector/overlay": "workspace:*",
     "@vue-dev-inspector/client": "workspace:*",

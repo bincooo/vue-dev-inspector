@@ -5,17 +5,17 @@
     <!-- 按钮组合 -->
     <a-space wrap>
       <a-button type="primary" @click="onClick('primary')">Primary</a-button>
-      <a-button>Default</a-button>
-      <a-button type="dashed">Dashed</a-button>
-      <a-button type="text">Text</a-button>
-      <a-button type="link">Link</a-button>
-      <a-button danger>Danger</a-button>
+      <a-button @click="onClick('default')">Default</a-button>
+      <a-button type="dashed" @click="onClick('dashed')">Dashed</a-button>
+      <a-button type="text" @click="onClick('text')">Text</a-button>
+      <a-button type="link" @click="onClick('link')">Link</a-button>
+      <a-button danger @click="onClick('danger')">Danger</a-button>
     </a-space>
 
     <!-- 标签 / 分割线 -->
     <a-divider style="margin: 16px 0" />
     <a-space wrap>
-      <a-tag color="success" v-if="visible">success</a-tag>
+      <a-tag v-if="visible" color="success">success</a-tag>
       <a-tag color="processing">processing</a-tag>
       <a-tag color="error">error</a-tag>
       <a-tag color="warning">warning</a-tag>
@@ -24,15 +24,10 @@
 
     <!-- 输入与选择 -->
     <a-divider style="margin: 16px 0" />
-        <a-space direction="vertical" style="width: 320px">
+    <a-space direction="vertical" style="width: 320px">
       <a-input v-model:value="text" placeholder="请输入文本" />
       <a-input-password v-model:value="pwd" placeholder="密码输入框" />
-      <a-select
-        v-model:value="selected"
-        style="width: 100%"
-        :options="options"
-        placeholder="请选择"
-      />
+      <a-select v-model="selected" style="width: 100%" :options="options" placeholder="请选择选项"/>
       <a-date-picker style="width: 100%" />
     </a-space>
 
@@ -51,7 +46,10 @@
     <!-- 卡片 -->
     <a-divider style="margin: 16px 0" />
     <a-card title="Antd 卡片" style="width: 320px">
-      <p>这是一个 antdv-next 的卡片组件，用于验证组件库与 vue-dev-inspector 的兼容性。</p>
+      <p>
+        这是一个 antdv-next 的卡片组件，用于验证组件库与 vue-dev-inspector
+        的兼容性。
+      </p>
       <template #extra>
         <a-button type="link" size="small">更多</a-button>
       </template>
@@ -68,30 +66,30 @@
 
     <a-divider />
     <a-typography-text type="secondary">
-      最后点击事件：{{ lastClick || '（无）' }}
+      最后点击事件：{{ lastClick || "（无）" }}
     </a-typography-text>
   </section>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref } from "vue";
 
-const text = ref('')
-const pwd = ref('')
-const selected = ref()
-const checked = ref(true)
-const radio = ref('a')
-const lastClick = ref('')
+const text = ref("");
+const pwd = ref("");
+const selected = ref();
+const checked = ref(true);
+const radio = ref("a");
+const lastClick = ref("");
 const visible = ref(true);
 
 const options = [
-  { value: 'vue', label: 'Vue' },
-  { value: 'antd', label: 'Ant Design Vue' },
-  { value: 'inspector', label: 'Dev Inspector' },
-]
+  { value: "vue", label: "Vue" },
+  { value: "antd", label: "Ant Design Vue" },
+  { value: "inspector", label: "Dev Inspector" },
+];
 
 function onClick(name) {
-  lastClick.value = name
+  lastClick.value = name;
 }
 </script>
 

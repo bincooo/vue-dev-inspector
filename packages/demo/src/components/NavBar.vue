@@ -8,7 +8,7 @@
 
 <script setup>
 defineProps({
-  mode: { type: String, default: 'horizontal' },
+  mode: { type: String, default: "horizontal" },
   items: { type: Array, default: () => [] },
-})
+});
 </script>

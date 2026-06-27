@@ -1,2 +1,2 @@
-export { default, vueDevInspector } from './plugin'
-export type { DevInspectorOptions } from './options'
+export { default, vueDevInspector } from "./plugin";
+export type { DevInspectorOptions } from "./options";
