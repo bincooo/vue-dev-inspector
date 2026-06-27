@@ -83,8 +83,11 @@ export function init(): void {
     function (e) {
       if (!state.inspecting) return;
       if (!findInspectableElement(e.target)) return;
-      /* 审查模式下拦截可审查元素的 mousedown，阻止双击产生文本选区 */
+      /* 审查模式下拦截可审查元素的 mousedown，阻止双击产生文本选区，
+       同时阻止事件透传（focus 变化 / 自定义 mousedown 监听器） */
       e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
     },
     true,
   );
@@ -141,8 +144,14 @@ export function init(): void {
       }
 
       /* 双击序列中的 click（detail >= 2）：由 dblclick 处理器独占响应，
-       避免第二次 click 把选中态切回 null */
-      if (e.detail >= 2) return;
+       避免第二次 click 把选中态切回 null；同时必须阻止冒泡，
+       否则原生 checkbox 等会被切换 */
+      if (e.detail >= 2) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return;
+      }
 
       e.preventDefault();
       e.stopPropagation();
@@ -192,10 +201,11 @@ export function init(): void {
       if (!state.inspecting) return;
       const el = findInspectableElement(e.target);
       if (!el) return;
-      /* 以 hoveredElement 为准：dblclick 期间鼠标没动，hoveredElement
-       仍是落点对应的可审查元素；这样即便 dblclick 序列里的 click
-       把 selectedElement 切回 null（点击已选元素会取消选中），
-       仍能正确识别「要打开的是这个元素的面板」 */
+      /* 命中可审查元素：先把所有透传停掉，再走业务分支，
+       避免早返回路径漏拦导致宿主原生控件（checkbox 等）状态被切换 */
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       if (el !== state.hoveredElement) {
         state.selectedElement = el;
         redrawSelection();
@@ -205,9 +215,6 @@ export function init(): void {
         state.selectedElement = el;
         redrawSelection();
       }
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
       /* 双击命中：把尚未到期的「取消选中」挂起任务吞掉，保持红框稳定 */
       if (cancelSelectionTimer) {
         clearTimeout(cancelSelectionTimer);
