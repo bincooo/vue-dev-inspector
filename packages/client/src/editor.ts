@@ -446,3 +446,127 @@ export function duplicateElement(
   s.appendRight(end, "\n" + indent + el.loc.source);
   return s.toString();
 }
+
+/** 方向：被移动元素相对于目标元素的位置 */
+export type MoveDirection = "before" | "inside" | "after";
+
+/**
+ * 判断 `target` 是否是 `source` 的后代（含自身）。
+ * 用于防止把元素拖到自己的后代中导致源被截断后丢失。
+ *
+ * 用 AST 节点引用做相等性比较（loc.start.offset 唯一）。
+ */
+function isDescendantOrSelf(
+  source: ElementNode,
+  target: ElementNode,
+): boolean {
+  if (source === target) return true;
+  const stack: (RootNode | TemplateChildNode)[] = [source];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (node === target) return true;
+    stack.push(...childrenOf(node));
+  }
+  return false;
+}
+
+/**
+ * 移动 (srcLine, srcCol) 元素到 (targetLine, targetCol) 处。
+ *
+ * direction 决定与目标元素的相对位置（语义同 insertComponent）：
+ *   'before' / 'after' — 同级插入（按目标行缩进重写源码每行前缀）
+ *   'inside'           — 作为目标元素的最后一个子元素插入（再深一级缩进）
+ *
+ * 实现：在同一份 sfcSource 上先用 MagicString 删源元素完整区间，
+ * 再在目标位置 appendLeft/appendRight 插入重缩进后的源元素源码。
+ * 同文件、源 ≠ 目标、目标不是源的后代 — 任一校验失败返回 null。
+ */
+export function moveElement(
+  sfcSource: string,
+  _filePath: string,
+  srcLine: number,
+  srcCol: number,
+  targetLine: number,
+  targetCol: number,
+  direction: MoveDirection,
+): string | null {
+  const t = parseTemplate(sfcSource, _filePath);
+  if (!t) return null;
+  const source = findElementAtLoc(t.ast, srcLine, srcCol);
+  if (!source) return null;
+  const target = findElementAtLoc(t.ast, targetLine, targetCol);
+  if (!target) return null;
+  if (isDescendantOrSelf(source, target)) return null;
+
+  // 源元素完整区间（含尾部换行，与 deleteElement 一致）
+  const sourceStart = t.offset + source.loc.start.offset;
+  const sourceEnd = sourceStart + source.loc.source.length;
+
+  // 源/目标行缩进
+  const sourceLineStart = sfcSource.lastIndexOf("\n", sourceStart) + 1;
+  const sourceIndentMatch = sfcSource
+    .slice(sourceLineStart, sourceStart)
+    .match(/^[ \t]*/);
+  const sourceIndent = sourceIndentMatch ? sourceIndentMatch[0] : "";
+
+  const targetStart = t.offset + target.loc.start.offset;
+  const targetLineStart = sfcSource.lastIndexOf("\n", targetStart) + 1;
+  const targetIndentMatch = sfcSource
+    .slice(targetLineStart, targetStart)
+    .match(/^[ \t]*/);
+  const targetIndent = targetIndentMatch ? targetIndentMatch[0] : "";
+
+  /** 把 source 源码的每行去掉 source 缩进后加上 newIndent */
+  function reindent(sourceCode: string, newIndent: string): string {
+    return sourceCode
+      .split("\n")
+      .map(function (line) {
+        const stripped = line.startsWith(sourceIndent)
+          ? line.slice(sourceIndent.length)
+          : line;
+        return newIndent + stripped;
+      })
+      .join("\n");
+  }
+
+  const s = new MagicString(sfcSource);
+
+  // 1. 删源：从源所在行的行首（含缩进）到源元素末尾 + 尾部换行
+  //    必须包含缩进，否则下一行的缩进会和它合并，造成双重缩进。
+  s.remove(
+    sourceLineStart,
+    sfcSource[sourceEnd] === "\n" ? sourceEnd + 1 : sourceEnd,
+  );
+
+  // 2. 在目标位置插入（用原始偏移，appendLeft/appendRight 不被前面的 remove 影响）
+  if (direction === "before" || direction === "after") {
+    const rewritten = reindent(source.loc.source, targetIndent);
+    if (direction === "before") {
+      s.appendLeft(targetLineStart, rewritten + "\n");
+    } else {
+      s.appendRight(
+        targetStart + target.loc.source.length,
+        "\n" + rewritten,
+      );
+    }
+  } else {
+    // inside: 子元素比目标缩进多 2 空格（与 insertComponent 自闭合路径约定一致）
+    const insideIndent = targetIndent + "  ";
+    const rewritten = reindent(source.loc.source, insideIndent);
+    const tagNameEnd =
+      t.offset + target.loc.start.offset + 1 + target.tag.length;
+    const openTagEnd = findOpenTagEnd(sfcSource, tagNameEnd);
+    if (openTagEnd === -1) return null;
+    if (target.isSelfClosing) {
+      s.overwrite(openTagEnd, openTagEnd + 2, ">");
+      s.appendLeft(
+        openTagEnd + 2,
+        "\n" + rewritten + "\n" + targetIndent + "</" + target.tag + ">",
+      );
+    } else {
+      s.appendLeft(openTagEnd + 1, "\n" + rewritten);
+    }
+  }
+
+  return s.toString();
+}

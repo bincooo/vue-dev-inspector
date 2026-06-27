@@ -13,6 +13,9 @@ declare global {
 
 export const clientConfig: ClientCfg = window.__DEV_INSPECTOR_CFG__;
 
+/** 拖拽放置方向（占目标元素盒的 Y 三分位） */
+export type DropDirection = "before" | "inside" | "after";
+
 /** 全局可变状态 — 各模块通过 state.xxx 读写 */
 export const state = {
   /** 配置常量快捷引用 */
@@ -57,4 +60,11 @@ export const state = {
   /** 选中框上方/下方的 + 按钮（同级插入） */
   insertBeforeButton: null as HTMLDivElement | null,
   insertAfterButton: null as HTMLDivElement | null,
+
+  /* ─── 拖拽（Ctrl + 鼠标按下进入，mouseup 提交 /move-element） ─── */
+  dragging: false,
+  dragSource: null as HTMLElement | null,
+  dropIndicator: null as HTMLDivElement | null,
+  dropTarget: null as HTMLElement | null,
+  dropDirection: null as DropDirection | null,
 };

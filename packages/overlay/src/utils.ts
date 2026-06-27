@@ -101,3 +101,19 @@ export function positionOverlay(
     height: rect.height + margin * 2 + "px",
   });
 }
+
+/**
+ * 根据光标在目标盒中的 Y 位置，返回放置方向：
+ *   top 1/3 → 'before'（同级上方）
+ *   中 1/3  → 'inside'（目标内部末尾）
+ *   底 1/3 → 'after'（同级下方）
+ */
+export function computeDropDirection(
+  rect: { top: number; height: number },
+  clientY: number,
+): "before" | "inside" | "after" {
+  const y = clientY - rect.top;
+  if (y < rect.height / 3) return "before";
+  if (y < (rect.height * 2) / 3) return "inside";
+  return "after";
+}

@@ -9,6 +9,8 @@ import {
   insertComponent,
   duplicateElement,
   deleteElement,
+  moveElement,
+  type MoveDirection,
   type PropEntry,
 } from "./editor";
 import { API_PREFIX, EDITOR_PROTOCOLS } from "@vue-dev-inspector/shared";
@@ -274,6 +276,63 @@ function handleDuplicateElement(
   json(res, 200, { success: true });
 }
 
+/**
+ * 把 (source.line, source.col) 元素移动到 (target.line, target.col) 处。
+ * direction 决定插入语义（before/inside/after）。
+ * v1 限定同文件，跨文件返回 400。
+ */
+function handleMoveElement(
+  projectRoot: string,
+  body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  const sourceFile = readString(body, "file");
+  const target = body.target as
+    | { file: string; line: number; col: number }
+    | undefined;
+  if (!target) {
+    json(res, 400, { error: "Missing target" });
+    return;
+  }
+  if (target.file !== sourceFile) {
+    json(res, 400, { error: "Cross-file move not supported in v1" });
+    return;
+  }
+  const fp = safePath(projectRoot, sourceFile);
+  if (!fp) {
+    json(res, 403, { error: "Forbidden" });
+    return;
+  }
+  const rawDirection = readString(body, "direction");
+  const direction: MoveDirection =
+    rawDirection === "before" ||
+    rawDirection === "inside" ||
+    rawDirection === "after"
+      ? rawDirection
+      : "inside";
+  const sourceLine = readNumber(body, "line");
+  const sourceCol = readNumber(body, "col");
+  const sourceCode = fs.readFileSync(fp, "utf-8");
+  const result = moveElement(
+    sourceCode,
+    sourceFile,
+    sourceLine,
+    sourceCol,
+    target.line,
+    target.col,
+    direction,
+  );
+  if (result === null) {
+    json(res, 400, {
+      error:
+        "Move rejected (source/target not found, or target is descendant of source)",
+    });
+    return;
+  }
+  fs.writeFileSync(fp, result, "utf-8");
+  json(res, 200, { success: true });
+}
+
 function handleOpenInEditor(
   projectRoot: string,
   body: RouteBody,
@@ -337,6 +396,7 @@ const ROUTES: Record<string, Record<string, RouteHandler>> = {
   "/list-components": { POST: handleListComponents },
   "/insert-component": { POST: handleInsertComponent },
   "/duplicate-element": { POST: handleDuplicateElement },
+  "/move-element": { POST: handleMoveElement },
 };
 
 /**

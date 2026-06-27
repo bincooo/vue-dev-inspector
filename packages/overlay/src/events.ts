@@ -1,23 +1,36 @@
 /**
  * 全局事件绑定 + 初始化。
  *
- *   mousemove    悬停追踪（跳过 deleteButton/copyButton 区域，免闪烁）
- *   click        菜单关闭 / 复制按钮 / 删除按钮 / 选中切换
+ *   mousemove    悬停追踪（跳过操作按钮区域，免闪烁）；drag mode 时更新 drop target
+ *   mousedown    拦截所有可审查元素（防文本选区 / 阻断原生控件副作用）；
+ *                Ctrl+命中选中元素 → 进入 drag mode
+ *   click        菜单关闭 / 复制 / 删除 / 选中切换（detail>=2 让位给 dblclick）
+ *   dblclick     命中已选中元素 → 打开属性面板
  *   contextmenu  右键弹出菜单
- *   keydown      Esc 逐级关闭（抽屉 → 面板 → 退出审查）+ 快捷键开关
- *   scroll/resize 重绘 overlay
- *   createUI()   初始化 + 控制台就绪日志
+ *   mouseup      drag mode 提交 /move-element
+ *   keydown      Esc 逐级关闭（drag / drawer / panel / 审查）+ 快捷键开关
+ *   scroll/resize 重绘 overlay 与 drop indicator
  */
 import { state, clientConfig } from "./state";
-import { findInspectableElement, createElement } from "./utils";
+import {
+  findInspectableElement,
+  createElement,
+  computeDropDirection,
+  getLayoutBox,
+  parsePosition,
+  apiRequest,
+} from "./utils";
 import {
   createUI,
   hover,
   hide,
   redrawSelection,
+  redrawDropIndicator,
   toggle,
   duplicateElement,
   deleteElement,
+  endDrag,
+  startDrag,
 } from "./inspector";
 import { showMenu } from "./menu";
 import { closePanel, openPanel } from "./panel";
@@ -35,6 +48,31 @@ const GEAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg"
  *  避免双击序列里的第一次 click 把红框先收起再亮起 */
 let cancelSelectionTimer: ReturnType<typeof setTimeout> | null = null;
 
+/** Ctrl 键是否按住：驱动 body.__vdi-ctrl 类切换，让可审查元素光标变 grab */
+let ctrlHeld = false;
+
+/** 操作按钮区域判定：避免 mousemove 在按钮上时切换悬停态造成红框闪烁 */
+function isOverActionButton(target: EventTarget | null): boolean {
+  for (const btn of [
+    state.deleteButton,
+    state.copyButton,
+    state.insertBeforeButton,
+    state.insertAfterButton,
+  ]) {
+    if (btn && btn.style.display === "flex" && btn.contains(target as Node)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** 彻底拦下事件，不再冒泡且不再触发现存捕获监听器 */
+function swallow(e: Event): void {
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+}
+
 /** 快捷键判定 */
 function isShortcut(e: KeyboardEvent): boolean {
   const shortcut = clientConfig.shortcut;
@@ -47,25 +85,79 @@ function isShortcut(e: KeyboardEvent): boolean {
   );
 }
 
+/** Esc 关闭的优先级：drag → drawer → panel → 审查 */
+function handleEscape(): void {
+  clearPendingCancel();
+  if (state.dragging) {
+    endDrag();
+    return;
+  }
+  if (state.componentDrawer) {
+    closeDrawer();
+    return;
+  }
+  if (state.propPanel) {
+    closePanel();
+    return;
+  }
+  closeAll();
+  toggle(false);
+}
+
+/** 审查关闭时清掉所有浮层与选中态。 */
+function closeAll(): void {
+  state.contextMenu!.style.display = "none";
+  state.selectedElement = null;
+  state.selectOverlay!.style.display = "none";
+  for (const btn of [
+    state.deleteButton,
+    state.copyButton,
+    state.insertBeforeButton,
+    state.insertAfterButton,
+  ]) {
+    if (btn) btn.style.display = "none";
+  }
+}
+
+function clearPendingCancel(): void {
+  if (cancelSelectionTimer) {
+    clearTimeout(cancelSelectionTimer);
+    cancelSelectionTimer = null;
+  }
+}
+
 /** 绑定所有事件 + 初始化 UI */
 export function init(): void {
   document.addEventListener(
     "mousemove",
     function (e) {
       if (!state.inspecting) return;
+
+      /* drag mode：跟随光标、更新 drop target / 方向 */
+      if (state.dragging) {
+        const target = findInspectableElement(e.target);
+        /* 目标无效 或 目标就是拖拽源本身：清指示器 */
+        if (!target || target === state.dragSource) {
+          if (state.dropTarget !== null) {
+            state.dropTarget = null;
+            state.dropDirection = null;
+            redrawDropIndicator();
+          }
+          return;
+        }
+        const rect = getLayoutBox(target)!.getBoundingClientRect();
+        const direction = computeDropDirection(rect, e.clientY);
+        if (state.dropTarget !== target || state.dropDirection !== direction) {
+          state.dropTarget = target;
+          state.dropDirection = direction;
+          redrawDropIndicator();
+        }
+        return;
+      }
+
       const el = findInspectableElement(e.target);
       /* 鼠标在操作按钮上时不触发悬停切换，避免闪烁 */
-      if (
-        (state.deleteButton!.style.display === "flex" &&
-          state.deleteButton!.contains(e.target as Node)) ||
-        (state.copyButton!.style.display === "flex" &&
-          state.copyButton!.contains(e.target as Node)) ||
-        (state.insertBeforeButton!.style.display === "flex" &&
-          state.insertBeforeButton!.contains(e.target as Node)) ||
-        (state.insertAfterButton!.style.display === "flex" &&
-          state.insertAfterButton!.contains(e.target as Node))
-      )
-        return;
+      if (isOverActionButton(e.target)) return;
       if (el !== state.hoveredElement) {
         state.hoveredElement = el;
         if (el) {
@@ -82,12 +174,21 @@ export function init(): void {
     "mousedown",
     function (e) {
       if (!state.inspecting) return;
-      if (!findInspectableElement(e.target)) return;
-      /* 审查模式下拦截可审查元素的 mousedown，阻止双击产生文本选区，
+      const target = findInspectableElement(e.target);
+      if (!target) return;
+      /* Ctrl+鼠标按下命中选中元素：进入 drag mode，源 = 选中元素 */
+      if (
+        e.ctrlKey &&
+        state.selectedElement &&
+        target === state.selectedElement
+      ) {
+        swallow(e);
+        startDrag(state.selectedElement);
+        return;
+      }
+      /* 默认：拦截 mousedown，阻止双击产生文本选区，
        同时阻止事件透传（focus 变化 / 自定义 mousedown 监听器） */
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
+      swallow(e);
     },
     true,
   );
@@ -95,6 +196,12 @@ export function init(): void {
   document.addEventListener(
     "click",
     function (e) {
+      /* drag mode 中不响应 click：mousedown 已 stopImmediatePropagation，
+       兜底再挡一层，防止用户拖到非 inspectable 区域释放触发 click */
+      if (state.dragging) {
+        swallow(e);
+        return;
+      }
       /* 点击菜单内部先处理菜单关闭 */
       if (state.contextMenu!.style.display === "block") {
         if (state.contextMenu!.contains(e.target as Node)) {
@@ -110,9 +217,7 @@ export function init(): void {
         state.copyButton!.style.display === "flex" &&
         state.copyButton!.contains(e.target as Node)
       ) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
+        swallow(e);
         duplicateElement(state.selectedElement!);
         return;
       }
@@ -121,47 +226,30 @@ export function init(): void {
         state.deleteButton!.style.display === "flex" &&
         state.deleteButton!.contains(e.target as Node)
       ) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
+        swallow(e);
         deleteElement(state.selectedElement!);
         return;
       }
-      /* 同级插入 + 按钮（上方/下方）— 动作在按钮自身 onclick 中触发
-       （openDrawerFor），捕获阶段只 return，不能 stopImmediatePropagation，
+      /* 同级插入 + 按钮（上方/下方）— 动作在按钮自身 onclick 中触发，
+       捕获阶段只 return，不能 stopImmediatePropagation，
        否则按钮的冒泡阶段 onclick 会被阻断，抽屉打不开 */
-      if (
-        state.insertBeforeButton!.style.display === "flex" &&
-        state.insertBeforeButton!.contains(e.target as Node)
-      ) {
-        return;
-      }
-      if (
-        state.insertAfterButton!.style.display === "flex" &&
-        state.insertAfterButton!.contains(e.target as Node)
-      ) {
-        return;
-      }
+      if (isOverActionButton(e.target)) return;
 
       /* 双击序列中的 click（detail >= 2）：由 dblclick 处理器独占响应，
        避免第二次 click 把选中态切回 null；同时必须阻止冒泡，
        否则原生 checkbox 等会被切换 */
       if (e.detail >= 2) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
+        swallow(e);
         return;
       }
 
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
+      swallow(e);
 
       /* 命中「已选中元素」的单击：双击的第一击。延迟执行取消选中，
          若 ~250ms 内紧跟 dblclick 则清掉计时器（dblclick 处理器里清），
          避免红框先闪一下再亮起 */
       if (state.selectedElement === state.hoveredElement) {
-        if (cancelSelectionTimer) clearTimeout(cancelSelectionTimer);
+        clearPendingCancel();
         cancelSelectionTimer = setTimeout(function () {
           cancelSelectionTimer = null;
           state.selectedElement = null;
@@ -171,10 +259,7 @@ export function init(): void {
       }
 
       /* 普通单击：选中一个新元素；若之前挂着未执行的取消计时器，一并清掉 */
-      if (cancelSelectionTimer) {
-        clearTimeout(cancelSelectionTimer);
-        cancelSelectionTimer = null;
-      }
+      clearPendingCancel();
       state.selectedElement = state.hoveredElement;
       redrawSelection();
     },
@@ -198,56 +283,77 @@ export function init(): void {
   document.addEventListener(
     "dblclick",
     function (e) {
+      if (state.dragging) {
+        swallow(e);
+        return;
+      }
       if (!state.inspecting) return;
       const el = findInspectableElement(e.target);
       if (!el) return;
       /* 命中可审查元素：先把所有透传停掉，再走业务分支，
        避免早返回路径漏拦导致宿主原生控件（checkbox 等）状态被切换 */
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      if (el !== state.hoveredElement) {
-        state.selectedElement = el;
-        redrawSelection();
-        return;
-      }
+      swallow(e);
       if (state.selectedElement !== el) {
         state.selectedElement = el;
         redrawSelection();
       }
       /* 双击命中：把尚未到期的「取消选中」挂起任务吞掉，保持红框稳定 */
-      if (cancelSelectionTimer) {
-        clearTimeout(cancelSelectionTimer);
-        cancelSelectionTimer = null;
-      }
+      clearPendingCancel();
       openPanel(el);
     },
     true,
   );
 
+  /** drag mode 提交：mouseup 在捕获阶段处理，先清场再异步提交 */
+  document.addEventListener(
+    "mouseup",
+    function () {
+      const source = state.dragSource;
+      const target = state.dropTarget;
+      const direction = state.dropDirection;
+      /* 提前清场（endDrag），再异步提交；即使提交失败 UI 状态也已恢复 */
+      endDrag();
+      if (!source || !target || !direction) return;
+      const src = parsePosition(source.getAttribute(state.attrName)!);
+      const tgt = parsePosition(target.getAttribute(state.attrName)!);
+      apiRequest("/move-element", {
+        method: "POST",
+        body: JSON.stringify({
+          file: src.file,
+          line: +src.line,
+          col: +src.col,
+          target: {
+            file: tgt.file,
+            line: +tgt.line,
+            col: +tgt.col,
+          },
+          direction,
+        }),
+      }).then(function (response: { success?: boolean; error?: string }) {
+        if (response && response.success) {
+          console.log(
+            "%c[Vue DevInspector]%c 元素已移动",
+            "color:#3b82f6;font-weight:bold",
+            "color:inherit",
+          );
+        } else {
+          console.warn(
+            "[Vue DevInspector] move 失败：",
+            (response && response.error) || "未知错误",
+          );
+        }
+      });
+    },
+    true,
+  );
+
   document.addEventListener("keydown", function (e) {
+    if (e.key === "Control" && !ctrlHeld) {
+      ctrlHeld = true;
+      document.body.classList.add("__vdi-ctrl");
+    }
     if (e.code === "Escape") {
-      /* Esc 任何情况下都立即清掉挂起的「取消选中」计时器 */
-      if (cancelSelectionTimer) {
-        clearTimeout(cancelSelectionTimer);
-        cancelSelectionTimer = null;
-      }
-      if (state.componentDrawer) {
-        closeDrawer();
-        return;
-      }
-      if (state.propPanel) {
-        closePanel();
-        return;
-      }
-      state.contextMenu!.style.display = "none";
-      state.selectedElement = null;
-      state.selectOverlay!.style.display = "none";
-      state.deleteButton!.style.display = "none";
-      state.copyButton!.style.display = "none";
-      state.insertBeforeButton!.style.display = "none";
-      state.insertAfterButton!.style.display = "none";
-      toggle(false);
+      handleEscape();
       return;
     }
     if (isShortcut(e)) {
@@ -256,22 +362,30 @@ export function init(): void {
     }
   });
 
-  window.addEventListener(
-    "scroll",
-    function () {
-      if (state.inspecting) {
-        if (state.hoveredElement) hover(state.hoveredElement);
-        redrawSelection();
-      }
-    },
-    true,
-  );
-  window.addEventListener("resize", function () {
-    if (state.inspecting) {
-      if (state.hoveredElement) hover(state.hoveredElement);
-      redrawSelection();
+  document.addEventListener("keyup", function (e) {
+    if (e.key === "Control" && ctrlHeld) {
+      ctrlHeld = false;
+      document.body.classList.remove("__vdi-ctrl");
     }
   });
+
+  /* 切窗/失焦时清掉 Ctrl 状态，避免持续显示 grab 光标 */
+  window.addEventListener("blur", function () {
+    if (ctrlHeld) {
+      ctrlHeld = false;
+      document.body.classList.remove("__vdi-ctrl");
+    }
+  });
+
+  /* 滚动/缩放时：刷新 hover / 选中框 / drop indicator（drag 中） */
+  function refreshOverlays(): void {
+    if (!state.inspecting) return;
+    if (state.hoveredElement) hover(state.hoveredElement);
+    redrawSelection();
+    if (state.dragging) redrawDropIndicator();
+  }
+  window.addEventListener("scroll", refreshOverlays, true);
+  window.addEventListener("resize", refreshOverlays);
 
   /* 启动 */
   createUI();
@@ -291,9 +405,7 @@ export function init(): void {
       gearButton.style.transform = "scale(1)";
     };
     gearButton.onclick = function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
+      swallow(e);
       toggle();
     };
     document.body.appendChild(gearButton);

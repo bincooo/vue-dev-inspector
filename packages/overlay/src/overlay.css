@@ -188,6 +188,31 @@
   opacity: 0.7;
 }
 
+.__vdi-drop-indicator {
+  position: fixed;
+  z-index: 9998;
+  pointer-events: none;
+  display: none;
+  background: #3b82f6;
+}
+
+.__vdi-drop-indicator--inside {
+  background: transparent;
+  border: 1px dashed #f59e0b;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2);
+}
+
+/* Ctrl 按住：可审查元素上显示 grab 光标，提示可拖拽 */
+body.__vdi-ctrl [data-source-file] {
+  cursor: grab;
+}
+
+/* drag mode 中：所有元素强制 grabbing（覆盖 grab 提示） */
+body.__vdi-dragging,
+body.__vdi-dragging * {
+  cursor: grabbing !important;
+}
+
 /* 属性编辑面板 */
 .__vdi-prop-card {
   width: 520px;
