@@ -4,8 +4,18 @@
   "private": true,
   "type": "module",
   "description": "AST-based element props editor + dev server middleware for vue-dev-inspector",
-  "main": "src/index.ts",
+
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+
   "scripts": {
-    "build": "echo 'Source-only package'"
+    "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc"
   }
 }

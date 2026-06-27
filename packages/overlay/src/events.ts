@@ -13,7 +13,7 @@ import { findInspectableElement, parsePosition, createElement } from './utils'
 import { createUI, hover, hide, redrawSelection, toggle, duplicateElement, deleteElement } from './inspector'
 import { showMenu } from './menu'
 import { closePanel } from './panel'
-import { closeDrawer, openDrawerFor } from './drawer'
+import { closeDrawer } from './drawer'
 
 /** Heroicons (MIT) 齿轮 SVG path */
 const GEAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" 

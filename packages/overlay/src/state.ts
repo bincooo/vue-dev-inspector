@@ -52,6 +52,4 @@ export const state = {
   insertBeforeButton: null as HTMLDivElement | null,
   insertAfterButton: null as HTMLDivElement | null,
 
-  /** 同级插入方向 'before' | 'after' */
-  insertDirection: 'before' as 'before' | 'after',
 }

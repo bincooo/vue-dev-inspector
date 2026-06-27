@@ -12,7 +12,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 // 在 monorepo 中直接引用本地插件源码
 // 发布后用户只需: import vueDevInspector from 'vite-plugin-vue-dev-inspector'
-import { vueDevInspector } from '../vite-plugin-vue-dev-inspector/src/index'
+import { vueDevInspector } from '@vue-dev-inspector/core'
 
 export default defineConfig({
   plugins: [

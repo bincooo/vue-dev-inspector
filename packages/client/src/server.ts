@@ -3,8 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { exec } from 'node:child_process'
 import { getElementProps, editElementProps, insertComponent, duplicateElement, deleteElement } from './editor'
-import type { PropEntry } from './editor'
-import { API_PREFIX, EDITOR_PROTOCOLS } from '../../vite-plugin-vue-dev-inspector/src/options'
+import { API_PREFIX, EDITOR_PROTOCOLS } from '../../core/src/options'
 
 // ─── Helpers ────────────────────────────────────────────
 

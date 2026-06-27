@@ -24,19 +24,19 @@ export function closeDrawer(): void {
 }
 
 /** 打开抽屉（已打开则关闭） */
-export function openDrawer(): void {
+export function openDrawer(direction: 'before' | 'after' | 'inside' = 'inside'): void {
   state.contextMenu!.style.display = 'none'
   if (state.componentDrawer) { closeDrawer(); return }
-  const direction = state.insertDirection
-  buildDrawer(direction, direction === 'before' ? '插入到选中元素的同级上方' : '插入到选中元素的同级下方')
-}
-
-/** 由 + 按钮调用：设定方向后打开抽屉 */
-export function openDrawerFor(direction: 'before' | 'after'): void {
-  state.contextMenu!.style.display = 'none'
-  if (state.componentDrawer) { closeDrawer(); return }
-  state.insertDirection = direction
-  buildDrawer(direction, direction === 'before' ? '插入到选中元素的同级上方' : '插入到选中元素的同级下方')
+  let tip = '插入到选中元素的内部'
+  switch (direction) {
+    case 'before':
+      tip = '插入到选中元素的同级上方'
+      break;
+    case 'after':
+      tip = '插入到选中元素的同级下方'
+      break;
+  }
+  buildDrawer(direction, tip)
 }
 
 /** 构造抽屉。direction 决定「点击组件」时的插入语义 */
@@ -131,8 +131,7 @@ function buildDrawer(direction: 'inside' | 'before' | 'after', hint: string): vo
         row.onclick = function () {
           if (!state.selectedElement) { footer.textContent = '请先选中一个元素再插入'; return }
           const pos = parsePosition(state.selectedElement.getAttribute(state.attrName)!)
-          const dir = state.insertDirection === 'before' ? 'before' : state.insertDirection === 'after' ? 'after' : 'inside'
-          apiRequest('/insert-component', { method: 'POST', body: JSON.stringify({ file: pos.file, line: +pos.line, col: +pos.col, componentTag: item.tag, direction: dir }) })
+          apiRequest('/insert-component', { method: 'POST', body: JSON.stringify({ file: pos.file, line: +pos.line, col: +pos.col, componentTag: item.tag, direction }) })
             .then(function (response: any) {
               if (response && response.success) { footer.textContent = '已插入 ' + item.tag + '（HMR 刷新中）' }
               else footer.textContent = (response && response.error) || '插入失败'

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "dev:demo": "pnpm -C packages/overlay build && pnpm -C packages/demo dev",
+    "dev:demo": "pnpm -C packages/overlay build && pnpm -C packages/client build && pnpm -C packages/core build && pnpm -C packages/demo dev",
     "build:overlay": "pnpm -C packages/overlay build"
   },
   "dependencies": {
@@ -22,6 +22,7 @@
     "@tailwindcss/vite": "4.1.17",
     "@types/node": "22.19.17",
     "tailwindcss": "4.1.17",
+    "tsup": "^8.5.1",
     "typescript": "5.9.3",
     "vite": "7.3.2",
     "vite-plugin-singlefile": "2.3.0"

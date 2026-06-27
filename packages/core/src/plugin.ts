@@ -7,7 +7,7 @@ import MagicString from 'magic-string'
 import type { DevInspectorOptions } from './options'
 import { DEFAULT_OPTIONS, EDITOR_PROTOCOLS, API_PREFIX } from './options'
 import { createInspectorTransform } from './transform'
-import { createDevServer } from '../../client/src/index'
+import { createDevServer } from '@vue-dev-inspector/client'
 
 /**
  * 编译后的 overlay 脚本（由 @vue-dev-inspector/overlay 子工程构建产生）。

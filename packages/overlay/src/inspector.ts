@@ -12,7 +12,7 @@
  */
 import { state } from './state'
 import { parsePosition, apiRequest, getElementTagName, createElement, getLayoutBox, positionOverlay } from './utils'
-import { openDrawerFor } from './drawer'
+import { openDrawer } from './drawer'
 
 /** 创建所有 UI 浮层并挂到 DOM */
 export function createUI(): void {
@@ -32,13 +32,13 @@ export function createUI(): void {
   insertBeforeButton.title = '在同级上方插入组件'
   insertBeforeButton.onclick = function (e) {
     e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation()
-    state.insertDirection = 'before'; openDrawerFor('before')
+    openDrawer('before')
   }
   const insertAfterButton = createInsertButton()
   insertAfterButton.title = '在同级下方插入组件'
   insertAfterButton.onclick = function (e) {
     e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation()
-    state.insertDirection = 'after'; openDrawerFor('after')
+    openDrawer('after')
   }
 
   ;[hoverOverlay, selectOverlay, tagTip, contextMenu, deleteButton, copyButton, insertBeforeButton, insertAfterButton]
