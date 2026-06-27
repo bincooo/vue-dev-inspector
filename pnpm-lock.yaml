@@ -73,7 +73,11 @@ importers:
         specifier: 2.3.0
         version: 2.3.0(rollup@4.62.2)(vite@7.3.2(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.30.2)(yaml@2.9.0))
 
-  packages/client: {}
+  packages/client:
+    dependencies:
+      '@vue-dev-inspector/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   packages/core:
     dependencies:
@@ -83,6 +87,9 @@ importers:
       '@vue-dev-inspector/overlay':
         specifier: workspace:*
         version: link:../overlay
+      '@vue-dev-inspector/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@vue/compiler-sfc':
         specifier: ^3.5.38
         version: 3.5.38
@@ -107,6 +114,8 @@ importers:
       vite-plugin-singlefile:
         specifier: 2.3.0
         version: 2.3.0(rollup@4.62.2)(vite@7.3.2(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.30.2)(yaml@2.9.0))
+
+  packages/shared: {}
 
 packages:
 

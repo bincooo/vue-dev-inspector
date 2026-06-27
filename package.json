@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "dev:demo": "pnpm -C packages/overlay build && pnpm -C packages/client build && pnpm -C packages/core build && pnpm -C packages/demo dev",
+    "dev:demo": "pnpm -r --filter @vue-dev-inspector/demo... --stream run build && pnpm -C packages/demo dev",
     "build:overlay": "pnpm -C packages/overlay build",
     "lint": "eslint \"packages/**/*.{ts,tsx,vue}\"",
     "lint:fix": "eslint \"packages/**/*.{ts,tsx,vue}\" --fix",

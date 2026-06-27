@@ -18,6 +18,7 @@
     "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc  --external @vue-dev-inspector/client"
   },
   "dependencies": {
+    "@vue-dev-inspector/shared": "workspace:*",
     "@vue-dev-inspector/overlay": "workspace:*",
     "@vue-dev-inspector/client": "workspace:*",
     "@vue/compiler-sfc": "^3.5.38"

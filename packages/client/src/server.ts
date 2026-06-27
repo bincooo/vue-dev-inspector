@@ -11,7 +11,7 @@ import {
   deleteElement,
   type PropEntry,
 } from "./editor";
-import { API_PREFIX, EDITOR_PROTOCOLS } from "../../core/src/options";
+import { API_PREFIX, EDITOR_PROTOCOLS } from "@vue-dev-inspector/shared";
 
 // ─── Types ────────────────────────────────────────────────
 

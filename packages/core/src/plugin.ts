@@ -5,9 +5,11 @@ import { fileURLToPath } from "node:url";
 import { parse, compileTemplate } from "@vue/compiler-sfc";
 import MagicString from "magic-string";
 import type { DevInspectorOptions } from "./options";
-import { DEFAULT_OPTIONS, EDITOR_PROTOCOLS, API_PREFIX } from "./options";
+import { DEFAULT_OPTIONS } from "./options";
 import { createInspectorTransform } from "./transform";
 import { createDevServer } from "@vue-dev-inspector/client";
+
+import { EDITOR_PROTOCOLS, API_PREFIX } from "@vue-dev-inspector/shared"
 
 /**
  * 编译后的 overlay 脚本（由 @vue-dev-inspector/overlay 子工程构建产生）。
@@ -29,7 +31,7 @@ function loadOverlayScript(): string {
   }
   throw new Error(
     "[vue-dev-inspector] 未找到 @vue-dev-inspector/overlay 的构建产物，" +
-      "请先运行 `pnpm -C packages/overlay build`。",
+    "请先运行 `pnpm -C packages/overlay build`。",
   );
 }
 
@@ -106,13 +108,13 @@ export function vueDevInspector(userOptions: DevInspectorOptions = {}): Plugin {
 
       return s.hasChanged()
         ? {
-            code: s.toString(),
-            map: s.generateMap({
-              source: id,
-              includeContent: true,
-              hires: true,
-            }),
-          }
+          code: s.toString(),
+          map: s.generateMap({
+            source: id,
+            includeContent: true,
+            hires: true,
+          }),
+        }
         : null;
     },
 
