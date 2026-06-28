@@ -15,6 +15,34 @@ const SKIP_TAGS = new Set([
 ]);
 
 /**
+ * 在元素源码里定位开标签的 `>` 或 `/>` 的索引（跳过引号包裹的属性值）。
+ *
+ * - 自闭合：返回 `/>` 中 `>` 的索引；
+ * - 非自闭合：返回开始标签结束 `>` 的索引（开标签本身通常紧接着 `<tag …>`）。
+ *
+ * 这是必要的，因为属性值里完全可能含字面 `>`，例如
+ *   @click="() => onClick('x')"
+ * 用朴素的 indexOf('>') 会先撞到表达式里的 `>`，把后续插入的属性怼到表达式中段。
+ */
+function findOpenTagEnd(source: string, isSelfClosing: boolean = false): number {
+  for (let i = 0; i < source.length; i++) {
+    const c = source[i];
+    if (c === '"' || c === "'" || c === "`") {
+      // 跳过整个引号串；不支持引号转义（HTML 属性里也没有这回事）。
+      const quote = c;
+      i++;
+      while (i < source.length && source[i] !== quote) i++;
+    } else if (
+      (isSelfClosing && c === "/" && source[i + 1] === ">") ||
+      (!isSelfClosing && c === ">")
+    ) {
+      return i;
+    }
+  }
+  return source.length;
+}
+
+/**
  * 创建 AST 节点转换器：为每个普通元素/组件的开始标签
  * 注入 `${attrName}="filePath:line:col"`。
  *
@@ -61,8 +89,8 @@ export function createInspectorTransform(
     }
 
     // 原生元素及非 wrap 组件：在开始标签的 `>` 前注入属性
-    const closeSeq = el.isSelfClosing ? "/>" : ">";
-    const insertPos = start + el.loc.source.indexOf(closeSeq);
+    // （自闭合元素找 `/>`），那就是开标签结束符的位置。
+    const insertPos = start + findOpenTagEnd(el.loc.source, el.isSelfClosing);
     const tagAttr =
       el.tagType === ElementTypes.COMPONENT
         ? ` data-inspector-tag="${el.tag}"`

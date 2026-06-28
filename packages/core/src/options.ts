@@ -45,6 +45,18 @@ export interface DevInspectorOptions {
    * @default []
    */
   componentConfig?: ComponentConfig;
+  /**
+   * 模板表达式解析器插件（透传给 compileTemplate 的 expressionPlugins）。
+   *
+   * 用于支持模板内联表达式中的 TS/装饰器/某些现代语法。
+   * 在 `vue()` 插件中我们设的 `expressionPlugins` 不会自动扩散到这里 ———
+   * 本插件提前调一次 `compileTemplate` 来跑 nodeTransforms 注入属性，
+   * 因此必须在这里也声明，否则会报
+   *   "Error parsing JavaScript expression: Unexpected token"
+   * 默认与 `@vitejs/plugin-vue` 官方示例一致：开启 typescript。
+   * @default ['typescript']
+   */
+  expressionPlugins?: Array<"typescript" | "jsx">;
 }
 
 export const DEFAULT_OPTIONS: Required<DevInspectorOptions> = {
@@ -56,4 +68,5 @@ export const DEFAULT_OPTIONS: Required<DevInspectorOptions> = {
   shortcut: { altKey: true, shiftKey: true, code: "KeyI" },
   toggleBtn: true,
   componentConfig: [],
+  expressionPlugins: [],
 };

@@ -103,6 +103,11 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
         filename: id,
         id,
         compilerOptions: {
+          // 透传 expressionPlugins，与 vue() 插件保持一致。
+          // 否则内联表达式里只要含 TS/部分现代语法就会先在这里爆
+          // "Error parsing JavaScript expression: Unexpected token"，
+          // 阻断本插件的 nodeTransforms 注入。
+          expressionPlugins: options.expressionPlugins,
           nodeTransforms: [
             createInspectorTransform(
               s,
