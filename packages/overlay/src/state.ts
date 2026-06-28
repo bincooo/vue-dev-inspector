@@ -68,3 +68,19 @@ export const state = {
   dropTarget: null as HTMLElement | null,
   dropDirection: null as DropDirection | null,
 };
+
+/**
+ * 切换"选中元素"时同步挂/卸这个 class。
+ * CSS 用 `body.__vdi-ctrl .__vdi-draggable` 收窄可拖拽光标：
+ * 必须同时满足 ①审查开着、②按住 Ctrl、③当前已选中 → 才有 move 光标。
+ */
+export const DRAGGABLE_CLASS = "__vdi-draggable";
+
+/** selectedElement 写入助手：旧节点先卸 class，避免停电/取消选中后残留。 */
+export function setSelectedElement(next: HTMLElement | null): void {
+  if (state.selectedElement && state.selectedElement !== next) {
+    state.selectedElement.classList.remove(DRAGGABLE_CLASS);
+  }
+  state.selectedElement = next;
+  if (next) next.classList.add(DRAGGABLE_CLASS);
+}

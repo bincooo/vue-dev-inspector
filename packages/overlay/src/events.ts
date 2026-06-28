@@ -11,7 +11,7 @@
  *   keydown      Esc 逐级关闭（drag / drawer / panel / 审查）+ 快捷键开关
  *   scroll/resize 重绘 overlay 与 drop indicator
  */
-import { state, clientConfig } from "./state";
+import { state, clientConfig, setSelectedElement } from "./state";
 import {
   findInspectableElement,
   createElement,
@@ -107,7 +107,7 @@ function handleEscape(): void {
 /** 审查关闭时清掉所有浮层与选中态。 */
 function closeAll(): void {
   state.contextMenu!.style.display = "none";
-  state.selectedElement = null;
+  setSelectedElement(null);
   state.selectOverlay!.style.display = "none";
   for (const btn of [
     state.deleteButton,
@@ -252,7 +252,7 @@ export function init(): void {
         clearPendingCancel();
         cancelSelectionTimer = setTimeout(function () {
           cancelSelectionTimer = null;
-          state.selectedElement = null;
+          setSelectedElement(null);
           redrawSelection();
         }, 250);
         return;
@@ -260,7 +260,7 @@ export function init(): void {
 
       /* 普通单击：选中一个新元素；若之前挂着未执行的取消计时器，一并清掉 */
       clearPendingCancel();
-      state.selectedElement = state.hoveredElement;
+      setSelectedElement(state.hoveredElement);
       redrawSelection();
     },
     true,
@@ -293,12 +293,9 @@ export function init(): void {
       /* 命中可审查元素：先把所有透传停掉，再走业务分支，
        避免早返回路径漏拦导致宿主原生控件（checkbox 等）状态被切换 */
       swallow(e);
-      if (state.selectedElement !== el) {
-        state.selectedElement = el;
-        redrawSelection();
-      }
       /* 双击命中：把尚未到期的「取消选中」挂起任务吞掉，保持红框稳定 */
       clearPendingCancel();
+      setSelectedElement(el);
       openPanel(el);
     },
     true,

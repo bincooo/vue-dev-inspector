@@ -11,7 +11,7 @@
  *   redrawDropIndicator   拖拽中按 dropTarget/dropDirection 重绘放置指示器
  *   startDrag / endDrag   drag mode 进出
  */
-import { state } from "./state";
+import { state, setSelectedElement } from "./state";
 import {
   parsePosition,
   apiRequest,
@@ -111,7 +111,7 @@ export function deleteElement(element: HTMLElement): void {
     }),
   }).then(function () {
     if (state.selectedElement === element) {
-      state.selectedElement = null;
+      setSelectedElement(null);
       redrawSelection();
     }
     element.remove();
@@ -188,7 +188,7 @@ export function redrawSelection(): void {
   } else {
     state.selectOverlay.style.display = "none";
     setActionButtonsVisible(false);
-    state.selectedElement = null;
+    setSelectedElement(null);
   }
 }
 
@@ -197,7 +197,7 @@ export function toggle(force?: boolean): void {
   state.inspecting = force !== undefined ? force : !state.inspecting;
   if (!state.inspecting) {
     hide();
-    state.selectedElement = null;
+    setSelectedElement(null);
     state.selectOverlay!.style.display = "none";
     setActionButtonsVisible(false);
     if (state.dragging) endDrag();

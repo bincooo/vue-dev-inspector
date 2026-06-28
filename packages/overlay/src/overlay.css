@@ -202,12 +202,18 @@
   box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2);
 }
 
-/* Ctrl 按住：可审查元素上显示 grab 光标，提示可拖拽 */
-body.__vdi-ctrl [data-source-file] {
-  cursor: grab;
+/* Ctrl 按住、且当前已选中元素：变 move 光标，提示可拖动。
+   选中元素在 events.ts / inspector.ts / menu.ts 通过 setSelectedElement
+   自动挂/卸 __vdi-draggable，避免未选中节点也被误标。
+   例外：wrapComponents 被包了一层 `display:contents` 的 span，
+   span 本身没有可视盒，把光标下传给它里面的子组件节点，
+   这样 a-date-picker / a-input-password 等也能展示 move 提示。 */
+body.__vdi-ctrl .__vdi-draggable,
+body.__vdi-ctrl .__vdi-draggable[data-inspector-wrap] * {
+  cursor: move;
 }
 
-/* drag mode 中：所有元素强制 grabbing（覆盖 grab 提示） */
+/* drag mode 中：所有元素强制 grabbing（覆盖 move 提示，给用户实操反馈） */
 body.__vdi-dragging,
 body.__vdi-dragging * {
   cursor: grabbing !important;

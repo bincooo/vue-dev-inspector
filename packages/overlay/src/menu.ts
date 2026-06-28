@@ -1,7 +1,7 @@
 /**
  * 右键菜单。
  */
-import { state } from "./state";
+import { state, setSelectedElement } from "./state";
 import {
   parsePosition,
   apiRequest,
@@ -97,7 +97,7 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
           }),
         }).then(function () {
           if (state.selectedElement === element) {
-            state.selectedElement = null;
+            setSelectedElement(null);
             redrawSelection();
           }
           element.remove();
