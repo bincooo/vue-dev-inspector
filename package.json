@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "dev:demo": "pnpm -C packages/demo dev",
+    "build:overlay": "pnpm -C packages/overlay build",
     "build:core": "pnpm -C packages/core build",
     "build:antd": "pnpm -C packages/antdv build",
     "lint": "eslint \"packages/**/*.{ts,tsx,vue}\"",
