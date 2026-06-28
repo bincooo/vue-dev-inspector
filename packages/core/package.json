@@ -1,7 +1,7 @@
 {
   "name": "@vue-dev-inspector/core",
-  "version": "1.0.0",
-  "private": true,
+  "version": "0.0.2",
+  "private": false,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -15,12 +15,12 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc  --external @vue-dev-inspector/client"
+    "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc && cp ../overlay/dist/overlay.iife.js dist/overlay.iife.js"
   },
   "dependencies": {
-    "@vue-dev-inspector/shared": "workspace:*",
-    "@vue-dev-inspector/overlay": "workspace:*",
-    "@vue-dev-inspector/client": "workspace:*",
     "@vue/compiler-sfc": "^3.5.38"
+  },
+  "devDependencies": {
+    "@vue-dev-inspector/shared": "^0.0.1"
   }
 }

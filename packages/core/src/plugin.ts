@@ -7,9 +7,9 @@ import MagicString from "magic-string";
 import type { DevInspectorOptions } from "./options";
 import { DEFAULT_OPTIONS } from "./options";
 import { createInspectorTransform } from "./transform";
-import { createDevServer } from "@vue-dev-inspector/client";
+import { createDevServer } from "../../client";
 
-import { EDITOR_PROTOCOLS, API_PREFIX } from "@vue-dev-inspector/shared"
+import { EDITOR_PROTOCOLS, API_PREFIX } from "../../shared"
 
 /**
  * 编译后的 overlay 脚本（由 @vue-dev-inspector/overlay 子工程构建产生）。
@@ -21,7 +21,10 @@ function loadOverlayScript(): string {
   // 当前插件源码位于 packages/vite-plugin-vue-dev-inspector/src/plugin.ts，
   // overlay 产物位于 packages/overlay/dist/overlay.iife.js
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const candidates = [path.resolve(here, "../../overlay/dist/overlay.iife.js")];
+  const candidates = [
+    path.resolve(here, './overlay.iife.js'),
+    path.resolve(here, "../../overlay/dist/overlay.iife.js"),
+  ];
   for (const p of candidates) {
     try {
       return fs.readFileSync(p, "utf-8");

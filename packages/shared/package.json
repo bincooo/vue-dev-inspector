@@ -1,6 +1,7 @@
 {
     "name": "@vue-dev-inspector/shared",
-    "private": true,
+    "private": false,
+    "version": "0.0.1",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -10,6 +11,9 @@
             "import": "./dist/index.js"
         }
     },
+    "files": [
+        "dist"
+    ],
     "scripts": {
         "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean"
     }

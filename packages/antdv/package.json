@@ -1,7 +1,7 @@
 {
     "name": "@vue-dev-inspector/antdv",
-    "version": "1.0.0",
-    "private": true,
+    "version": "0.0.1",
+    "private": false,
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -18,6 +18,6 @@
         "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean"
     },
     "dependencies": {
-        "@vue-dev-inspector/shared": "workspace:*"
+        "@vue-dev-inspector/shared": "^0.0.1"
     }
 }

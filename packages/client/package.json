@@ -19,6 +19,6 @@
     "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc"
   },
   "dependencies": {
-    "@vue-dev-inspector/shared": "workspace:*"
+    "@vue-dev-inspector/shared": "^0.0.1"
   }
 }

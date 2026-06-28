@@ -9,7 +9,7 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@vue-dev-inspector/shared": "workspace:*"
+    "@vue-dev-inspector/shared": "^0.0.1"
   },
   "devDependencies": {
     "typescript": "5.9.3",

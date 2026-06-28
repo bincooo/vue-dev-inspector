@@ -76,29 +76,24 @@ importers:
   packages/antdv:
     dependencies:
       '@vue-dev-inspector/shared':
-        specifier: workspace:*
-        version: link:../shared
+        specifier: ^0.0.1
+        version: 0.0.1
 
   packages/client:
     dependencies:
       '@vue-dev-inspector/shared':
-        specifier: workspace:*
-        version: link:../shared
+        specifier: ^0.0.1
+        version: 0.0.1
 
   packages/core:
     dependencies:
-      '@vue-dev-inspector/client':
-        specifier: workspace:*
-        version: link:../client
-      '@vue-dev-inspector/overlay':
-        specifier: workspace:*
-        version: link:../overlay
-      '@vue-dev-inspector/shared':
-        specifier: workspace:*
-        version: link:../shared
       '@vue/compiler-sfc':
         specifier: ^3.5.38
         version: 3.5.38
+    devDependencies:
+      '@vue-dev-inspector/shared':
+        specifier: ^0.0.1
+        version: 0.0.1
 
   packages/demo:
     devDependencies:
@@ -115,8 +110,8 @@ importers:
   packages/overlay:
     dependencies:
       '@vue-dev-inspector/shared':
-        specifier: workspace:*
-        version: link:../shared
+        specifier: ^0.0.1
+        version: 0.0.1
     devDependencies:
       typescript:
         specifier: 5.9.3
@@ -946,6 +941,9 @@ packages:
     peerDependencies:
       vite: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
       vue: ^3.2.25
+
+  '@vue-dev-inspector/shared@0.0.1':
+    resolution: {integrity: sha512-0lyIJfTBtCRKTKnaJtwBo8ZoVS85ehdkiLoEQAshvv6UJFOpXG9WqarqVWU0KCyMU7XpWtuACz8F/N22bvqr6A==}
 
   '@vue/compiler-core@3.5.38':
     resolution: {integrity: sha512-s99aGxWYig9ErHbct27KXEGhrBYlRI6c4MwAgXErOAbX9xiW37/uMa+XUDO69zLz83dng8UUZ70CTOJrLrYrEQ==}
@@ -2500,6 +2498,8 @@ snapshots:
       '@rolldown/pluginutils': 1.0.1
       vite: 7.3.2(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.30.2)(yaml@2.9.0)
       vue: 3.5.38(typescript@5.9.3)
+
+  '@vue-dev-inspector/shared@0.0.1': {}
 
   '@vue/compiler-core@3.5.38':
     dependencies:

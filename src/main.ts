@@ -71,7 +71,7 @@ function init() {
         <a href="#guide" class="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white font-medium rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-200">⚡ 快速开始</a>
         <a href="#code" class="flex items-center gap-2 px-6 py-3 bg-white text-slate-700 font-medium rounded-xl border border-slate-200 hover:shadow-md">📂 查看 Monorepo 源码</a>
       </div>
-      <div class="inline-flex items-center gap-3 bg-slate-900 rounded-xl px-5 py-3 shadow-2xl"><span class="text-slate-400">$</span><code class="text-sm text-slate-300 font-mono">pnpm add -D <span class="text-emerald-400">vite-plugin-vue-dev-inspector</span></code></div>
+      <div class="inline-flex items-center gap-3 bg-slate-900 rounded-xl px-5 py-3 shadow-2xl"><span class="text-slate-400">$</span><code class="text-sm text-slate-300 font-mono">pnpm add -D <span class="text-emerald-400">@vue-dev-inspector/core</span></code></div>
     </div>
   </section>
 
