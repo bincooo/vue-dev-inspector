@@ -40,6 +40,9 @@ function buildCfgJson(
   options: Required<DevInspectorOptions>,
   projectRoot: string,
 ): string {
+  // 保留每个 entry（含 name），抽屉用 entry 渲染左侧竖列 tab。
+  // 同一 entry 内部多 groups；切换 tab 即切换整组渲染。
+  const componentEntries = options.componentConfig ?? [];
   const cfg = {
     attrName: options.attrName,
     protocol: EDITOR_PROTOCOLS[options.editor] || EDITOR_PROTOCOLS.vscode,
@@ -49,8 +52,11 @@ function buildCfgJson(
     projectRoot,
     shortcut: options.shortcut,
     toggleBtn: options.toggleBtn,
+    componentEntries,
   };
-  return JSON.stringify(cfg);
+  // 防御：snippet 字符串里若出现 "</script>" 会切断外层 HTML 的 <script> 块，
+  // 全部转义成 <\/script>。JSON.stringify 已处理普通字符转义，仅需补这一刀。
+  return JSON.stringify(cfg).replace(/<\/(script)/gi, "<\\/$1");
 }
 
 /**
@@ -59,8 +65,8 @@ function buildCfgJson(
  * 基于 AST 遍历，在 dev 模式下为 DOM 元素注入源码位置属性，
  * 并注入客户端审查脚本 + 服务端 API。
  */
-export function vueDevInspector(userOptions: DevInspectorOptions = {}): Plugin {
-  const options = { ...DEFAULT_OPTIONS, ...userOptions };
+export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
+  const options = { ...DEFAULT_OPTIONS, ...opts };
   let isDev = false;
   let projectRoot = "";
 

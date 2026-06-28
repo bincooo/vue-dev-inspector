@@ -2,6 +2,9 @@
  * 纯计算工具函数——无 DOM 副作用。
  */
 import { state } from "./state";
+import type { PropEntry } from "./types";
+
+const POS_RE = /^(.*):(\d+):(\d+)$/;
 
 /** 解析形如 `path/file.vue:line:col` 的位置串。 */
 export function parsePosition(value: string): {
@@ -9,20 +12,34 @@ export function parsePosition(value: string): {
   line: string;
   col: string;
 } {
-  const lastColon = value.lastIndexOf(":");
-  const prevColon = value.lastIndexOf(":", lastColon - 1);
-  return {
-    file: value.substring(0, prevColon),
-    line: value.substring(prevColon + 1, lastColon),
-    col: value.substring(lastColon + 1),
-  };
+  const [, file, line, col] = value.match(POS_RE)!;
+  return { file, line, col };
+}
+
+/** 把 `{file,line,col}` 类型位置对象格式化回 `file:line:col` 串。 */
+export function formatPosition(pos: {
+  file: string;
+  line: string | number;
+  col: string | number;
+}): string {
+  return pos.file + ":" + pos.line + ":" + pos.col;
+}
+
+/** 读取元素上的位置属性并解析为结构化位置。 */
+export function readPosition(element: HTMLElement): {
+  file: string;
+  line: string;
+  col: string;
+} | null {
+  const raw = element.getAttribute(state.attrName);
+  return raw ? parsePosition(raw) : null;
 }
 
 /** 调用插件提供的服务端 API。 */
 export interface ApiResponse<T = unknown> {
   success?: boolean;
   error?: string;
-  props?: Array<{ key: string; value: string }>;
+  props?: PropEntry[];
   components?: Array<{ path: string; name: string }>;
   data?: T;
 }
@@ -31,15 +48,10 @@ export function apiRequest<T = unknown>(
   path: string,
   init?: RequestInit,
 ): Promise<ApiResponse<T>> {
-  return fetch(
-    state.apiPrefix + path,
-    Object.assign(
-      { headers: { "Content-Type": "application/json" } },
-      init || {},
-    ),
-  ).then(function (response) {
-    return response.json() as Promise<ApiResponse<T>>;
-  });
+  return fetch(state.apiPrefix + path, {
+    headers: { "Content-Type": "application/json" },
+    ...init,
+  }).then((response) => response.json() as Promise<ApiResponse<T>>);
 }
 
 /** 读取元素的展示标签（优先取注入的 tag 属性，否则取小写标签名）。 */
@@ -65,24 +77,22 @@ export function findInspectableElement(
 ): HTMLElement | null {
   let node = target as HTMLElement | null;
   while (node && node !== document.documentElement) {
-    if (
-      (node as HTMLElement).getAttribute &&
-      (node as HTMLElement).getAttribute(state.attrName)
-    )
+    if (node.nodeType === Node.ELEMENT_NODE && node.getAttribute(state.attrName))
       return node;
-    node = (node as HTMLElement).parentElement;
+    node = node.parentElement;
   }
   return null;
 }
 
 /** 对 `display:contents` 元素取首个子元素作为定位盒。 */
 export function getLayoutBox(element: HTMLElement | null): HTMLElement | null {
+  if (!element) return element;
   if (
-    element &&
     getComputedStyle(element).display === "contents" &&
     element.firstElementChild
-  )
+  ) {
     return element.firstElementChild as HTMLElement;
+  }
   return element;
 }
 
@@ -102,6 +112,8 @@ export function positionOverlay(
   });
 }
 
+import type { DropDirection } from "./state";
+
 /**
  * 根据光标在目标盒中的 Y 位置，返回放置方向：
  *   top 1/3 → 'before'（同级上方）
@@ -111,9 +123,36 @@ export function positionOverlay(
 export function computeDropDirection(
   rect: { top: number; height: number },
   clientY: number,
-): "before" | "inside" | "after" {
+): DropDirection {
   const y = clientY - rect.top;
   if (y < rect.height / 3) return "before";
   if (y < (rect.height * 2) / 3) return "inside";
   return "after";
+}
+
+/* ─── 控制台日志模板 ───────────────────────────────────────── */
+
+const BRAND = "[Vue DevInspector]";
+
+/** 「蓝色 + 加粗」品牌前缀 + 信息。 */
+export function logInfo(msg: string): void {
+  console.log(
+    "%c" + BRAND + "%c " + msg,
+    "color:#3b82f6;font-weight:bold",
+    "color:inherit",
+  );
+}
+
+/** 「绿色 + 加粗」品牌前缀 + 成功信息。 */
+export function logSuccess(msg: string): void {
+  console.log(
+    "%c" + BRAND + "%c " + msg,
+    "color:#10b981;font-weight:bold",
+    "color:inherit",
+  );
+}
+
+/** 「红色」品牌前缀 + 报错信息（首参作标签，第二参接描述）。 */
+export function logError(label: string, detail: string): void {
+  console.warn(BRAND + " " + label + "：", detail);
 }

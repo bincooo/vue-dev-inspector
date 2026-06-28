@@ -5,6 +5,8 @@
  * window.__DEV_INSPECTOR_CFG__ 全局变量，
  * overlay IIFE 启动时读取。
  */
+import type { ComponentConfigEntry } from "@vue-dev-inspector/shared";
+
 export interface ClientCfg {
   attrName: string;
   protocol: string;
@@ -21,17 +23,15 @@ export interface ClientCfg {
   };
   /** 是否显示右下角齿轮按钮 */
   toggleBtn: boolean;
+  /**
+   * 抽屉左侧竖列 tab 的物料库条目。
+   * 数组顺序决定 tab 从左到右渲染顺序；
+   * 为空时 overlay 回退到内置 antdv 默认物料（仅一个 tab）。
+   */
+  componentEntries: ComponentConfigEntry[];
 }
 
 export interface PropEntry {
   key: string;
   value: string;
-}
-
-export interface PanelData {
-  file: string;
-  line: number;
-  col: number;
-  tag: string;
-  entries: PropEntry[];
 }

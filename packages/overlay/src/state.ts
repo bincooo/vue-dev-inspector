@@ -1,11 +1,11 @@
-import type { ClientCfg, PanelData, PropEntry } from "./types";
-
 /**
  * 所有跨模块共享的可变状态集中在一个对象上。
  *
  * 原来的 IIFE 字符串用闭包变量共享状态；模块化后
  * let 导出不是 live binding，所以用一个可变对象代替。
  */
+
+import type { ClientCfg } from "./types";
 
 declare global {
   var __DEV_INSPECTOR_CFG__: ClientCfg;
@@ -26,6 +26,15 @@ export const state = {
   tagAttr: clientConfig.tagAttr,
   editor: clientConfig.editor,
 
+  /** 抽屉左侧竖列 tab：每个 entry 一个物料库；空时 drawer 回退内置默认 */
+  componentEntries: clientConfig.componentEntries ?? [],
+
+  /** 抽屉当前激活的物料 tab 下标（每次打开抽屉时由 drawer 决定默认值） */
+  activeEntryIndex: 0,
+
+  /** iconify 解析后的 SVG 缓存（key = `i-prefix:name`，value = svg 字符串） */
+  iconCache: {} as Record<string, string>,
+
   /** 审查开关与当前悬停、选中元素 */
   inspecting: false,
   hoveredElement: null as HTMLElement | null,
@@ -36,12 +45,21 @@ export const state = {
   selectOverlay: null as HTMLDivElement | null,
   tagTip: null as HTMLDivElement | null,
 
-  /** 右键菜单 / 删除按钮 / 复制按钮 */
+  /** 右键菜单 */
   contextMenu: null as HTMLDivElement | null,
+
+  /** 选中框右下角的「复制 / 删除」按钮 */
   deleteButton: null as HTMLDivElement | null,
   copyButton: null as HTMLDivElement | null,
 
-  /** 组件抽屉 */
+  /** 选中框上下边中点的「同级插入 +」按钮 */
+  insertBeforeButton: null as HTMLDivElement | null,
+  insertAfterButton: null as HTMLDivElement | null,
+
+  /** 拖拽放置指示器 */
+  dropIndicator: null as HTMLDivElement | null,
+
+  /** 组件抽屉 + 抽屉外层遮罩 */
   componentDrawer: null as HTMLDivElement | null,
 
   /** 属性编辑面板 */
@@ -51,23 +69,28 @@ export const state = {
     line: 0,
     col: 0,
     tag: "",
-    entries: [] as PropEntry[],
-  } as PanelData,
+    entries: [] as { key: string; value: string }[],
+  },
 
   /** 右下角齿轮按钮（点击开启审查，开启后隐藏） */
   gearButton: null as HTMLDivElement | null,
 
-  /** 选中框上方/下方的 + 按钮（同级插入） */
-  insertBeforeButton: null as HTMLDivElement | null,
-  insertAfterButton: null as HTMLDivElement | null,
-
   /* ─── 拖拽（Ctrl + 鼠标按下进入，mouseup 提交 /move-element） ─── */
   dragging: false,
   dragSource: null as HTMLElement | null,
-  dropIndicator: null as HTMLDivElement | null,
   dropTarget: null as HTMLElement | null,
   dropDirection: null as DropDirection | null,
 };
+
+/** 选中框旁的 4 个动作按钮：getter 数组，每次访问都拿最新引用。 */
+export function actionButtons(): (HTMLDivElement | null)[] {
+  return [
+    state.deleteButton,
+    state.copyButton,
+    state.insertBeforeButton,
+    state.insertAfterButton,
+  ];
+}
 
 /**
  * 切换"选中元素"时同步挂/卸这个 class。

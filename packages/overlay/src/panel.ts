@@ -7,12 +7,13 @@ import {
   apiRequest,
   getElementTagName,
   createElement,
-  type ApiResponse,
+  formatPosition,
+  logSuccess,
 } from "./utils";
-import { escapeHtml } from "./escapeHtml";
+import type { PropEntry } from "./types";
 
 /** 关闭浮层 */
-export function closePanel() {
+export function closePanel(): void {
   if (state.propPanel) {
     state.propPanel.remove();
     state.propPanel = null;
@@ -33,25 +34,37 @@ export function openPanel(el: HTMLElement): void {
   };
 
   const mask = createElement("div", "__vdi-panel-mask");
-  mask.onmousedown = function (e: MouseEvent) {
+  mask.onmousedown = (e) => {
     if (e.target === mask) closePanel();
   };
 
   const card = createElement("div", "__vdi-prop-card");
 
-  const header = createElement("div", "__vdi-prop-header");
-  header.innerHTML =
-    '<div><div class="__vdi-prop-title">⚙️ 编辑属性</div>' +
-    '<div class="__vdi-prop-subtitle"><span>' +
-    escapeHtml(getElementTagName(el)) +
-    "</span> - " +
-    escapeHtml(pos.file) +
-    ":" +
-    pos.line +
-    '<span class="__vdi-loading-hint">  加载中…</span></div></div>';
-  const closeButton = createElement<HTMLButtonElement>("button", "__vdi-close-btn", "✕");
+  const headerTitle = createElement("div", "__vdi-prop-title", "⚙️ 编辑属性");
+  const tagSpan = createElement(
+    "span",
+    "__vdi-prop-subtitle-tag",
+    getElementTagName(el),
+  );
+  const subtitle = createElement("div", "__vdi-prop-subtitle");
+  const fileSpan = createElement("span", undefined, formatPosition(pos));
+  const loadingHint = createElement(
+    "span",
+    "__vdi-loading-hint",
+    "  加载中…",
+  );
+  subtitle.append(tagSpan, document.createTextNode(" - "), fileSpan, loadingHint);
+  const headerLeft = createElement("div");
+  headerLeft.append(headerTitle, subtitle);
+
+  const closeButton = createElement<HTMLButtonElement>(
+    "button",
+    "__vdi-close-btn",
+    "✕",
+  );
   closeButton.onclick = closePanel;
-  header.appendChild(closeButton);
+  const header = createElement("div", "__vdi-prop-header");
+  header.append(headerLeft, closeButton);
 
   const list = createElement("div", "__vdi-prop-body");
 
@@ -66,9 +79,7 @@ export function openPanel(el: HTMLElement): void {
     "__vdi-save-btn",
     "💾 保存",
   );
-  saveButton.onclick = function () {
-    submit(el);
-  };
+  saveButton.onclick = () => submit();
   footer.append(hint, saveButton);
 
   card.append(header, list, footer);
@@ -84,86 +95,84 @@ export function openPanel(el: HTMLElement): void {
       col: state.panelData.col,
     }),
   })
-    .then(function (response: ApiResponse) {
-      const loadingHint = header.querySelector(".__vdi-loading-hint");
-      if (loadingHint) loadingHint.remove();
-      if (response && response.props)
-        state.panelData.entries = response.props.map(function (prop) {
-          return { key: prop.key, value: prop.value };
-        });
+    .then((response) => {
+      if (response && response.props) state.panelData.entries = [...response.props];
       renderList(list);
+      loadingHint.remove();
     })
-    .catch(function () {
-      const loadingHint = header.querySelector(".__vdi-loading-hint");
-      if (loadingHint) loadingHint.textContent = "  读取失败";
+    .catch(() => {
+      loadingHint.textContent = "  读取失败";
     });
+}
+
+/** 单个属性行：key 输入 + = + value 输入 + 删除按钮 */
+function makePropRow(
+  entry: PropEntry,
+  list: HTMLDivElement,
+  onRemove: () => void,
+): HTMLDivElement {
+  const row = createElement("div", "__vdi-prop-row");
+  const keyInput = createElement<HTMLInputElement>(
+    "input",
+    "__vdi-prop-input __vdi-prop-key",
+  );
+  keyInput.value = entry.key;
+  keyInput.placeholder = "属性名";
+  keyInput.oninput = () => (entry.key = keyInput.value);
+  const equalsSign = createElement("span", "__vdi-prop-eq", "=");
+  const valueInput = createElement<HTMLInputElement>(
+    "input",
+    "__vdi-prop-input __vdi-prop-value",
+  );
+  valueInput.value = entry.value;
+  valueInput.placeholder = "值（可空）";
+  valueInput.oninput = () => (entry.value = valueInput.value);
+  const removeButton = createElement<HTMLButtonElement>(
+    "button",
+    "__vdi-prop-remove",
+    "✕",
+  );
+  removeButton.onclick = onRemove;
+  row.append(keyInput, equalsSign, valueInput, removeButton);
+  list.appendChild(row);
+  return row;
 }
 
 /** 渲染属性行 */
 export function renderList(list: HTMLDivElement): void {
   list.innerHTML = "";
-  if (!state.panelData.entries.length)
+  if (!state.panelData.entries.length) {
     list.appendChild(
       createElement("div", "__vdi-prop-empty-hint", "暂无属性，点击下方添加"),
     );
+  } else {
+    state.panelData.entries.forEach((entry, index) => {
+      makePropRow(entry, list, () => {
+        state.panelData.entries.splice(index, 1);
+        renderList(list);
+      });
+    });
+  }
 
-  state.panelData.entries.forEach(function (entry, index) {
-    const row = createElement("div", "__vdi-prop-row");
-    const keyInput = createElement(
-      "input",
-      "__vdi-prop-input __vdi-prop-key",
-    ) as HTMLInputElement;
-    keyInput.value = entry.key;
-    keyInput.placeholder = "属性名";
-    keyInput.oninput = function () {
-      entry.key = keyInput.value;
-    };
-    const equalsSign = createElement("span", "__vdi-prop-eq", "=");
-    const valueInput = createElement(
-      "input",
-      "__vdi-prop-input __vdi-prop-value",
-    ) as HTMLInputElement;
-    valueInput.value = entry.value;
-    valueInput.placeholder = "值（可空）";
-    valueInput.oninput = function () {
-      entry.value = valueInput.value;
-    };
-    const removeButton = createElement<HTMLButtonElement>(
-      "button",
-      "__vdi-prop-remove",
-      "✕",
-    );
-    removeButton.onmouseenter = function () {
-      removeButton.style.color = "#ef4444";
-      removeButton.style.background = "#fef2f2";
-    };
-    removeButton.onmouseleave = function () {
-      removeButton.style.color = "#cbd5e1";
-      removeButton.style.background = "none";
-    };
-    removeButton.onclick = function () {
-      state.panelData.entries.splice(index, 1);
-      renderList(list);
-    };
-    row.append(keyInput, equalsSign, valueInput, removeButton);
-    list.appendChild(row);
-  });
-
-  // 新增行
-  const addRow = createElement("div", "__vdi-prop-add-row");
-  const newKeyInput = createElement(
+  const newKeyInput = createElement<HTMLInputElement>(
     "input",
     "__vdi-prop-input __vdi-new-input",
-  ) as HTMLInputElement;
+  );
   newKeyInput.placeholder = "新属性名";
-  const equalsSign2 = createElement("span", "__vdi-prop-eq", "=");
-  const newValueInput = createElement(
+  const equalsSign = createElement("span", "__vdi-prop-eq", "=");
+  const newValueInput = createElement<HTMLInputElement>(
     "input",
     "__vdi-prop-input __vdi-prop-value __vdi-new-input",
-  ) as HTMLInputElement;
+  );
   newValueInput.placeholder = "值";
-  const addButton = createElement<HTMLButtonElement>("button", "__vdi-add-btn", "＋ 添加");
-  const doAdd = function () {
+  const addButton = createElement<HTMLButtonElement>(
+    "button",
+    "__vdi-add-btn",
+    "＋ 添加",
+  );
+  const addRow = createElement("div", "__vdi-prop-add-row");
+
+  const doAdd = () => {
     if (!newKeyInput.value.trim()) return;
     state.panelData.entries.push({
       key: newKeyInput.value.trim(),
@@ -174,35 +183,33 @@ export function renderList(list: HTMLDivElement): void {
     renderList(list);
   };
   addButton.onclick = doAdd;
-  newKeyInput.onkeydown = function (e: KeyboardEvent) {
+  const onEnter = (e: KeyboardEvent) => {
     if (e.key === "Enter") doAdd();
   };
-  newValueInput.onkeydown = newKeyInput.onkeydown;
-  addRow.append(newKeyInput, equalsSign2, newValueInput, addButton);
+  newKeyInput.onkeydown = onEnter;
+  newValueInput.onkeydown = onEnter;
+
+  addRow.append(newKeyInput, equalsSign, newValueInput, addButton);
   list.appendChild(addRow);
 }
 
 /** 收集 entries 回写源码 */
-export function submit(_el: HTMLElement): void {
-  void _el;
+function submit(): void {
   apiRequest("/update-props", {
     method: "POST",
     body: JSON.stringify({
       file: state.panelData.file,
       line: state.panelData.line,
       col: state.panelData.col,
-      props: state.panelData.entries.map(function (entry) {
-        return { key: entry.key, value: entry.value };
-      }),
+      props: state.panelData.entries.map((entry) => ({
+        key: entry.key,
+        value: entry.value,
+      })),
     }),
-  }).then(function (response: ApiResponse) {
+  }).then((response) => {
     if (response && response.success) {
       closePanel();
-      console.log(
-        "%c[Vue DevInspector]%c 属性已更新",
-        "color:#10b981;font-weight:bold",
-        "color:inherit",
-      );
+      logSuccess("属性已更新");
     }
   });
 }

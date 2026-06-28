@@ -11,7 +11,11 @@
  *   redrawDropIndicator   拖拽中按 dropTarget/dropDirection 重绘放置指示器
  *   startDrag / endDrag   drag mode 进出
  */
-import { state, setSelectedElement } from "./state";
+import {
+  state,
+  actionButtons,
+  setSelectedElement,
+} from "./state";
 import {
   parsePosition,
   apiRequest,
@@ -19,6 +23,7 @@ import {
   createElement,
   getLayoutBox,
   positionOverlay,
+  logInfo,
 } from "./utils";
 import { openDrawer } from "./drawer";
 
@@ -29,21 +34,18 @@ export function createUI(): void {
   const tagTip = createElement("div", "__vdi-tag-tip");
   const contextMenu = createElement("div", "__vdi-context-menu");
 
-  const deleteButton = createElement(
-    "div",
+  const deleteButton = createActionBtn(
     "__vdi-action-btn __vdi-delete-btn",
     "×",
+    "#dc2626",
+    "#ef4444",
   );
-  deleteButton.onmouseenter = () => (deleteButton.style.background = "#dc2626");
-  deleteButton.onmouseleave = () => (deleteButton.style.background = "#ef4444");
-
-  const copyButton = createElement(
-    "div",
+  const copyButton = createActionBtn(
     "__vdi-action-btn __vdi-copy-btn",
     "⧉",
+    "#2563eb",
+    "#3b82f6",
   );
-  copyButton.onmouseenter = () => (copyButton.style.background = "#2563eb");
-  copyButton.onmouseleave = () => (copyButton.style.background = "#3b82f6");
 
   const insertBeforeButton = makeInsertButton(() => openDrawer("before"));
   insertBeforeButton.title = "在同级上方插入组件";
@@ -54,19 +56,34 @@ export function createUI(): void {
   dropIndicator.style.display = "none";
 
   /* appendChild 批量挂载 + state 一次性灌引用，避免重复 list */
-  const layers: Record<string, HTMLDivElement> = {
-    hoverOverlay,
-    selectOverlay,
-    tagTip,
-    contextMenu,
-    deleteButton,
-    copyButton,
-    insertBeforeButton,
-    insertAfterButton,
-    dropIndicator,
-  };
-  Object.values(layers).forEach((layer) => document.body.appendChild(layer));
-  Object.assign(state, layers);
+  const layers: Array<[keyof typeof state, HTMLDivElement]> = [
+    ["hoverOverlay", hoverOverlay],
+    ["selectOverlay", selectOverlay],
+    ["tagTip", tagTip],
+    ["contextMenu", contextMenu],
+    ["deleteButton", deleteButton],
+    ["copyButton", copyButton],
+    ["insertBeforeButton", insertBeforeButton],
+    ["insertAfterButton", insertAfterButton],
+    ["dropIndicator", dropIndicator],
+  ];
+  for (const [key, el] of layers) {
+    document.body.appendChild(el);
+    (state as unknown as Record<string, HTMLDivElement | null>)[key] = el;
+  }
+}
+
+/** 构造一个固定定位小按钮，hover 切换背景色。 */
+function createActionBtn(
+  className: string,
+  text: string,
+  hoverColor: string,
+  baseColor: string,
+): HTMLDivElement {
+  const btn = createElement("div", className, text);
+  btn.onmouseenter = () => (btn.style.background = hoverColor);
+  btn.onmouseleave = () => (btn.style.background = baseColor);
+  return btn;
 }
 
 /** 构造一个 + 同级插入按钮 */
@@ -87,29 +104,18 @@ export function duplicateElement(element: HTMLElement): void {
   apiRequest("/duplicate-element", {
     method: "POST",
     body: JSON.stringify({ file: pos.file, line: +pos.line, col: +pos.col }),
-  }).then(function (response) {
-    if (response && response.success)
-      console.log(
-        "%c[Vue DevInspector]%c 元素已复制",
-        "color:#3b82f6;font-weight:bold",
-        "color:inherit",
-      );
+  }).then((response) => {
+    if (response && response.success) logInfo("元素已复制");
   });
 }
 
 /** 删除元素 */
 export function deleteElement(element: HTMLElement): void {
   const pos = parsePosition(element.getAttribute(state.attrName)!);
-  const tag = getElementTagName(element);
   apiRequest("/delete-element", {
     method: "POST",
-    body: JSON.stringify({
-      file: pos.file,
-      line: +pos.line,
-      col: +pos.col,
-      tag,
-    }),
-  }).then(function () {
+    body: JSON.stringify({ file: pos.file, line: +pos.line, col: +pos.col, tag: getElementTagName(element) }),
+  }).then(() => {
     if (state.selectedElement === element) {
       setSelectedElement(null);
       redrawSelection();
@@ -118,43 +124,40 @@ export function deleteElement(element: HTMLElement): void {
   });
 }
 
-/** 4 个动作按钮共用同一份显示状态 */
+/** 选中框旁的 4 个动作按钮同步显隐。 */
 function setActionButtonsVisible(visible: boolean): void {
-  for (const btn of [
-    state.deleteButton,
-    state.copyButton,
-    state.insertBeforeButton,
-    state.insertAfterButton,
-  ]) {
+  for (const btn of actionButtons()) {
     if (btn) btn.style.display = visible ? "flex" : "none";
   }
 }
 
 /** 定位 复制/删除 按钮到选中框右下角；定位 +/- 同级插入按钮到上下边框中点 */
 export function positionActionButtons(): void {
-  if (
-    !state.selectedElement ||
-    !state.selectOverlay ||
-    state.selectOverlay.style.display === "none"
-  ) {
+  if (!state.selectedElement) {
+    setActionButtonsVisible(false);
+    return;
+  }
+  if (!state.selectOverlay || state.selectOverlay.style.display === "none") {
     setActionButtonsVisible(false);
     return;
   }
   const r = getLayoutBox(state.selectedElement)!.getBoundingClientRect();
-  /* 复制/删除：右下角（复制偏左 18px） */
-  state.deleteButton!.style.display = "flex";
-  state.deleteButton!.style.left = r.right - 18 + "px";
-  state.deleteButton!.style.top = r.bottom - 18 + "px";
-  state.copyButton!.style.display = "flex";
-  state.copyButton!.style.left = r.right - 36 + "px";
-  state.copyButton!.style.top = r.bottom - 18 + "px";
-  /* ± 插入：上下边框中点 */
-  state.insertBeforeButton!.style.display = "flex";
-  state.insertBeforeButton!.style.left = r.left + r.width / 2 - 9 + "px";
-  state.insertBeforeButton!.style.top = r.top - 9 + "px";
-  state.insertAfterButton!.style.display = "flex";
-  state.insertAfterButton!.style.left = r.left + r.width / 2 - 9 + "px";
-  state.insertAfterButton!.style.top = r.bottom - 9 + "px";
+  const del = state.deleteButton!;
+  const cp = state.copyButton!;
+  const before = state.insertBeforeButton!;
+  const after = state.insertAfterButton!;
+  del.style.display = "flex";
+  del.style.left = r.right - 18 + "px";
+  del.style.top = r.bottom - 18 + "px";
+  cp.style.display = "flex";
+  cp.style.left = r.right - 36 + "px";
+  cp.style.top = r.bottom - 18 + "px";
+  before.style.display = "flex";
+  before.style.left = r.left + r.width / 2 - 9 + "px";
+  before.style.top = r.top - 9 + "px";
+  after.style.display = "flex";
+  after.style.left = r.left + r.width / 2 - 9 + "px";
+  after.style.top = r.bottom - 9 + "px";
 }
 
 /** 悬停态 */
@@ -211,27 +214,23 @@ export function toggle(force?: boolean): void {
  * 空 → 隐藏；before/after → 2px 蓝线；inside → 黄色虚线内框。
  */
 export function redrawDropIndicator(): void {
-  const indicator = state.dropIndicator;
-  if (!indicator) return;
   const target = state.dropTarget;
   const dir = state.dropDirection;
   if (!target || !dir) {
-    indicator.style.display = "none";
+    if (state.dropIndicator) state.dropIndicator.style.display = "none";
     return;
   }
   const rect = getLayoutBox(target)!.getBoundingClientRect();
+  const indicator = state.dropIndicator!;
   indicator.className = "__vdi-drop-indicator __vdi-drop-indicator--" + dir;
+  indicator.style.display = "block";
+  indicator.style.left = rect.left - 2 + "px";
+  indicator.style.width = rect.width + 4 + "px";
   if (dir === "before" || dir === "after") {
-    indicator.style.display = "block";
-    indicator.style.left = rect.left - 2 + "px";
     indicator.style.top = (dir === "before" ? rect.top : rect.bottom) - 1 + "px";
-    indicator.style.width = rect.width + 4 + "px";
     indicator.style.height = "2px";
   } else {
-    indicator.style.display = "block";
-    indicator.style.left = rect.left - 2 + "px";
     indicator.style.top = rect.top - 2 + "px";
-    indicator.style.width = rect.width + 4 + "px";
     indicator.style.height = rect.height + 4 + "px";
   }
 }

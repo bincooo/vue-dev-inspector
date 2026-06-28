@@ -11,7 +11,7 @@
  *   keydown      Esc 逐级关闭（drag / drawer / panel / 审查）+ 快捷键开关
  *   scroll/resize 重绘 overlay 与 drop indicator
  */
-import { state, clientConfig, setSelectedElement } from "./state";
+import { state, clientConfig, actionButtons, setSelectedElement } from "./state";
 import {
   findInspectableElement,
   createElement,
@@ -19,6 +19,10 @@ import {
   getLayoutBox,
   parsePosition,
   apiRequest,
+  formatPosition,
+  logInfo,
+  logSuccess,
+  logError,
 } from "./utils";
 import {
   createUI,
@@ -44,21 +48,31 @@ const GEAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg"
     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
   </svg>`;
 
+/** 把 user-config 的 shortcut 翻成可读的展示字符串，例如 "Alt+Shift+I"。 */
+function formatShortcut(s: typeof clientConfig.shortcut): string {
+  return [
+    s.altKey && "Alt",
+    s.shiftKey && "Shift",
+    s.ctrlKey && "Ctrl",
+    s.metaKey && "Meta",
+    s.code.replace(/^Key/, ""),
+  ]
+    .filter(Boolean)
+    .join("+");
+}
+
 /** 单击已选中元素的「取消选中」挂起计时器：等待是否紧跟 dblclick，
  *  避免双击序列里的第一次 click 把红框先收起再亮起 */
 let cancelSelectionTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** Ctrl 键是否按住：驱动 body.__vdi-ctrl 类切换，让可审查元素光标变 grab */
-let ctrlHeld = false;
+function setCtrlHeld(active: boolean): void {
+  document.body.classList.toggle("__vdi-ctrl", active);
+}
 
 /** 操作按钮区域判定：避免 mousemove 在按钮上时切换悬停态造成红框闪烁 */
 function isOverActionButton(target: EventTarget | null): boolean {
-  for (const btn of [
-    state.deleteButton,
-    state.copyButton,
-    state.insertBeforeButton,
-    state.insertAfterButton,
-  ]) {
+  for (const btn of actionButtons()) {
     if (btn && btn.style.display === "flex" && btn.contains(target as Node)) {
       return true;
     }
@@ -88,18 +102,9 @@ function isShortcut(e: KeyboardEvent): boolean {
 /** Esc 关闭的优先级：drag → drawer → panel → 审查 */
 function handleEscape(): void {
   clearPendingCancel();
-  if (state.dragging) {
-    endDrag();
-    return;
-  }
-  if (state.componentDrawer) {
-    closeDrawer();
-    return;
-  }
-  if (state.propPanel) {
-    closePanel();
-    return;
-  }
+  if (state.dragging) return endDrag();
+  if (state.componentDrawer) return closeDrawer();
+  if (state.propPanel) return closePanel();
   closeAll();
   toggle(false);
 }
@@ -109,12 +114,7 @@ function closeAll(): void {
   state.contextMenu!.style.display = "none";
   setSelectedElement(null);
   state.selectOverlay!.style.display = "none";
-  for (const btn of [
-    state.deleteButton,
-    state.copyButton,
-    state.insertBeforeButton,
-    state.insertAfterButton,
-  ]) {
+  for (const btn of actionButtons()) {
     if (btn) btn.style.display = "none";
   }
 }
@@ -146,10 +146,10 @@ export function init(): void {
           return;
         }
         const rect = getLayoutBox(target)!.getBoundingClientRect();
-        const direction = computeDropDirection(rect, e.clientY);
-        if (state.dropTarget !== target || state.dropDirection !== direction) {
+        const dropDir = computeDropDirection(rect, e.clientY);
+        if (state.dropTarget !== target || state.dropDirection !== dropDir) {
           state.dropTarget = target;
-          state.dropDirection = direction;
+          state.dropDirection = dropDir;
           redrawDropIndicator();
         }
         return;
@@ -160,11 +160,8 @@ export function init(): void {
       if (isOverActionButton(e.target)) return;
       if (el !== state.hoveredElement) {
         state.hoveredElement = el;
-        if (el) {
-          hover(el);
-        } else {
-          hide();
-        }
+        if (el) hover(el);
+        else hide();
       }
     },
     true,
@@ -275,6 +272,11 @@ export function init(): void {
       e.preventDefault();
       state.hoveredElement = el;
       hover(el);
+      /* 右键命中即视作选中 —— 让后续「组件面板 / 删除」等读
+       * state.selectedElement 的分支都对齐到右键命中的元素，
+       避免抽屉里点组件插到了上次单击的旧元素里。 */
+      setSelectedElement(el);
+      redrawSelection();
       showMenu(e.clientX, e.clientY, el);
     },
     true,
@@ -307,10 +309,10 @@ export function init(): void {
     function () {
       const source = state.dragSource;
       const target = state.dropTarget;
-      const direction = state.dropDirection;
+      const dropDir = state.dropDirection;
       /* 提前清场（endDrag），再异步提交；即使提交失败 UI 状态也已恢复 */
       endDrag();
-      if (!source || !target || !direction) return;
+      if (!source || !target || !dropDir) return;
       const src = parsePosition(source.getAttribute(state.attrName)!);
       const tgt = parsePosition(target.getAttribute(state.attrName)!);
       apiRequest("/move-element", {
@@ -319,36 +321,21 @@ export function init(): void {
           file: src.file,
           line: +src.line,
           col: +src.col,
-          target: {
-            file: tgt.file,
-            line: +tgt.line,
-            col: +tgt.col,
-          },
-          direction,
+          target: { file: tgt.file, line: +tgt.line, col: +tgt.col },
+          direction: dropDir,
         }),
-      }).then(function (response: { success?: boolean; error?: string }) {
-        if (response && response.success) {
-          console.log(
-            "%c[Vue DevInspector]%c 元素已移动",
-            "color:#3b82f6;font-weight:bold",
-            "color:inherit",
-          );
-        } else {
-          console.warn(
-            "[Vue DevInspector] move 失败：",
-            (response && response.error) || "未知错误",
-          );
-        }
-      });
+      })
+        .then((response) => {
+          if (response && response.success) logInfo("元素已移动");
+          else logError("move 失败", (response && response.error) || "未知错误");
+        })
+        .catch(() => logError("move 失败", "网络错误"));
     },
     true,
   );
 
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Control" && !ctrlHeld) {
-      ctrlHeld = true;
-      document.body.classList.add("__vdi-ctrl");
-    }
+    if (e.key === "Control") setCtrlHeld(true);
     if (e.code === "Escape") {
       handleEscape();
       return;
@@ -360,19 +347,11 @@ export function init(): void {
   });
 
   document.addEventListener("keyup", function (e) {
-    if (e.key === "Control" && ctrlHeld) {
-      ctrlHeld = false;
-      document.body.classList.remove("__vdi-ctrl");
-    }
+    if (e.key === "Control") setCtrlHeld(false);
   });
 
   /* 切窗/失焦时清掉 Ctrl 状态，避免持续显示 grab 光标 */
-  window.addEventListener("blur", function () {
-    if (ctrlHeld) {
-      ctrlHeld = false;
-      document.body.classList.remove("__vdi-ctrl");
-    }
-  });
+  window.addEventListener("blur", () => setCtrlHeld(false));
 
   /* 滚动/缩放时：刷新 hover / 选中框 / drop indicator（drag 中） */
   function refreshOverlays(): void {
@@ -393,15 +372,15 @@ export function init(): void {
     gearButton.title = "开启审查模式";
     gearButton.innerHTML = GEAR_SVG;
     gearButton.style = "opacity: 0.7;transform: scale(1)";
-    gearButton.onmouseenter = function () {
+    gearButton.onmouseenter = () => {
       gearButton.style.opacity = "1";
       gearButton.style.transform = "scale(1.1)";
     };
-    gearButton.onmouseleave = function () {
+    gearButton.onmouseleave = () => {
       gearButton.style.opacity = ".7";
       gearButton.style.transform = "scale(1)";
     };
-    gearButton.onclick = function (e) {
+    gearButton.onclick = (e) => {
       swallow(e);
       toggle();
     };
@@ -409,9 +388,7 @@ export function init(): void {
     state.gearButton = gearButton;
   }
 
-  console.log(
-    "%c[Vue Dev Inspector]%c Ready — Alt+Shift+I to inspect",
-    "color:#10b981;font-weight:bold",
-    "color:inherit",
-  );
+  logSuccess("Ready — " + formatShortcut(clientConfig.shortcut) + " to inspect");
+  // 抑制可能的 unused 警告
+  void formatPosition;
 }

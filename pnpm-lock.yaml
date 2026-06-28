@@ -73,6 +73,12 @@ importers:
         specifier: 2.3.0
         version: 2.3.0(rollup@4.62.2)(vite@7.3.2(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.30.2)(yaml@2.9.0))
 
+  packages/antdv:
+    dependencies:
+      '@vue-dev-inspector/shared':
+        specifier: workspace:*
+        version: link:../shared
+
   packages/client:
     dependencies:
       '@vue-dev-inspector/shared':
@@ -96,6 +102,9 @@ importers:
 
   packages/demo:
     devDependencies:
+      '@vue-dev-inspector/antdv':
+        specifier: workspace:*
+        version: link:../antdv
       '@vue-dev-inspector/core':
         specifier: workspace:*
         version: link:../core
@@ -104,6 +113,10 @@ importers:
         version: 1.3.6(vue@3.5.38(typescript@5.9.3))
 
   packages/overlay:
+    dependencies:
+      '@vue-dev-inspector/shared':
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       typescript:
         specifier: 5.9.3

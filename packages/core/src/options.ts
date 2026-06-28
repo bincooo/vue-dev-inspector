@@ -1,3 +1,6 @@
+/** 共享类型来自 shared 包（API_PREFIX / EDITOR_PROTOCOLS / 组件目录类型） */
+import type { ComponentConfig } from "@vue-dev-inspector/shared";
+
 /** DevInspector 配置选项 */
 export interface DevInspectorOptions {
   /** 是否启用（仅 dev 模式生效） @default true */
@@ -31,6 +34,17 @@ export interface DevInspectorOptions {
    * @default true
    */
   toggleBtn?: boolean;
+  /**
+   * 组件面板扩展条目（来自 antdv / element-plus / 自定义插件）。
+   *
+   * 每个 entry 是一个独立的组件目录（antdvMaterial() 返回值即为典型 entry），
+   * dev 启动时被序列化到 window.__DEV_INSPECTOR_CFG__.componentGroups，
+   * 由 overlay 的「🧩 组件面板」抽屉分组渲染。
+   *
+   * 数组顺序决定分组渲染顺序；未配置时抽屉回退到内置 antdv 列表。
+   * @default []
+   */
+  componentConfig?: ComponentConfig;
 }
 
 export const DEFAULT_OPTIONS: Required<DevInspectorOptions> = {
@@ -41,4 +55,5 @@ export const DEFAULT_OPTIONS: Required<DevInspectorOptions> = {
   editor: "vscode",
   shortcut: { altKey: true, shiftKey: true, code: "KeyI" },
   toggleBtn: true,
+  componentConfig: [],
 };
