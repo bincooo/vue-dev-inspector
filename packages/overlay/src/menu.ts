@@ -24,6 +24,33 @@ interface MenuItem {
   isDanger?: boolean;
 }
 
+/**
+ * 服务端删除后清掉选中态，并把元素从 DOM 摘除交给 HMR 处理。
+ *
+ * 不在本函数做 element.remove()：服务端写盘后 Vite HMR 会按改写后的 sfc
+ * 重新挂载 template 子树，自动处理"被删节点 + 毗邻节点的位置重排"。
+ * 手动 remove 会与 HMR 的 patch 撞车 —— 在 a-space 这类基于 slot/index 的
+ * 容器里，slot 子节点被错位删除会让毗邻元素被 HMR 误判丢失
+ * （用户报告"复制 Primary 再删除副本 → Default 消失"）。
+ */
+export function deleteElementViaApi(element: HTMLElement): Promise<unknown> {
+  const pos = parsePosition(element.getAttribute(state.attrName)!);
+  return apiRequest("/delete-element", {
+    method: "POST",
+    body: JSON.stringify({
+      file: pos.file,
+      line: +pos.line,
+      col: +pos.col,
+      tag: getElementTagName(element),
+    }),
+  }).then(() => {
+    if (state.selectedElement === element) {
+      setSelectedElement(null);
+      redrawSelection();
+    }
+  });
+}
+
 export function showMenu(x: number, y: number, element: HTMLElement): void {
   const pos = parsePosition(element.getAttribute(state.attrName)!);
   /* 上次右键的按钮仍挂在 DOM 上（display:none 不清节点），先清空避免新旧并存 */
@@ -59,26 +86,14 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
     props: () => openPanel(element),
     catalog: () => openDrawer(),
     copy: () => {
-      navigator.clipboard.writeText(
-        state.protocol + state.projectRoot + "/" + formatPosition(pos),
-      );
+      // 多根场景下 `state.projectRoot` 只代表第一个根；
+      // 对兄弟根上的元素直接拼绝对路径会得到错误的协议 URL。
+      // 因此这里只复制 `相对路径:行:列`（user 在编辑器/搜索框里仍可粘贴使用），
+      // 打开编辑器走 /open-in-editor，由服务端在多根下解析。
+      navigator.clipboard.writeText(formatPosition(pos));
     },
     del: () => {
-      apiRequest("/delete-element", {
-        method: "POST",
-        body: JSON.stringify({
-          file: pos.file,
-          line: +pos.line,
-          col: +pos.col,
-          tag: getElementTagName(element),
-        }),
-      }).then(() => {
-        if (state.selectedElement === element) {
-          setSelectedElement(null);
-          redrawSelection();
-        }
-        element.remove();
-      });
+      void deleteElementViaApi(element);
     },
   };
 

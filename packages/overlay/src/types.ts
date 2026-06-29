@@ -13,7 +13,19 @@ export interface ClientCfg {
   editor: string;
   apiPrefix: string;
   tagAttr: string;
+  /**
+   * @deprecated 兼容字段：保留为 `projectRoots[0] ?? ""`。
+   * 等价于第一个根；多根场景下旧代码（如"复制路径"的协议 URL 拼接）
+   * 仍基于该字段，可能对兄弟根上的元素给出错误的绝对路径。
+   * 新代码优先使用 `projectRoots`。
+   */
   projectRoot: string;
+  /**
+   * 项目根目录列表（monorepo 下可声明多个 sub-project）。
+   * 由 `vueDevInspector` 的 `projectRoots` 配置；未配置时为 `[config.root]`。
+   * 每个元素都是绝对路径。
+   */
+  projectRoots: string[];
   shortcut: {
     altKey: boolean;
     shiftKey: boolean;

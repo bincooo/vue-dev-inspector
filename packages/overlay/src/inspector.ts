@@ -19,57 +19,52 @@ import {
 import {
   parsePosition,
   apiRequest,
-  getElementTagName,
   createElement,
+  getElementTagName,
   getLayoutBox,
   positionOverlay,
   logInfo,
 } from "./utils";
 import { openDrawer } from "./drawer";
+import { deleteElementViaApi } from "./menu";
 
 /** 创建所有 UI 浮层并挂到 DOM */
 export function createUI(): void {
-  const hoverOverlay = createElement("div", "__vdi-hover-overlay");
-  const selectOverlay = createElement("div", "__vdi-select-overlay");
-  const tagTip = createElement("div", "__vdi-tag-tip");
-  const contextMenu = createElement("div", "__vdi-context-menu");
-
-  const deleteButton = createActionBtn(
+  state.hoverOverlay = createElement<HTMLDivElement>("div", "__vdi-hover-overlay");
+  state.selectOverlay = createElement<HTMLDivElement>("div", "__vdi-select-overlay");
+  state.tagTip = createElement<HTMLDivElement>("div", "__vdi-tag-tip");
+  state.contextMenu = createElement<HTMLDivElement>("div", "__vdi-context-menu");
+  state.deleteButton = createActionBtn(
     "__vdi-action-btn __vdi-delete-btn",
     "×",
     "#dc2626",
     "#ef4444",
   );
-  const copyButton = createActionBtn(
+  state.copyButton = createActionBtn(
     "__vdi-action-btn __vdi-copy-btn",
     "⧉",
     "#2563eb",
     "#3b82f6",
   );
+  state.insertBeforeButton = makeInsertButton(() => openDrawer("before"));
+  state.insertBeforeButton.title = "在同级上方插入组件";
+  state.insertAfterButton = makeInsertButton(() => openDrawer("after"));
+  state.insertAfterButton.title = "在同级下方插入组件";
+  state.dropIndicator = createElement<HTMLDivElement>("div", "__vdi-drop-indicator");
+  state.dropIndicator.style.display = "none";
 
-  const insertBeforeButton = makeInsertButton(() => openDrawer("before"));
-  insertBeforeButton.title = "在同级上方插入组件";
-  const insertAfterButton = makeInsertButton(() => openDrawer("after"));
-  insertAfterButton.title = "在同级下方插入组件";
-
-  const dropIndicator = createElement("div", "__vdi-drop-indicator");
-  dropIndicator.style.display = "none";
-
-  /* appendChild 批量挂载 + state 一次性灌引用，避免重复 list */
-  const layers: Array<[keyof typeof state, HTMLDivElement]> = [
-    ["hoverOverlay", hoverOverlay],
-    ["selectOverlay", selectOverlay],
-    ["tagTip", tagTip],
-    ["contextMenu", contextMenu],
-    ["deleteButton", deleteButton],
-    ["copyButton", copyButton],
-    ["insertBeforeButton", insertBeforeButton],
-    ["insertAfterButton", insertAfterButton],
-    ["dropIndicator", dropIndicator],
-  ];
-  for (const [key, el] of layers) {
-    document.body.appendChild(el);
-    (state as unknown as Record<string, HTMLDivElement | null>)[key] = el;
+  for (const el of [
+    state.hoverOverlay,
+    state.selectOverlay,
+    state.tagTip,
+    state.contextMenu,
+    state.deleteButton,
+    state.copyButton,
+    state.insertBeforeButton,
+    state.insertAfterButton,
+    state.dropIndicator,
+  ]) {
+    if (el) document.body.appendChild(el);
   }
 }
 
@@ -109,19 +104,9 @@ export function duplicateElement(element: HTMLElement): void {
   });
 }
 
-/** 删除元素 */
+/** 删除元素 — 服务端写盘后由 HMR 重渲染，本函数只清审查层选中态。 */
 export function deleteElement(element: HTMLElement): void {
-  const pos = parsePosition(element.getAttribute(state.attrName)!);
-  apiRequest("/delete-element", {
-    method: "POST",
-    body: JSON.stringify({ file: pos.file, line: +pos.line, col: +pos.col, tag: getElementTagName(element) }),
-  }).then(() => {
-    if (state.selectedElement === element) {
-      setSelectedElement(null);
-      redrawSelection();
-    }
-    element.remove();
-  });
+  void deleteElementViaApi(element);
 }
 
 /** 选中框旁的 4 个动作按钮同步显隐。 */

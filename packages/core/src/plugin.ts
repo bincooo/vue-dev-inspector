@@ -4,12 +4,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse, compileTemplate } from "@vue/compiler-sfc";
 import MagicString from "magic-string";
+import {
+  API_PREFIX,
+  EDITOR_PROTOCOLS,
+  findProjectRoot,
+  toPosixRelative,
+} from "@vue-dev-inspector/shared";
 import type { DevInspectorOptions } from "./options";
 import { DEFAULT_OPTIONS } from "./options";
 import { createInspectorTransform } from "./transform";
 import { createDevServer } from "../../client";
-
-import { EDITOR_PROTOCOLS, API_PREFIX } from "../../shared"
 
 /**
  * 编译后的 overlay 脚本（由 @vue-dev-inspector/overlay 子工程构建产生）。
@@ -38,10 +42,10 @@ function loadOverlayScript(): string {
   );
 }
 
-/** 构造运行时配置对象 (window.__DEV_INSPECTOR_CFG__) 的 JSON 字符串 */
+/** 构造运行时配置对象 (window.__DEV_INSPECTOR_CFG__) 的 JSON 字符串。 */
 function buildCfgJson(
-  options: Required<DevInspectorOptions>,
-  projectRoot: string,
+  options: Required<Omit<DevInspectorOptions, "projectRoots">>,
+  projectRoots: string[],
 ): string {
   // 保留每个 entry（含 name），抽屉用 entry 渲染左侧竖列 tab。
   // 同一 entry 内部多 groups；切换 tab 即切换整组渲染。
@@ -52,7 +56,9 @@ function buildCfgJson(
     editor: options.editor,
     apiPrefix: API_PREFIX,
     tagAttr: "data-inspector-tag",
-    projectRoot,
+    /** @deprecated v2 起使用 projectRoots；保留为 projectRoots[0] 兼容 overlay 旧代码 */
+    projectRoot: projectRoots[0] ?? "",
+    projectRoots,
     shortcut: options.shortcut,
     toggleBtn: options.toggleBtn,
     componentEntries,
@@ -71,7 +77,7 @@ function buildCfgJson(
 export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
   const options = { ...DEFAULT_OPTIONS, ...opts };
   let isDev = false;
-  let projectRoot = "";
+  let projectRoots: string[] = [];
 
   return {
     name: "vue-dev-inspector",
@@ -79,11 +85,17 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
 
     configResolved(config) {
       isDev = config.command === "serve";
-      projectRoot = config.root;
+      const userRoots = options.projectRoots;
+      if (Array.isArray(userRoots) && userRoots.length > 0) {
+        // 相对路径以 config.root 为基准（与 monorepo 用户的目录直觉一致）
+        projectRoots = userRoots.map((p) => path.resolve(config.root, p));
+      } else {
+        projectRoots = [path.resolve(config.root)];
+      }
     },
 
     configureServer(server) {
-      if (isDev && options.enabled) createDevServer(server, projectRoot);
+      if (isDev && options.enabled) createDevServer(server, projectRoots);
     },
 
     transform(code, id) {
@@ -91,12 +103,16 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
       if (!id.endsWith(".vue")) return null;
       if (options.exclude.some((re) => re.test(id))) return null;
 
+      // 多根支持：只在声明的根下注入，避免越界文件被错误标记
+      const matchedRoot = findProjectRoot(projectRoots, id);
+      if (!matchedRoot) return null;
+
       const { descriptor, errors } = parse(code, { filename: id });
       if (errors.length || !descriptor.template) return null;
 
       const template = descriptor.template;
       const s = new MagicString(code);
-      const relativePath = id.replace(projectRoot + "/", "");
+      const relativePath = toPosixRelative(matchedRoot, id);
 
       compileTemplate({
         source: template.content,
@@ -134,7 +150,7 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
 
     transformIndexHtml(html) {
       if (!isDev || !options.enabled) return html;
-      const cfgJson = buildCfgJson(options, projectRoot);
+      const cfgJson = buildCfgJson(options, projectRoots);
       const injection = `<script>window.__DEV_INSPECTOR_CFG__=${cfgJson};</script>\n<script type="module">\n${overlayScript}\n</script>`;
       return html.replace("</body>", injection + "\n</body>");
     },

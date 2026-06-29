@@ -7,6 +7,16 @@ export interface DevInspectorOptions {
   enabled?: boolean;
   /** 排除文件的正则列表 @default [/node_modules/, /\.d\.ts$/] */
   exclude?: RegExp[];
+  /**
+   * 项目根目录列表 — monorepo 下声明可被审查/编辑的多个 sub-project 根。
+   *
+   * - 默认未配置时，使用 Vite 的 `config.root`（单根，行为与之前一致）。
+   * - 配置后，落在任一根下的 `.vue` 文件都会被注入审查标记，
+   *   并在服务端按声明顺序匹配解析。
+   * - 不在任一根下的文件：跳过注入（不会污染 `data-source-file`）。
+   * - 接收绝对路径或相对于 `config.root` 的路径；插件内部统一 `path.resolve`。
+   */
+  projectRoots?: string[];
   /** 注入的属性名 @default 'data-source-file' */
   attrName?: string;
   /**
@@ -59,7 +69,7 @@ export interface DevInspectorOptions {
   expressionPlugins?: Array<"typescript" | "jsx">;
 }
 
-export const DEFAULT_OPTIONS: Required<DevInspectorOptions> = {
+export const DEFAULT_OPTIONS: Required<Omit<DevInspectorOptions, "projectRoots">> = {
   enabled: true,
   exclude: [/node_modules/, /\.d\.ts$/],
   attrName: "data-source-file",

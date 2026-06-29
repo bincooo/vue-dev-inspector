@@ -13,7 +13,7 @@ import {
   type MoveDirection,
   type PropEntry,
 } from "./editor";
-import { API_PREFIX, EDITOR_PROTOCOLS } from "@vue-dev-inspector/shared";
+import { API_PREFIX, EDITOR_PROTOCOLS, safePath } from "@vue-dev-inspector/shared";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -28,7 +28,7 @@ type MiddlewareResponse = Pick<
 
 /** 单个路由处理函数。 */
 type RouteHandler = (
-  projectRoot: string,
+  projectRoots: string[],
   body: RouteBody,
   res: MiddlewareResponse,
 ) => void;
@@ -41,9 +41,7 @@ type RouteRequest = Pick<IncomingMessage, "on" | "url" | "method">;
 function parseBody(req: RouteRequest): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let body = "";
-    req.on("data", (c: Buffer) => {
-      body += c.toString();
-    });
+    req.on("data", (c: Buffer) => (body += c.toString()));
     req.on("end", () => {
       try {
         resolve(JSON.parse(body));
@@ -55,6 +53,7 @@ function parseBody(req: RouteRequest): Promise<unknown> {
   });
 }
 
+/** 解析失败/拒绝统一 JSON 响应（含 CORS 头）。 */
 function json(
   res: MiddlewareResponse,
   status: number,
@@ -70,14 +69,12 @@ function json(
 
 /** 从请求体中读取字符串字段。 */
 function readString(body: RouteBody, key: string, fallback = ""): string {
-  const value = body[key];
-  return typeof value === "string" ? value : fallback;
+  return typeof body[key] === "string" ? (body[key] as string) : fallback;
 }
 
 /** 从请求体中读取数字字段。 */
 function readNumber(body: RouteBody, key: string, fallback = 0): number {
-  const value = body[key];
-  return typeof value === "number" ? value : fallback;
+  return typeof body[key] === "number" ? (body[key] as number) : fallback;
 }
 
 /** 把请求体中的 props 字段规整成 PropEntry[]。字段缺失或非数组时返回空数组。 */
@@ -94,150 +91,128 @@ function readPropEntries(value: unknown): PropEntry[] {
     .map((entry) => ({ key: entry.key, value: entry.value }));
 }
 
-/** 解析文件路径并校验安全边界 */
-function safePath(projectRoot: string, file: string): string | null {
-  const fp = path.resolve(projectRoot, file);
-  return fp.startsWith(projectRoot) ? fp : null;
+/** 单个文件路由的常见前置：安全路径解析 → 加载源码 → 403 拒绝。 */
+function resolveSource(
+  projectRoots: string[],
+  body: RouteBody,
+  res: MiddlewareResponse,
+): { file: string; source: string; absolutePath: string } | null {
+  const file = readString(body, "file");
+  const resolved = safePath(projectRoots, file);
+  if (!resolved) {
+    json(res, 403, { error: "Forbidden" });
+    return null;
+  }
+  const source = fs.readFileSync(resolved.absolutePath, "utf-8");
+  return { file, source, absolutePath: resolved.absolutePath };
 }
 
-// ─── Route handlers ────────────────────────────────────
+/** 「限制到该枚举」的窄化 helper；落空回退到 default。 */
+function enforceEnum<T extends string>(
+  value: string,
+  allowed: readonly T[],
+  fallback: T,
+): T {
+  return (allowed as readonly string[]).includes(value) ? (value as T) : fallback;
+}
+
+const INSERT_DIRECTIONS = ["inside", "before", "after"] as const;
+const MOVE_DIRECTIONS = INSERT_DIRECTIONS;
+
+// ─── Editor 路由 ────────────────────────────────────────
 
 function handleGetProps(
-  projectRoot: string,
+  projectRoots: string[],
   body: RouteBody,
   res: MiddlewareResponse,
 ): void {
-  const fp = safePath(projectRoot, readString(body, "file"));
-  if (!fp) {
-    json(res, 403, { error: "Forbidden" });
-    return;
-  }
-  const source = fs.readFileSync(fp, "utf-8");
+  const ctx = resolveSource(projectRoots, body, res);
+  if (!ctx) return;
   const result = getElementProps(
-    source,
-    readString(body, "file"),
+    ctx.source,
+    ctx.file,
     readNumber(body, "line"),
     readNumber(body, "col"),
   );
-  if (result) {
-    json(res, 200, result);
-  } else {
-    json(res, 404, { error: "Element not found" });
-  }
+  json(res, result ? 200 : 404, result ?? { error: "Element not found" });
 }
 
 function handleUpdateProps(
-  projectRoot: string,
+  projectRoots: string[],
   body: RouteBody,
   res: MiddlewareResponse,
 ): void {
-  const fp = safePath(projectRoot, readString(body, "file"));
-  if (!fp) {
-    json(res, 403, { error: "Forbidden" });
-    return;
-  }
-  const source = fs.readFileSync(fp, "utf-8");
-  const props = readPropEntries(body.props);
+  const ctx = resolveSource(projectRoots, body, res);
+  if (!ctx) return;
   const result = editElementProps(
-    source,
-    readString(body, "file"),
+    ctx.source,
+    ctx.file,
     readNumber(body, "line"),
     readNumber(body, "col"),
-    props,
+    readPropEntries(body.props),
   );
-  fs.writeFileSync(fp, result, "utf-8");
+  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
   json(res, 200, { success: true });
 }
 
 function handleDeleteElement(
-  projectRoot: string,
+  projectRoots: string[],
   body: RouteBody,
   res: MiddlewareResponse,
 ): void {
-  const fp = safePath(projectRoot, readString(body, "file"));
-  if (!fp) {
-    json(res, 403, { error: "Forbidden" });
-    return;
-  }
-  const source = fs.readFileSync(fp, "utf-8");
+  const ctx = resolveSource(projectRoots, body, res);
+  if (!ctx) return;
   const result = deleteElement(
-    source,
-    readString(body, "file"),
+    ctx.source,
+    ctx.file,
     readNumber(body, "line"),
     readNumber(body, "col"),
   );
-  if (result === source) {
+  if (result === ctx.source) {
     json(res, 404, { error: "Element not found" });
     return;
   }
-  fs.writeFileSync(fp, result, "utf-8");
+  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
   json(res, 200, { success: true });
 }
 
-/**
- * 用 shell 指令在编辑器中打开源码文件并定位到具体行。
- * 不同编辑器用不同的命令行打开方式：
- *   vscode:  code -g file:line
- *   webstorm: webstorm file:line
- *   Others fall back to the editor protocol URL via `open`/`xdg-open`/`start`.
- */
-/**
- * 扫描 projectRoot 下所有 .vue 文件（排除 node_modules），返回相对路径列表。
- * 供组件面板渲染目录树。
- */
-function handleListComponents(
-  projectRoot: string,
-  _body: RouteBody,
-  res: MiddlewareResponse,
-): void {
-  const result: { path: string; name: string }[] = [];
-  const EXCLUDE = /(node_modules|dist|\.vite)/;
-  function walk(dir: string): void {
-    let ents: fs.Dirent[];
-    try {
-      ents = fs.readdirSync(dir, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const ent of ents) {
-      if (EXCLUDE.test(ent.name)) continue;
-      const full = path.join(dir, ent.name);
-      if (ent.isDirectory()) {
-        walk(full);
-      } else if (ent.isFile() && ent.name.endsWith(".vue")) {
-        result.push({
-          path: path.relative(projectRoot, full).replace(/\\/g, "/"),
-          name: ent.name,
-        });
-      }
-    }
-  }
-  walk(projectRoot);
-  result.sort((a, b) => a.path.localeCompare(b.path));
-  json(res, 200, { components: result });
-}
-
-/** 把组件插入到 (line,col) 指定的元素位置，direction 决定语义 */
-function handleInsertComponent(
-  projectRoot: string,
+function handleDuplicateElement(
+  projectRoots: string[],
   body: RouteBody,
   res: MiddlewareResponse,
 ): void {
-  const fp = safePath(projectRoot, readString(body, "file"));
-  if (!fp) {
-    json(res, 403, { error: "Forbidden" });
+  const ctx = resolveSource(projectRoots, body, res);
+  if (!ctx) return;
+  const result = duplicateElement(
+    ctx.source,
+    ctx.file,
+    readNumber(body, "line"),
+    readNumber(body, "col"),
+  );
+  if (result === null) {
+    json(res, 404, { error: "Element not found" });
     return;
   }
-  const source = fs.readFileSync(fp, "utf-8");
+  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
+  json(res, 200, { success: true });
+}
+
+function handleInsertComponent(
+  projectRoots: string[],
+  body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  const ctx = resolveSource(projectRoots, body, res);
+  if (!ctx) return;
   const tag = readString(body, "componentTag") || readString(body, "tag");
-  const rawDirection = readString(body, "direction");
-  const direction: "before" | "after" | "inside" =
-    rawDirection === "before" || rawDirection === "after"
-      ? rawDirection
-      : "inside";
+  const direction = enforceEnum(
+    readString(body, "direction"),
+    INSERT_DIRECTIONS,
+    "inside",
+  );
   const result = insertComponent(
-    source,
-    readString(body, "file"),
+    ctx.source,
+    ctx.file,
     readNumber(body, "line"),
     readNumber(body, "col"),
     tag,
@@ -247,77 +222,40 @@ function handleInsertComponent(
     json(res, 404, { error: "Target element not found" });
     return;
   }
-  fs.writeFileSync(fp, result, "utf-8");
+  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
   json(res, 200, { success: true });
 }
 
-function handleDuplicateElement(
-  projectRoot: string,
-  body: RouteBody,
-  res: MiddlewareResponse,
-): void {
-  const fp = safePath(projectRoot, readString(body, "file"));
-  if (!fp) {
-    json(res, 403, { error: "Forbidden" });
-    return;
-  }
-  const source = fs.readFileSync(fp, "utf-8");
-  const result = duplicateElement(
-    source,
-    readString(body, "file"),
-    readNumber(body, "line"),
-    readNumber(body, "col"),
-  );
-  if (result === null) {
-    json(res, 404, { error: "Element not found" });
-    return;
-  }
-  fs.writeFileSync(fp, result, "utf-8");
-  json(res, 200, { success: true });
-}
-
-/**
- * 把 (source.line, source.col) 元素移动到 (target.line, target.col) 处。
- * direction 决定插入语义（before/inside/after）。
- * v1 限定同文件，跨文件返回 400。
- */
+/** 移动（line,col）元素到（target.line,target.col）。v1 限定同文件，跨文件返回 400。 */
 function handleMoveElement(
-  projectRoot: string,
+  projectRoots: string[],
   body: RouteBody,
   res: MiddlewareResponse,
 ): void {
-  const sourceFile = readString(body, "file");
   const target = body.target as
     | { file: string; line: number; col: number }
     | undefined;
-  if (!target) {
-    json(res, 400, { error: "Missing target" });
-    return;
-  }
-  if (target.file !== sourceFile) {
+  if (!target) return json(res, 400, { error: "Missing target" });
+
+  const ctx = resolveSource(projectRoots, body, res);
+  if (!ctx) return;
+
+  if (target.file !== ctx.file) {
     json(res, 400, { error: "Cross-file move not supported in v1" });
     return;
   }
-  const fp = safePath(projectRoot, sourceFile);
-  if (!fp) {
-    json(res, 403, { error: "Forbidden" });
-    return;
-  }
-  const rawDirection = readString(body, "direction");
-  const direction: MoveDirection =
-    rawDirection === "before" ||
-    rawDirection === "inside" ||
-    rawDirection === "after"
-      ? rawDirection
-      : "inside";
-  const sourceLine = readNumber(body, "line");
-  const sourceCol = readNumber(body, "col");
-  const sourceCode = fs.readFileSync(fp, "utf-8");
+
+  const direction = enforceEnum(
+    readString(body, "direction"),
+    MOVE_DIRECTIONS,
+    "inside",
+  ) as MoveDirection;
+
   const result = moveElement(
-    sourceCode,
-    sourceFile,
-    sourceLine,
-    sourceCol,
+    ctx.source,
+    ctx.file,
+    readNumber(body, "line"),
+    readNumber(body, "col"),
     target.line,
     target.col,
     direction,
@@ -329,59 +267,93 @@ function handleMoveElement(
     });
     return;
   }
-  fs.writeFileSync(fp, result, "utf-8");
+  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
   json(res, 200, { success: true });
 }
 
+/** 扫描所有 projectRoot 下 .vue 文件（排除 node_modules|dist|.vite），去重后排序合并。 */
+function handleListComponents(
+  projectRoots: string[],
+  _body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  const seen = new Set<string>();
+  const components: { path: string; name: string }[] = [];
+  const EXCLUDE = /(node_modules|dist|\.vite)/;
+
+  function walk(root: string, dir: string): void {
+    let ents: fs.Dirent[];
+    try {
+      ents = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const ent of ents) {
+      if (EXCLUDE.test(ent.name)) continue;
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) {
+        walk(root, full);
+      } else if (ent.isFile() && ent.name.endsWith(".vue")) {
+        const rel = path
+          .relative(root, full)
+          .split(path.sep)
+          .join("/");
+        if (seen.has(rel)) continue;
+        seen.add(rel);
+        components.push({ path: rel, name: ent.name });
+      }
+    }
+  }
+  for (const root of projectRoots) walk(root, root);
+  components.sort((a, b) => a.path.localeCompare(b.path));
+  json(res, 200, { components });
+}
+
+// ─── Editor Open ─────────────────────────────────────────
+
+/** 在 EDITOR_CLI 里走 shell 命令；不在则回退到 URL protocol。 */
+const EDITOR_CLI: Record<
+  string,
+  (fp: string, line: number, col: number) => string
+> = {
+  vscode: (fp, line, col) => `code -g "${fp}:${line}:${col}"`,
+  webstorm: (fp, line) => `webstorm "${fp}:${line}"`,
+  idea: (fp, line) => `webstorm "${fp}:${line}"`,
+  atom: (fp, line, col) => `atom "${fp}:${line}:${col}"`,
+  sublime: (fp, line, col) => `subl "${fp}:${line}:${col}"`,
+};
+
+/** 用操作系统的 open/start/xdg-open 调起编辑器 URL protocol。 */
+function protocolCmd(
+  editor: string,
+  fp: string,
+  line: number,
+  col: number,
+): string {
+  const proto = EDITOR_PROTOCOLS[editor] ?? EDITOR_PROTOCOLS.vscode;
+  const url = `${proto}${fp}:${line}:${col}`;
+  if (process.platform === "win32") return `start "" "${url}"`;
+  if (process.platform === "darwin") return `open "${url}"`;
+  return `xdg-open "${url}"`;
+}
+
 function handleOpenInEditor(
-  projectRoot: string,
+  projectRoots: string[],
   body: RouteBody,
   res: MiddlewareResponse,
 ): void {
-  const fp = safePath(projectRoot, readString(body, "file"));
-  if (!fp) {
-    json(res, 403, { error: "Forbidden" });
-    return;
-  }
+  const ctx = resolveSource(projectRoots, body, res);
+  if (!ctx) return;
   const line = readNumber(body, "line", 1) || 1;
   const col = readNumber(body, "col", 1) || 1;
   const editor = readString(body, "editor", "vscode");
-  const lineArg = `${line}:${col}`;
-
-  let cmd: string;
-  switch (editor) {
-    case "vscode":
-      cmd = `code -g "${fp}:${lineArg}"`;
-      break;
-    case "webstorm":
-    case "idea":
-      cmd = `webstorm "${fp}:${line}"`;
-      break;
-    case "atom":
-      cmd = `atom "${fp}:${line}:${col}"`;
-      break;
-    case "sublime":
-      cmd = `subl "${fp}:${line}:${col}"`;
-      break;
-    default: {
-      // 回退：用编辑器 URL protocol 走系统默认 handler
-      const proto = EDITOR_PROTOCOLS[editor] ?? EDITOR_PROTOCOLS.vscode;
-      const url = `${proto}${fp}:${line}:${col}`;
-      cmd =
-        process.platform === "win32"
-          ? `start "" "${url}"`
-          : process.platform === "darwin"
-            ? `open "${url}"`
-            : `xdg-open "${url}"`;
-    }
-  }
+  const cmd =
+    EDITOR_CLI[editor]?.(ctx.absolutePath, line, col) ??
+    protocolCmd(editor, ctx.absolutePath, line, col);
 
   exec(cmd, (err) => {
-    if (err) {
-      json(res, 500, { error: err.message });
-      return;
-    }
-    json(res, 200, { success: true });
+    if (err) json(res, 500, { error: err.message });
+    else json(res, 200, { success: true });
   });
 }
 
@@ -401,19 +373,24 @@ const ROUTES: Record<string, Record<string, RouteHandler>> = {
 
 /**
  * 创建 DevInspector 服务端中间件
- * 统一处理所有 /__dev-inspector-api__/* 请求
+ * 统一处理所有 /__dev-inspector-api__/* 请求。
+ *
+ * `projectRoots` 为多根目录列表（monorepo 下跨子工程编辑的支持）；
+ * 至少包含一个根路径。单根场景下使用 `[config.root]` 传入即可。
  */
 export function createDevServer(
   server: ViteDevServer,
-  projectRoot: string,
+  projectRoots: string[],
 ): void {
+  if (projectRoots.length === 0) {
+    // 防御：空数组会让所有请求都返回 403；显式抛错避免静默失败
+    throw new Error(
+      "[vue-dev-inspector] createDevServer received empty projectRoots.",
+    );
+  }
   server.middlewares.use(async (req, res, next) => {
     const url = req.url || "";
     if (!url.startsWith(API_PREFIX + "/")) return next();
-
-    const pathname = url.split("?")[0].replace(API_PREFIX, "");
-    const route = ROUTES[pathname];
-    const handler = route?.[req.method || ""];
 
     // CORS preflight
     if (req.method === "OPTIONS") {
@@ -425,11 +402,13 @@ export function createDevServer(
       return;
     }
 
+    const pathname = url.split("?")[0].replace(API_PREFIX, "");
+    const handler = ROUTES[pathname]?.[req.method || ""];
     if (!handler) return next();
 
     try {
       const body = await parseBody(req);
-      handler(projectRoot, body as RouteBody, res);
+      handler(projectRoots, body as RouteBody, res);
     } catch (err: unknown) {
       json(res, 500, {
         error: err instanceof Error ? err.message : "Unknown error",

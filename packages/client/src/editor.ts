@@ -137,6 +137,24 @@ function findOpenTagEnd(source: string, from: number): number {
   return -1;
 }
 
+/** 取一行行首的缩进（空白/制表符）；offset 必须落在该行内部。 */
+function lineIndent(source: string, offset: number): string {
+  const lineStart = source.lastIndexOf("\n", offset) + 1;
+  const match = source.slice(lineStart, offset).match(/^[ \t]*/u);
+  return match ? match[0] : "";
+}
+
+/** 解析源码中元素开标签的 tagNameEnd / openTagEnd（不可定位时返 null）。 */
+function resolveTagRange(
+  source: string,
+  tplOffset: number,
+  el: ElementNode,
+): { tagNameEnd: number; openTagEnd: number } | null {
+  const tagNameEnd = tplOffset + el.loc.start.offset + 1 + el.tag.length;
+  const openTagEnd = findOpenTagEnd(source, tagNameEnd);
+  return openTagEnd === -1 ? null : { tagNameEnd, openTagEnd };
+}
+
 /** 读取位于 (line, col) 的元素的当前属性（基于 AST 读取磁盘源码） */
 export function getElementProps(
   sfcSource: string,
@@ -165,9 +183,9 @@ export function editElementProps(
   const el = findElementAtLoc(t.ast, line, col);
   if (!el) return sfcSource;
 
-  const tagNameEnd = t.offset + el.loc.start.offset + 1 + el.tag.length;
-  const openTagEnd = findOpenTagEnd(sfcSource, tagNameEnd);
-  if (openTagEnd === -1) return sfcSource;
+  const range = resolveTagRange(sfcSource, t.offset, el);
+  if (!range) return sfcSource;
+  const { tagNameEnd, openTagEnd } = range;
 
   const attrs = newProps
     .map((p) => ({ k: p.key.trim(), v: p.value }))
@@ -191,7 +209,16 @@ export function editElementProps(
   return s.toString();
 }
 
-/** 用 AST 定位目标元素，删除其完整源码区间（含尾部换行） */
+/**
+ * 用 AST 定位目标元素，删除其完整源码区间（含行首缩进与尾部换行）。
+ *
+ * 删除范围 = `[lineStart, end+1)`：
+ *   - 行首缩进必须一并删掉，否则下一行会"继承"被删元素的缩进
+ *     并在原行留下"打碎的空白段"。这种残留进一步会让相邻兄弟元素
+ *     的 src AST 重新解析时列号偏移，data-source-file 失效 → HMR 边界异常。
+ *     复现路径：先 duplicate 再 delete 原元素即可触发。
+ *   - 末尾换行一并删，让下一行顶上来（与 moveElement 的 remove 语义一致）。
+ */
 export function deleteElement(
   sfcSource: string,
   filePath: string,
@@ -205,8 +232,10 @@ export function deleteElement(
 
   const start = t.offset + el.loc.start.offset;
   const end = start + el.loc.source.length;
+  const lineStart = sfcSource.lastIndexOf("\n", start) + 1;
+  const trimEnd = sfcSource[end] === "\n" ? end + 1 : end;
   const s = new MagicString(sfcSource);
-  s.remove(start, sfcSource[end] === "\n" ? end + 1 : end);
+  s.remove(lineStart, trimEnd);
   return s.toString();
 }
 
@@ -384,14 +413,11 @@ export function insertComponent(
   if (direction === "before" || direction === "after") {
     const start = t.offset + el.loc.start.offset;
     const end = start + el.loc.source.length;
-    // 取元素原行缩进
-    const lineStart = sfcSource.lastIndexOf("\n", start) + 1;
-    const indentMatch = sfcSource.slice(lineStart, start).match(/^[ \t]*/u);
-    const indent = indentMatch ? indentMatch[0] : "";
+    const indent = lineIndent(sfcSource, start);
     const insertion = indent + snippet;
     if (direction === "before") {
       // 插到行首缩进之前，使新组件独占一行并保留原行缩进
-      s.appendLeft(lineStart, insertion + "\n");
+      s.appendLeft(sfcSource.lastIndexOf("\n", start) + 1, insertion + "\n");
     } else {
       s.appendRight(end, "\n" + insertion);
     }
@@ -399,13 +425,12 @@ export function insertComponent(
   }
 
   // 内部插入
-  const tagNameEnd = t.offset + el.loc.start.offset + 1 + el.tag.length;
-  const openTagEnd = findOpenTagEnd(sfcSource, tagNameEnd);
-  if (openTagEnd === -1) return null;
+  const range = resolveTagRange(sfcSource, t.offset, el);
+  if (!range) return null;
+  const { openTagEnd } = range;
 
   if (el.isSelfClosing) {
     // 自闭合目标：`.../>` → `...>`（开标签转为未闭合），其后补 snippet + 目标注入闭合标签
-    // openTagEnd 指向 '/'；overwrite [slash, '>'] 为 '>'
     s.overwrite(openTagEnd, openTagEnd + 2, ">");
     s.appendLeft(openTagEnd + 2, `\n    ${snippet}\n  </${el.tag}>`);
   } else {
@@ -436,11 +461,7 @@ export function duplicateElement(
 
   const start = t.offset + el.loc.start.offset;
   const end = start + el.loc.source.length;
-
-  // 取元素原行的缩进，让副本保持同样的缩进
-  const lineStart = sfcSource.lastIndexOf("\n", start) + 1;
-  const indentMatch = sfcSource.slice(lineStart, start).match(/^[ \t]*/);
-  const indent = indentMatch ? indentMatch[0] : "";
+  const indent = lineIndent(sfcSource, start);
 
   const s = new MagicString(sfcSource);
   s.appendRight(end, "\n" + indent + el.loc.source);
@@ -501,20 +522,11 @@ export function moveElement(
   // 源元素完整区间（含尾部换行，与 deleteElement 一致）
   const sourceStart = t.offset + source.loc.start.offset;
   const sourceEnd = sourceStart + source.loc.source.length;
-
-  // 源/目标行缩进
-  const sourceLineStart = sfcSource.lastIndexOf("\n", sourceStart) + 1;
-  const sourceIndentMatch = sfcSource
-    .slice(sourceLineStart, sourceStart)
-    .match(/^[ \t]*/);
-  const sourceIndent = sourceIndentMatch ? sourceIndentMatch[0] : "";
+  const sourceIndent = lineIndent(sfcSource, sourceStart);
 
   const targetStart = t.offset + target.loc.start.offset;
-  const targetLineStart = sfcSource.lastIndexOf("\n", targetStart) + 1;
-  const targetIndentMatch = sfcSource
-    .slice(targetLineStart, targetStart)
-    .match(/^[ \t]*/);
-  const targetIndent = targetIndentMatch ? targetIndentMatch[0] : "";
+  const targetEnd = targetStart + target.loc.source.length;
+  const targetIndent = lineIndent(sfcSource, targetStart);
 
   /** 把 source 源码的每行去掉 source 缩进后加上 newIndent */
   function reindent(sourceCode: string, newIndent: string): string {
@@ -534,7 +546,7 @@ export function moveElement(
   // 1. 删源：从源所在行的行首（含缩进）到源元素末尾 + 尾部换行
   //    必须包含缩进，否则下一行的缩进会和它合并，造成双重缩进。
   s.remove(
-    sourceLineStart,
+    sfcSource.lastIndexOf("\n", sourceStart) + 1,
     sfcSource[sourceEnd] === "\n" ? sourceEnd + 1 : sourceEnd,
   );
 
@@ -542,30 +554,27 @@ export function moveElement(
   if (direction === "before" || direction === "after") {
     const rewritten = reindent(source.loc.source, targetIndent);
     if (direction === "before") {
-      s.appendLeft(targetLineStart, rewritten + "\n");
+      s.appendLeft(sfcSource.lastIndexOf("\n", targetStart) + 1, rewritten + "\n");
     } else {
-      s.appendRight(
-        targetStart + target.loc.source.length,
-        "\n" + rewritten,
-      );
+      s.appendRight(targetEnd, "\n" + rewritten);
     }
+    return s.toString();
+  }
+
+  // inside: 子元素比目标缩进多 2 空格（与 insertComponent 自闭合路径约定一致）
+  const insideIndent = targetIndent + "  ";
+  const rewritten = reindent(source.loc.source, insideIndent);
+  const range = resolveTagRange(sfcSource, t.offset, target);
+  if (!range) return null;
+  const { openTagEnd } = range;
+  if (target.isSelfClosing) {
+    s.overwrite(openTagEnd, openTagEnd + 2, ">");
+    s.appendLeft(
+      openTagEnd + 2,
+      "\n" + rewritten + "\n" + targetIndent + "</" + target.tag + ">",
+    );
   } else {
-    // inside: 子元素比目标缩进多 2 空格（与 insertComponent 自闭合路径约定一致）
-    const insideIndent = targetIndent + "  ";
-    const rewritten = reindent(source.loc.source, insideIndent);
-    const tagNameEnd =
-      t.offset + target.loc.start.offset + 1 + target.tag.length;
-    const openTagEnd = findOpenTagEnd(sfcSource, tagNameEnd);
-    if (openTagEnd === -1) return null;
-    if (target.isSelfClosing) {
-      s.overwrite(openTagEnd, openTagEnd + 2, ">");
-      s.appendLeft(
-        openTagEnd + 2,
-        "\n" + rewritten + "\n" + targetIndent + "</" + target.tag + ">",
-      );
-    } else {
-      s.appendLeft(openTagEnd + 1, "\n" + rewritten);
-    }
+    s.appendLeft(openTagEnd + 1, "\n" + rewritten);
   }
 
   return s.toString();

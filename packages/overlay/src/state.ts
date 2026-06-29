@@ -5,7 +5,7 @@
  * let 导出不是 live binding，所以用一个可变对象代替。
  */
 
-import type { ClientCfg } from "./types";
+import type { ClientCfg, PropEntry } from "./types";
 
 declare global {
   var __DEV_INSPECTOR_CFG__: ClientCfg;
@@ -21,7 +21,8 @@ export const state = {
   /** 配置常量快捷引用 */
   attrName: clientConfig.attrName,
   protocol: clientConfig.protocol,
-  projectRoot: clientConfig.projectRoot,
+  /** 多根目录列表 — monorepo 跨子工程编辑的标识 */
+  projectRoots: clientConfig.projectRoots ?? ['.'],
   apiPrefix: clientConfig.apiPrefix,
   tagAttr: clientConfig.tagAttr,
   editor: clientConfig.editor,
@@ -69,7 +70,7 @@ export const state = {
     line: 0,
     col: 0,
     tag: "",
-    entries: [] as { key: string; value: string }[],
+    entries: [] as PropEntry[],
   },
 
   /** 右下角齿轮按钮（点击开启审查，开启后隐藏） */
@@ -91,7 +92,6 @@ export function actionButtons(): (HTMLDivElement | null)[] {
     state.insertAfterButton,
   ];
 }
-
 /**
  * 切换"选中元素"时同步挂/卸这个 class。
  * CSS 用 `body.__vdi-ctrl .__vdi-draggable` 收窄可拖拽光标：
