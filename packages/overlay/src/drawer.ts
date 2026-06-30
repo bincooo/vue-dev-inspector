@@ -8,12 +8,12 @@
  *   'after'           插入选中元素同级下方
  */
 import { state, type DropDirection } from "./state";
-import { parsePosition, apiRequest, createElement } from "./utils";
+import { parsePosition, apiRequest, createElement, formatPosition } from "./utils";
 import { renderIcon } from "./icon";
 import type {
   ComponentConfigEntry,
   ComponentGroup,
-} from "@vue-dev-inspector/shared";
+} from "@vdi/shared";
 
 /** 抽屉遮罩（点击非面板区域关闭） */
 let drawerBackdrop: HTMLDivElement | null = null;
@@ -206,11 +206,11 @@ function buildDrawer(direction: DropDirection, hint: string): void {
           }
           const pos = parsePosition(
             state.selectedElement.getAttribute(state.attrName)!,
-          );
+          )!;
           apiRequest("/insert-component", {
             method: "POST",
             body: JSON.stringify({
-              file: pos.file,
+              file: formatPosition(pos),
               line: +pos.line,
               col: +pos.col,
               componentTag: item.tag,

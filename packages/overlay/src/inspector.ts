@@ -20,6 +20,7 @@ import {
   parsePosition,
   apiRequest,
   createElement,
+  formatPosition,
   getElementTagName,
   getLayoutBox,
   positionOverlay,
@@ -95,10 +96,10 @@ function makeInsertButton(onClick: () => void): HTMLDivElement {
 
 /** 复制元素 */
 export function duplicateElement(element: HTMLElement): void {
-  const pos = parsePosition(element.getAttribute(state.attrName)!);
+  const pos = parsePosition(element.getAttribute(state.attrName)!)!;
   apiRequest("/duplicate-element", {
     method: "POST",
-    body: JSON.stringify({ file: pos.file, line: +pos.line, col: +pos.col }),
+    body: JSON.stringify({ file: formatPosition(pos), line: +pos.line, col: +pos.col }),
   }).then((response) => {
     if (response && response.success) logInfo("元素已复制");
   });

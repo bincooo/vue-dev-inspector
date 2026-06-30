@@ -4,35 +4,54 @@
 import { state } from "./state";
 import type { PropEntry } from "./types";
 
-const POS_RE = /^(.*):(\d+):(\d+)$/;
+const POS_RE = /^r(\d+):(.+):(\d+):(\d+)$/;
 
-/** 解析形如 `path/file.vue:line:col` 的位置串。 */
+/**
+ * 解析形如 `rN:path/file.vue:line:col` 的位置串。
+ * 不匹配（含旧无前缀格式）返回 null。
+ */
 export function parsePosition(value: string): {
+  rootIndex: number;
   file: string;
   line: string;
   col: string;
-} {
-  const [, file, line, col] = value.match(POS_RE)!;
-  return { file, line, col };
+} | null {
+  const m = value.match(POS_RE);
+  if (!m) return null;
+  return { rootIndex: Number(m[1]), file: m[2], line: m[3], col: m[4] };
 }
 
-/** 把 `{file,line,col}` 类型位置对象格式化回 `file:line:col` 串。 */
+/**
+ * 把 `{rootIndex,file,line,col}` 类型位置对象格式化回 `rN:file:line:col` 串。
+ * rootIndex 来自 `parsePosition` 或服务端回包。
+ */
 export function formatPosition(pos: {
+  rootIndex: number | string;
   file: string;
-  line: string | number;
-  col: string | number;
+  line: number | string;
+  col: number | string;
 }): string {
-  return pos.file + ":" + pos.line + ":" + pos.col;
+  return `r${pos.rootIndex}:${pos.file}:${pos.line}:${pos.col}`;
 }
 
-/** 读取元素上的位置属性并解析为结构化位置。 */
+/** 读取元素上的位置属性并解析为结构化位置（不匹配返回 null）。 */
 export function readPosition(element: HTMLElement): {
+  rootIndex: number;
   file: string;
   line: string;
   col: string;
 } | null {
   const raw = element.getAttribute(state.attrName);
-  return raw ? parsePosition(raw) : null;
+  if (!raw) return null;
+  const parsed = parsePosition(raw);
+  if (!parsed) {
+    logError(
+      "Outdated source format",
+      `expected rN:path:line:col, got: ${raw}`,
+    );
+    return null;
+  }
+  return parsed;
 }
 
 /** 调用插件提供的服务端 API。 */

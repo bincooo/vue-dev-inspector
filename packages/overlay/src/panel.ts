@@ -24,8 +24,9 @@ export function closePanel(): void {
 export function openPanel(el: HTMLElement): void {
   closePanel();
   state.contextMenu!.style.display = "none";
-  const pos = parsePosition(el.getAttribute(state.attrName)!);
+  const pos = parsePosition(el.getAttribute(state.attrName)!)!;
   state.panelData = {
+    rootIndex: pos.rootIndex,
     file: pos.file,
     line: +pos.line,
     col: +pos.col,
@@ -90,7 +91,7 @@ export function openPanel(el: HTMLElement): void {
   apiRequest("/get-props", {
     method: "POST",
     body: JSON.stringify({
-      file: state.panelData.file,
+      file: formatPosition(state.panelData),
       line: state.panelData.line,
       col: state.panelData.col,
     }),
@@ -198,7 +199,7 @@ function submit(): void {
   apiRequest("/update-props", {
     method: "POST",
     body: JSON.stringify({
-      file: state.panelData.file,
+      file: formatPosition(state.panelData),
       line: state.panelData.line,
       col: state.panelData.col,
       props: state.panelData.entries.map((entry) => ({
@@ -206,10 +207,11 @@ function submit(): void {
         value: entry.value,
       })),
     }),
-  }).then((response) => {
-    if (response && response.success) {
-      closePanel();
-      logSuccess("属性已更新");
-    }
-  });
+  })
+    .then((response) => {
+      if (response && response.success) {
+        closePanel();
+        logSuccess("属性已更新");
+      }
+    });
 }

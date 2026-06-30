@@ -66,6 +66,7 @@ export const state = {
   /** 属性编辑面板 */
   propPanel: null as HTMLDivElement | null,
   panelData: {
+    rootIndex: 0,
     file: "",
     line: 0,
     col: 0,

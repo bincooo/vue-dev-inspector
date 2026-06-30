@@ -15,7 +15,7 @@ import { openDrawer } from "./drawer";
 
 type MenuAction = (
   element: HTMLElement,
-  pos: { file: string; line: string; col: string },
+  pos: { rootIndex: number; file: string; line: string; col: string },
 ) => void;
 
 interface MenuItem {
@@ -34,11 +34,11 @@ interface MenuItem {
  * （用户报告"复制 Primary 再删除副本 → Default 消失"）。
  */
 export function deleteElementViaApi(element: HTMLElement): Promise<unknown> {
-  const pos = parsePosition(element.getAttribute(state.attrName)!);
+  const pos = parsePosition(element.getAttribute(state.attrName)!)!;
   return apiRequest("/delete-element", {
     method: "POST",
     body: JSON.stringify({
-      file: pos.file,
+      file: formatPosition(pos),
       line: +pos.line,
       col: +pos.col,
       tag: getElementTagName(element),
@@ -52,7 +52,7 @@ export function deleteElementViaApi(element: HTMLElement): Promise<unknown> {
 }
 
 export function showMenu(x: number, y: number, element: HTMLElement): void {
-  const pos = parsePosition(element.getAttribute(state.attrName)!);
+  const pos = parsePosition(element.getAttribute(state.attrName)!)!;
   /* 上次右键的按钮仍挂在 DOM 上（display:none 不清节点），先清空避免新旧并存 */
   state.contextMenu!.innerHTML = "";
   state.contextMenu!.style.display = "block";
@@ -76,7 +76,7 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
       apiRequest("/open-in-editor", {
         method: "POST",
         body: JSON.stringify({
-          file: pos.file,
+          file: formatPosition(pos),
           line: +pos.line,
           col: +pos.col,
           editor: state.editor,
@@ -116,7 +116,7 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
     );
     button.onclick = () => {
       state.contextMenu!.style.display = "none";
-      actions[option.action](element, pos);
+      actions[option.action](element, pos!);
     };
     state.contextMenu!.appendChild(button);
   }

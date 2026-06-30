@@ -313,15 +313,15 @@ export function init(): void {
       /* 提前清场（endDrag），再异步提交；即使提交失败 UI 状态也已恢复 */
       endDrag();
       if (!source || !target || !dropDir) return;
-      const src = parsePosition(source.getAttribute(state.attrName)!);
-      const tgt = parsePosition(target.getAttribute(state.attrName)!);
+      const src = parsePosition(source.getAttribute(state.attrName)!)!;
+      const tgt = parsePosition(target.getAttribute(state.attrName)!)!;
       apiRequest("/move-element", {
         method: "POST",
         body: JSON.stringify({
-          file: src.file,
+          file: formatPosition(src),
           line: +src.line,
           col: +src.col,
-          target: { file: tgt.file, line: +tgt.line, col: +tgt.col },
+          target: { file: formatPosition(tgt), line: +tgt.line, col: +tgt.col },
           direction: dropDir,
         }),
       })
