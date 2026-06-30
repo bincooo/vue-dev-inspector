@@ -13,7 +13,7 @@ import {
   type MoveDirection,
   type PropEntry,
 } from "./editor";
-import { API_PREFIX, EDITOR_PROTOCOLS, safePath } from "@vue-dev-inspector/shared";
+import { API_PREFIX, EDITOR_PROTOCOLS, parseSource, safePath } from "@vdi/shared";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -91,20 +91,46 @@ function readPropEntries(value: unknown): PropEntry[] {
     .map((entry) => ({ key: entry.key, value: entry.value }));
 }
 
-/** 单个文件路由的常见前置：安全路径解析 → 加载源码 → 403 拒绝。 */
+/**
+ * 单个文件路由的常见前置：解析 `rN:file:line:col` → 加载源码 → 失败统一 JSON 响应。
+ *
+ * - 任何不符合 `rN:file:line:col` 格式 → 400
+ * - rootIndex 越界 → 400
+ * - 文件越出对应根 → 403
+ * - 成功返回 `{ file, source, absolutePath, rootIndex }`，file 已剥离 `rN:` 前缀
+ */
 function resolveSource(
   projectRoots: string[],
   body: RouteBody,
   res: MiddlewareResponse,
-): { file: string; source: string; absolutePath: string } | null {
-  const file = readString(body, "file");
-  const resolved = safePath(projectRoots, file);
+): { file: string; source: string; absolutePath: string; rootIndex: number } | null {
+  const raw = readString(body, "file");
+  const parsed = parseSource(raw);
+  if (!parsed) {
+    json(res, 400, {
+      error: "Invalid source format; expected r<N>:<path>:<line>:<col>",
+    });
+    return null;
+  }
+  if (parsed.rootIndex < 0 || parsed.rootIndex >= projectRoots.length) {
+    json(res, 400, { error: "Unknown root index" });
+    return null;
+  }
+  const resolved = safePath(projectRoots, {
+    rootIndex: parsed.rootIndex,
+    file: parsed.file,
+  });
   if (!resolved) {
     json(res, 403, { error: "Forbidden" });
     return null;
   }
   const source = fs.readFileSync(resolved.absolutePath, "utf-8");
-  return { file, source, absolutePath: resolved.absolutePath };
+  return {
+    file: parsed.file,
+    source,
+    absolutePath: resolved.absolutePath,
+    rootIndex: parsed.rootIndex,
+  };
 }
 
 /** 「限制到该枚举」的窄化 helper；落空回退到 default。 */
@@ -281,7 +307,7 @@ function handleListComponents(
   const components: { path: string; name: string }[] = [];
   const EXCLUDE = /(node_modules|dist|\.vite)/;
 
-  function walk(root: string, dir: string): void {
+  function walk(rootIndex: number, root: string, dir: string): void {
     let ents: fs.Dirent[];
     try {
       ents = fs.readdirSync(dir, { withFileTypes: true });
@@ -292,19 +318,20 @@ function handleListComponents(
       if (EXCLUDE.test(ent.name)) continue;
       const full = path.join(dir, ent.name);
       if (ent.isDirectory()) {
-        walk(root, full);
+        walk(rootIndex, root, full);
       } else if (ent.isFile() && ent.name.endsWith(".vue")) {
         const rel = path
           .relative(root, full)
           .split(path.sep)
           .join("/");
-        if (seen.has(rel)) continue;
-        seen.add(rel);
+        const key = `r${rootIndex}:${rel}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
         components.push({ path: rel, name: ent.name });
       }
     }
   }
-  for (const root of projectRoots) walk(root, root);
+  for (let i = 0; i < projectRoots.length; i++) walk(i, projectRoots[i], projectRoots[i]);
   components.sort((a, b) => a.path.localeCompare(b.path));
   json(res, 200, { components });
 }
@@ -385,7 +412,7 @@ export function createDevServer(
   if (projectRoots.length === 0) {
     // 防御：空数组会让所有请求都返回 403；显式抛错避免静默失败
     throw new Error(
-      "[vue-dev-inspector] createDevServer received empty projectRoots.",
+      "[vdi] createDevServer received empty projectRoots.",
     );
   }
   server.middlewares.use(async (req, res, next) => {
