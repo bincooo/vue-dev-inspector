@@ -5,7 +5,7 @@ export const usageCode = [
   "// vite.config.ts",
   "import { defineConfig } from 'vite'",
   "import vue from '@vitejs/plugin-vue'",
-  "import vueDevInspector from '@vue-dev-inspector/core'",
+  "import vueDevInspector from '@vdi/core'",
   "",
   "export default defineConfig({",
   "  plugins: [",
@@ -27,11 +27,11 @@ export const usageCode = [
 // ============================================================
 export const installCode = [
   "# pnpm (推荐)",
-  "pnpm add -D @vue-dev-inspector",
+  "pnpm add -D @vdi/core",
   "",
   "# npm",
-  "npm install -D @vue-dev-inspector",
+  "npm install -D @vdi/core",
   "",
   "# yarn",
-  "yarn add -D @vue-dev-inspector",
+  "yarn add -D @vdi/core",
 ].join('\n');

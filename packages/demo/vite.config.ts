@@ -1,7 +1,7 @@
 /**
  * packages/demo/vite.config.ts
  *
- * Demo 项目的 Vite 配置 — 展示 vite-plugin-vue-dev-inspector 的实际接入。
+ * Demo 项目的 Vite 配置 — 展示 @vdi/core 的实际接入。
  *
  * 使用方式：
  *   cd packages/demo
@@ -11,9 +11,9 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 // 在 monorepo 中直接引用本地插件源码
-// 发布后用户只需: import vueDevInspector from 'vite-plugin-vue-dev-inspector'
-import { vueDevInspector } from "@vue-dev-inspector/core";
-import antdv from "@vue-dev-inspector/antdv";
+// 发布后用户只需: import vueDevInspector from '@vdi/core'
+import { vueDevInspector } from "@vdi/core";
+import antdv from "@vdi/antdv";
 
 export default defineConfig({
   plugins: [

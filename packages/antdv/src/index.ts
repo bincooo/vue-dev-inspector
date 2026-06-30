@@ -1,14 +1,14 @@
 /**
- * @vue-dev-inspector/antdv — Ant Design Vue 组件目录扩展。
+ * @vdi/antdv — Ant Design Vue 组件目录扩展。
  *
  * 用法：
- *   import antdv from "@vue-dev-inspector/antdv";
+ *   import antdv from "@vdi/antdv";
  *   vueDevInspector({ componentConfig: [antdv()] })
  *
  * icon 字段使用 iconify 短串约定：`i-{prefix}:{name}`，由 overlay 运行时
  * fetch api.iconify.design 解析。fetch 失败回退到 tag 前缀字符占位。
  */
-import type { ComponentConfigEntry } from "@vue-dev-inspector/shared";
+import type { ComponentConfigEntry } from "@vdi/shared";
 
 /**
  * 返回 Ant Design Vue 组件目录。

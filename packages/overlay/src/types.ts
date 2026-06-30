@@ -5,7 +5,7 @@
  * window.__DEV_INSPECTOR_CFG__ 全局变量，
  * overlay IIFE 启动时读取。
  */
-import type { ComponentConfigEntry } from "@vue-dev-inspector/shared";
+import type { ComponentConfigEntry } from "@vdi/shared";
 
 export interface ClientCfg {
   attrName: string;
