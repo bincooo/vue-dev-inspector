@@ -6,14 +6,17 @@
   "description": "Browser overlay script for @vdi/core — compiles to a single IIFE JS file",
   "main": "dist/overlay.iife.js",
   "scripts": {
-    "build": "vite build"
+    "build": "vite build",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@vdi/shared": "^0.0.1"
+    "@vdi/shared": "workspace:*"
   },
   "devDependencies": {
     "typescript": "5.9.3",
     "vite": "7.3.2",
-    "vite-plugin-singlefile": "2.3.0"
+    "vite-plugin-singlefile": "2.3.0",
+    "vitest": "^2.1.0",
+    "jsdom": "^24.0.0"
   }
 }
