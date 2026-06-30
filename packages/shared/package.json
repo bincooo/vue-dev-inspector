@@ -1,5 +1,5 @@
 {
-    "name": "@vue-dev-inspector/shared",
+    "name": "@vdi/shared",
     "private": false,
     "version": "0.0.1",
     "type": "module",

@@ -1,9 +1,9 @@
 {
-  "name": "@vue-dev-inspector/client",
+  "name": "@vdi/client",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "AST-based element props editor + dev server middleware for vue-dev-inspector",
+  "description": "AST-based element props editor + dev server middleware for @vdi/core",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -19,6 +19,6 @@
     "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc"
   },
   "dependencies": {
-    "@vue-dev-inspector/shared": "^0.0.1"
+    "@vdi/shared": "^0.0.1"
   }
 }
