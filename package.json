@@ -17,8 +17,6 @@
   },
   "dependencies": {
     "@vitejs/plugin-vue": "^6.0.7",
-    "@vdi/antdv": "file:.yalc/@vdi/antdv",
-    "@vdi/shared": "file:.yalc/@vdi/shared",
     "@vue/compiler-core": "^3.5.38",
     "@vue/compiler-dom": "^3.5.38",
     "@vue/compiler-sfc": "^3.5.38",
