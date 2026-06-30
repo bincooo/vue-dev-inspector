@@ -1,5 +1,5 @@
 /** 共享类型来自 shared 包（API_PREFIX / EDITOR_PROTOCOLS / 组件目录类型） */
-import type { ComponentConfig } from "@vue-dev-inspector/shared";
+import type { ComponentConfig } from "@vdi/shared";
 
 /** DevInspector 配置选项 */
 export interface DevInspectorOptions {

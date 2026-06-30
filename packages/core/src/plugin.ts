@@ -7,22 +7,22 @@ import MagicString from "magic-string";
 import {
   API_PREFIX,
   EDITOR_PROTOCOLS,
-  findProjectRoot,
+  resolveProjectRootIndex,
   toPosixRelative,
-} from "@vue-dev-inspector/shared";
+} from "@vdi/shared";
 import type { DevInspectorOptions } from "./options";
 import { DEFAULT_OPTIONS } from "./options";
 import { createInspectorTransform } from "./transform";
 import { createDevServer } from "../../client";
 
 /**
- * 编译后的 overlay 脚本（由 @vue-dev-inspector/overlay 子工程构建产生）。
+ * 编译后的 overlay 脚本（由 @vdi/overlay 子工程构建产生）。
  * 通过文件系统读取单文件 IIFE，避免在插件源码中以字符串形式拼脚本。
  */
 const overlayScript = loadOverlayScript();
 
 function loadOverlayScript(): string {
-  // 当前插件源码位于 packages/vite-plugin-vue-dev-inspector/src/plugin.ts，
+  // 当前插件源码位于 packages/core/src/plugin.ts，
   // overlay 产物位于 packages/overlay/dist/overlay.iife.js
   const here = path.dirname(fileURLToPath(import.meta.url));
   const candidates = [
@@ -37,7 +37,7 @@ function loadOverlayScript(): string {
     }
   }
   throw new Error(
-    "[vue-dev-inspector] 未找到 @vue-dev-inspector/overlay 的构建产物，" +
+    "[vdi] 未找到 @vdi/overlay 的构建产物，" +
     "请先运行 `pnpm -C packages/overlay build`。",
   );
 }
@@ -104,15 +104,15 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
       if (options.exclude.some((re) => re.test(id))) return null;
 
       // 多根支持：只在声明的根下注入，避免越界文件被错误标记
-      const matchedRoot = findProjectRoot(projectRoots, id);
-      if (!matchedRoot) return null;
+      const rootIndex = resolveProjectRootIndex(projectRoots, id);
+      if (rootIndex < 0) return null;
 
       const { descriptor, errors } = parse(code, { filename: id });
       if (errors.length || !descriptor.template) return null;
 
       const template = descriptor.template;
       const s = new MagicString(code);
-      const relativePath = toPosixRelative(matchedRoot, id);
+      const relativePath = toPosixRelative(projectRoots[rootIndex], id);
 
       compileTemplate({
         source: template.content,
@@ -128,7 +128,7 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
             createInspectorTransform(
               s,
               template,
-              relativePath,
+              { rootIndex, relativePath },
               options.attrName,
               options.wrapComponents,
             ),

@@ -42,9 +42,19 @@ function findOpenTagEnd(source: string, isSelfClosing: boolean = false): number 
   return source.length;
 }
 
+/** 注入到 `data-source-file` 属性的源码位置编码：`r<N>:<relativePath>:<line>:<col>`。 */
+function formatSourceRef(
+  rootIndex: number,
+  relativePath: string,
+  line: number,
+  column: number,
+): string {
+  return `r${rootIndex}:${relativePath}:${line}:${column}`;
+}
+
 /**
  * 创建 AST 节点转换器：为每个普通元素/组件的开始标签
- * 注入 `${attrName}="filePath:line:col"`。
+ * 注入 `${attrName}="rN:relativePath:line:col"`。
  *
  * 列在 `wrapComponents` 中的组件名会改用 `display:contents` 的 span
  * 包裹整个组件标签，标记只挂在 span 上（不注入到组件标签本身）。
@@ -54,7 +64,7 @@ function findOpenTagEnd(source: string, isSelfClosing: boolean = false): number 
 export function createInspectorTransform(
   s: MagicString,
   template: { content: string; loc: { start: { offset: number } } },
-  filePath: string,
+  sourceRef: { rootIndex: number; relativePath: string },
   attrName: string,
   wrapComponents: string[],
 ): NodeTransform {
@@ -72,6 +82,7 @@ export function createInspectorTransform(
 
     const { line, column } = el.loc.start;
     const start = template.loc.start.offset + el.loc.start.offset;
+    const ref = formatSourceRef(sourceRef.rootIndex, sourceRef.relativePath, line, column);
 
     // 列在 wrapComponents 中的组件：用 span 包裹，标记挂 span
     if (
@@ -82,7 +93,7 @@ export function createInspectorTransform(
       const end = start + el.loc.source.length;
       s.appendLeft(
         start,
-        `<span ${attrName}="${filePath}:${line}:${column}" data-inspector-tag="${el.tag}" data-inspector-wrap style="display:contents">`,
+        `<span ${attrName}="${ref}" data-inspector-tag="${el.tag}" data-inspector-wrap style="display:contents">`,
       );
       s.appendRight(end, "</span>");
       return;
@@ -97,7 +108,7 @@ export function createInspectorTransform(
         : "";
     s.appendLeft(
       insertPos,
-      ` ${attrName}="${filePath}:${line}:${column}"${tagAttr}`,
+      ` ${attrName}="${ref}"${tagAttr}`,
     );
   };
 }
