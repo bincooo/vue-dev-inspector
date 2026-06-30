@@ -38,7 +38,7 @@
   position: fixed;
   pointer-events: none;
   z-index: 9995;
-  border: 1px solid #3b82f6;
+  border: 1px solid #3a78fc;
   background: rgba(59, 130, 246, 0.1);
   display: none;
 }
@@ -47,7 +47,7 @@
   position: fixed;
   z-index: 9999;
   pointer-events: none;
-  background: #5377aa;
+  background: #3a78fc;
   color: #e2e8f0;
   padding: 4px 10px;
   border-radius: 3px;
@@ -258,6 +258,7 @@ body.__vdi-dragging * {
 .__vdi-menu-item--normal:hover {
   background-color: #f1f5f9;
 }
+
 .__vdi-menu-item--danger:hover {
   background-color: #fee2e2;
 }
@@ -640,4 +641,19 @@ body.__vdi-dragging * {
   color: #cbd5e1;
   font-size: 12px;
   padding: 24px 0;
+}
+
+/* ─── 自定义工具按钮（extensibility 注册式） ──────────────── */
+
+.__vdi-tool-buttons {
+  /* 容器静态占位；动态 left/top 走 JS 内联 */
+}
+
+.__vdi-tool-btn {
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.__vdi-tool-btn:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
 }

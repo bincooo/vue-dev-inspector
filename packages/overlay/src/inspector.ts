@@ -28,6 +28,8 @@ import {
 } from "./utils";
 import { openDrawer } from "./drawer";
 import { deleteElementViaApi } from "./menu";
+import { emitInspect } from "./extensibility";
+import type { SelectEvent } from "@vdi/shared";
 
 /** 创建所有 UI 浮层并挂到 DOM */
 export function createUI(): void {
@@ -146,6 +148,93 @@ export function positionActionButtons(): void {
   after.style.top = r.bottom - 9 + "px";
 }
 
+// ─── 自定义工具按钮（注册式） ────────────────────────────────
+
+let toolButtonContainer: HTMLDivElement | null = null;
+
+/** 把当前所有 toolButtons 渲染到选中元素右侧；空集合直接返回。 */
+export function renderToolButtons(selectedEl: HTMLElement): void {
+  if (state.toolButtons.size === 0) return;
+
+  if (!toolButtonContainer) {
+    toolButtonContainer = createElement<HTMLDivElement>("div", "__vdi-tool-buttons");
+    Object.assign(toolButtonContainer.style, {
+      position: "fixed",
+      display: "flex",
+      flexDirection: "column",
+      gap: "4px",
+      zIndex: "2147483646",
+      pointerEvents: "auto",
+    });
+    document.body.appendChild(toolButtonContainer);
+  }
+
+  toolButtonContainer.innerHTML = "";
+
+  for (const def of state.toolButtons.values()) {
+    const btn = createElement<HTMLButtonElement>("button", "__vdi-tool-btn");
+    btn.textContent = def.icon;
+    btn.title = def.label;
+    btn.setAttribute("data-tool-btn-id", def.id);
+    Object.assign(btn.style, {
+      width: "28px",
+      height: "28px",
+      border: "none",
+      borderRadius: "4px",
+      background: def.baseColor ?? "#ffffff",
+      cursor: "pointer",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+      fontSize: "14px",
+    });
+    btn.onmouseenter = () => {
+      btn.style.background = def.hoverColor ?? "#3b82f6";
+      btn.style.color = "#fff";
+    };
+    btn.onmouseleave = () => {
+      btn.style.background = def.baseColor ?? "#ffffff";
+      btn.style.color = "inherit";
+    };
+    btn.onclick = (ev) => {
+      ev.stopPropagation();
+      const raw = selectedEl.getAttribute(state.attrName);
+      const parsed = raw ? parsePosition(raw) : null;
+      const event: SelectEvent = {
+        kind: "select",
+        at: Date.now(),
+        target: selectedEl,
+        source: parsed
+          ? {
+              rootIndex: parsed.rootIndex,
+              file: parsed.file,
+              line: Number(parsed.line),
+              col: Number(parsed.col),
+            }
+          : null,
+      };
+      def.onClick(event);
+    };
+    toolButtonContainer.appendChild(btn);
+  }
+
+  positionToolButtons(selectedEl);
+}
+
+/** 清空容器内容；保留 DOM 节点以便下次渲染复用。 */
+export function clearToolButtons(): void {
+  if (toolButtonContainer) {
+    toolButtonContainer.innerHTML = "";
+  }
+}
+
+function positionToolButtons(selectedEl: HTMLElement): void {
+  if (!toolButtonContainer) return;
+  const rect = getLayoutBox(selectedEl)!.getBoundingClientRect();
+  Object.assign(toolButtonContainer.style, {
+    top: `${rect.top}px`,
+    left: `${rect.right + 4}px`,
+  });
+}
+
 /** 悬停态 */
 export function hover(element: HTMLElement): void {
   if (!element || !state.hoverOverlay) return;
@@ -193,6 +282,12 @@ export function toggle(force?: boolean): void {
   }
   if (state.gearButton)
     state.gearButton.style.display = state.inspecting ? "none" : "flex";
+
+  if (state.inspecting) {
+    emitInspect();
+  } else if (state.selectedElement) {
+    setSelectedElement(null);
+  }
 }
 
 /**

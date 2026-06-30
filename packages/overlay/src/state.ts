@@ -12,6 +12,8 @@ import type {
   InspectEvent,
   SelectEvent,
 } from '@vdi/shared';
+import { emitSelect } from "./extensibility";
+import { renderToolButtons, clearToolButtons } from "./inspector";
 
 declare global {
   var __DEV_INSPECTOR_CFG__: ClientCfg;
@@ -121,4 +123,10 @@ export function setSelectedElement(next: HTMLElement | null): void {
   }
   state.selectedElement = next;
   if (next) next.classList.add(DRAGGABLE_CLASS);
+  if (next) {
+    renderToolButtons(next);
+  } else {
+    clearToolButtons();
+  }
+  emitSelect(next);
 }
