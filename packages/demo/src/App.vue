@@ -22,4 +22,5 @@ import CardList from "./components/CardList.vue";
 import Card from "./components/Card.vue";
 import Footer from "./components/Footer.vue";
 import AntdTest from "./components/AntdTest.vue";
+import "./inspector-demo.ts";
 </script>
