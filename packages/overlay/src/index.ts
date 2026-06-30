@@ -14,6 +14,7 @@
  */
 import cssText from "./overlay.css?inline";
 import { init } from "./events";
+import { installHost } from "./extensibility";
 
 /** 将 overlay 样式注入 document.head（幂等），@__vdi-* 类名才生效。 */
 function injectStyle(): void {
@@ -27,3 +28,4 @@ function injectStyle(): void {
 
 injectStyle();
 init();
+installHost();
