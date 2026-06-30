@@ -6,6 +6,12 @@
  */
 
 import type { ClientCfg, PropEntry } from "./types";
+import type {
+  ActionButtonDef,
+  EventCallback,
+  InspectEvent,
+  SelectEvent,
+} from '@vdi/shared';
 
 declare global {
   var __DEV_INSPECTOR_CFG__: ClientCfg;
@@ -40,6 +46,14 @@ export const state = {
   inspecting: false,
   hoveredElement: null as HTMLElement | null,
   selectedElement: null as HTMLElement | null,
+
+  // ─── extensibility 注册表 ────────────────────────────────
+  /** 自定义工具按钮；id → def。同 id 重复 addToolBtn 视为覆盖。 */
+  toolButtons: new Map<string, ActionButtonDef>(),
+  /** 进入审查模式回调集合。 */
+  inspectCallbacks: new Set<EventCallback<InspectEvent>>(),
+  /** 选中 / 取消选中回调集合。 */
+  selectCallbacks: new Set<EventCallback<SelectEvent>>(),
 
   /** 悬停框 / 选中框 / 标签 */
   hoverOverlay: null as HTMLDivElement | null,
