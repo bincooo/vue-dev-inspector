@@ -28,21 +28,6 @@ export interface ElementProps {
   props: PropEntry[];
 }
 
-/** 指令名 → 源码前缀（bind/on 需再拼接参数名） */
-const DIRECTIVE_PREFIX: Record<string, string> = {
-  bind: ":",
-  on: "@",
-  slot: "v-slot",
-  model: "v-model",
-  for: "v-for",
-  if: "v-if",
-  "else-if": "v-else-if",
-  else: "v-else",
-  html: "v-html",
-  text: "v-text",
-  show: "v-show",
-};
-
 const isSimpleExp = (n: unknown): n is SimpleExpressionNode =>
   !!n && typeof n === "object" && (n as { type?: number }).type === 4;
 
@@ -126,32 +111,16 @@ function extractProps(el: ElementNode): PropEntry[] {
       }
       if (p.type === 7 /* DIRECTIVE */) {
         const d = p as DirectiveNode;
-        const value = isSimpleExp(d.exp)
-          ? d.exp.content
-          : d.name === "else"
-            ? ""
-            : "";
-        return { key: formatDirectiveKey(d), value };
+        return { key: d.rawName ?? `v-${d.name}`, value: directiveValue(d) };
       }
       return null;
     })
     .filter((p): p is PropEntry => p !== null);
 }
 
-/**
- * 把 Vue AST 的 DirectiveNode 还原为源码书写的 key。
- *
- * 直接返回 `d.rawName` —— Vue parser 在 ondirname / onattribnameend 时
- * 已经把原始书写形式记录下来（如 `v-bind:src` / `:src` / `@click.prevent` /
- * `v-access:code.readonly` / `v-bind` / `v-slot:foo` / `#foo`），用它做 key
- * 可以 1:1 保留源码形式，做 round-trip 时不丢信息、也不强制规范化。
- *
- * `rawName` 在 Vue 3 编译路径下必填（`ondirname` 与 `onattribnameend` 都会写），
- * 但类型签名是 optional；缺失时用 `v-${name}` 兜底，避免极端情况下崩。
- */
-function formatDirectiveKey(d: DirectiveNode): string {
-  if (d.rawName) return d.rawName;
-  return DIRECTIVE_PREFIX[d.name] ?? `v-${d.name}`;
+/** 指令表达式取值：SimpleExpressionNode 取 content，否则空串。 */
+function directiveValue(d: DirectiveNode): string {
+  return isSimpleExp(d.exp) ? d.exp.content : "";
 }
 
 /**
