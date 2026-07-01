@@ -15,12 +15,13 @@ import {
   toPosixRelative,
   loadScript,
 } from "../../utils/src/paths";
+import { setCdnBuilder } from "@vue-dev-inspector/utils";
 
 /**
  * 编译后的 overlay 脚本（由 @vue-dev-inspector/overlay 子工程构建产生）。
  * 通过文件系统读取单文件 IIFE，避免在插件源码中以字符串形式拼脚本。
  */
-const overlayScript = loadScript('./overlay.iife.js', '../../overlay/dist/overlay.iife.js');
+const overlayScript = await loadScript('./overlay.iife.js', '../../overlay/dist/overlay.iife.js');
 
 /**
  * 把字节偏移转成 1-based 行号（统计 `offset` 之前的换行符数量 + 1）。
@@ -93,6 +94,10 @@ function buildExpandScripts(
  */
 export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
   const options = { ...DEFAULT_OPTIONS, ...opts };
+  // 注入 cdn 构造器：用户配置 vueDevInspector({ cdn }) 时由 utils 模块的
+  // loadScript('cdn:...') 消费。未配置时 _builder 保持 undefined，
+  // loadScript('cdn:...') 调用会抛明确错误。
+  setCdnBuilder(options.cdn);
   let isDev = false;
   let projectRoots: string[] = [];
 
