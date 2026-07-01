@@ -143,28 +143,32 @@ function extractProps(el: ElementNode): PropEntry[] {
  * v-bind:src → :src；v-bind:src.sync → :src.sync；v-bind:[k] → :[k]；
  * v-on:click → @click；v-on:click.once → @click.once；v-on:[ev].once → @[ev].once；
  * v-slot:foo → v-slot:foo；v-access:code → v-access:code；
- * v-access:code.r → v-access:code.r；v-my-dir → v-my-dir。
+ * v-access:code.r → v-access:code.r；v-my-dir → v-my-dir；
+ * v-bind（无 arg）→ v-bind；v-on（无 arg）→ v-on。
  * 动态 arg（isStatic=false）用 [] 包回 content。modifiers 拼 .mod1.mod2。
  * arg 非 SimpleExpressionNode 抛错，不静默丢数据。
  *
- * 实现注意：`v-bind:foo` 与 `v-on:foo` 的语法前缀是 `:` / `@`（已含分隔符），
- * `v-slot:foo` / `v-access:foo` 的语法前缀是 `v-slot` / `v-access`（不含分隔符），
- * arg 之前还需要一个 `:`。bind/on 走 prefix + argStr（prefix 自带分隔符）；
- * 其它指令走 prefix + ":" + argStr。
+ * 实现注意：
+ * - bind/on 在**有 arg** 时走 shorthand（:src / @click），prefix 已含分隔符；
+ *   在**无 arg** 时必须走 long form（v-bind / v-on）—— 因为 `:` / `@` 单独
+ *   出现不构成合法指令，会让用户读到 ": = gridOptions" 这种无意义结果。
+ * - v-slot / v-access / v-my-dir 等其它指令 prefix 是 `v-<name>`，后面
+ *   要补 `:` 再接 arg。
  */
 function formatDirectiveKey(d: DirectiveNode): string {
-  const prefix = DIRECTIVE_PREFIX[d.name] ?? `v-${d.name}`;
-  if (d.name === "else") return prefix;
-  if (!d.arg) return prefix;
+  if (!d.arg) {
+    if (d.name === "bind") return "v-bind";
+    if (d.name === "on") return "v-on";
+    return DIRECTIVE_PREFIX[d.name] ?? `v-${d.name}`;
+  }
   if (!isSimpleExp(d.arg)) {
     throw new Error(
       `[vdi] unsupported directive arg in extractProps: ${d.name}`,
     );
   }
+  const prefix = DIRECTIVE_PREFIX[d.name] ?? `v-${d.name}`;
   const argStr = d.arg.isStatic ? d.arg.content : `[${d.arg.content}]`;
   const mods = d.modifiers.map((m) => `.${m.content}`).join("");
-  // bind/on 的 prefix 是 `:` / `@`，已含分隔符；其它指令 prefix 是 `v-<name>`，
-  // 后面要补 `:` 再接 arg。
   const sep = d.name === "bind" || d.name === "on" ? "" : ":";
   return `${prefix}${sep}${argStr}${mods}`;
 }

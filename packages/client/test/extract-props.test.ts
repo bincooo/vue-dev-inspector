@@ -115,6 +115,34 @@ describe('getElementProps / directive key extraction', () => {
     expect(result.props).toEqual([{ key: 'v-my-dir', value: 'value' }]);
   });
 
+  it('preserves v-bind (no arg) as long form v-bind', () => {
+    const sfc = buildSFC('<a-button v-bind="gridOptions" />');
+    const { line, col } = locate(sfc);
+    const result = getElementProps(sfc, 'Foo.vue', line, col)!;
+    expect(result.props).toEqual([{ key: 'v-bind', value: 'gridOptions' }]);
+  });
+
+  it('preserves v-on (no arg) as long form v-on', () => {
+    const sfc = buildSFC('<a-button v-on="gridEvents" />');
+    const { line, col } = locate(sfc);
+    const result = getElementProps(sfc, 'Foo.vue', line, col)!;
+    expect(result.props).toEqual([{ key: 'v-on', value: 'gridEvents' }]);
+  });
+
+  it('mixes v-bind/v-on long form with :src shorthand on same element', () => {
+    const sfc = buildSFC(
+      '<a-button v-bind="opts" v-on="events" :src="url" @click="onClick">x</a-button>',
+    );
+    const { line, col } = locate(sfc);
+    const result = getElementProps(sfc, 'Foo.vue', line, col)!;
+    expect(result.props).toEqual([
+      { key: 'v-bind', value: 'opts' },
+      { key: 'v-on', value: 'events' },
+      { key: ':src', value: 'url' },
+      { key: '@click', value: 'onClick' },
+    ]);
+  });
+
   it('preserves v-if expression', () => {
     const sfc = buildSFC('<div v-if="show" />');
     const { line, col } = locate(sfc);
