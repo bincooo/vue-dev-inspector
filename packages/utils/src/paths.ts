@@ -112,7 +112,8 @@ export async function loadScriptSpecifier(
       // import.meta.resolve 总能解出 entry（即便 ESM 也能用），不依赖 exports。
       const entry = resolve(pkgName);
       const pkg = fileURLToPath(entry);
-      baseDir = path.dirname(pkg);
+      // dirname 两次：entry（dist/index.js） → dist/ → 包根
+      baseDir = path.dirname(path.dirname(pkg));
       candidates = args.slice(1);
     } catch (err) {
       throw new Error(`[vdi] 未找到包 ${pkgName}: ${(err as Error).message}`);
@@ -129,5 +130,7 @@ export async function loadScriptSpecifier(
       // intentionally ignored
     }
   }
-  throw new Error("[vdi] 未找到构建产物。" + candidates);
+  throw new Error(
+    `[vdi] 未找到构建产物（候选：${candidates.join(", ")}）`,
+  );
 }

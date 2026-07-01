@@ -19,7 +19,7 @@ export default defineConfig({
     // ⚠️ vueDevInspector 必须放在 vue() 之前
     vueDevInspector({
       cdn: (pkg: string, version: string) => {
-        return `https://cdn.jsdelivr.net/npm/${pkg}@${version}/dist/jquery.min.js`
+        return `https://cdn.jsdelivr.net/npm/${pkg}@${version}`
       },
       // 仅在 dev 模式下启用（默认 true）
       enabled: true,
