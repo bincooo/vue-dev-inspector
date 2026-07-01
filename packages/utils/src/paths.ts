@@ -63,12 +63,17 @@ export function resolveProjectRootIndex(roots: string[], id: string): number {
  * 多个候选按顺序尝试，命中即返回；全部失败抛错。
  */
 export function loadScript(...args: string[]): string {
+  return loadScriptSpecifier(import.meta.resolve, ...args);
+}
+
+export function loadScriptSpecifier(resolve: (specifier: string) => string, ...args: string[]): string {
   let baseDir: string | undefined;
   let candidates = args;
 
-  // 可选包名前缀：第一个参数匹配 `@vue-dev-inspector/<pkg>` 时，把它当作包名解析
-  if (args.length > 0 && /^@vdi\//.test(args[0])) {
-    const pkgName = args[0];
+  // 可选包名前缀：第一个参数匹配 `pkg:@vue-dev-inspector/<pkg>` 时，把它当作包名解析
+  if (args.length > 0 && /^pkg:/.test(args[0])) {
+    const pkgName = args[0].split(':')[1];
+    console.log('[vdi] loadScript: ' + args);
     try {
       // 用 ESM 解析解到包 entry（dist/index.js 或 main 字段），
       // 再 dirname 两次（entry → dist/ → 包根）。这是因为：
@@ -77,13 +82,13 @@ export function loadScript(...args: string[]): string {
       //   - createRequire(...).resolve(`${pkgName}/package.json`) 在 exports
       //     没暴露 ./package.json 时会抛 ERR_PACKAGE_PATH_NOT_EXPORTED。
       // import.meta.resolve 总能解出 entry（即便 ESM 也能用），不依赖 exports。
-      const pkgEntryUrl = import.meta.resolve(pkgName);
-      const pkgEntry = fileURLToPath(pkgEntryUrl);
-      baseDir = path.dirname(path.dirname(pkgEntry));
+      const entry = resolve(pkgName);
+      const pkg = fileURLToPath(entry);
+      baseDir = path.dirname(pkg);
       candidates = args.slice(1);
     } catch (err) {
       throw new Error(
-        `[vdi] 未找到包 ${pkgName}：${(err as Error).message}`,
+        `[vdi] 未找到包 ${pkgName}: ${(err as Error).message}`,
       );
     }
   }
@@ -97,5 +102,5 @@ export function loadScript(...args: string[]): string {
       // intentionally ignored
     }
   }
-  throw new Error("[vdi] 未找到构建产物。");
+  throw new Error("[vdi] 未找到构建产物。" + candidates);
 }

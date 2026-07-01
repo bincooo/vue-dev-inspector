@@ -19,20 +19,11 @@ import { addToolBtn, onInspect, onSelect } from "@vue-dev-inspector/shared";
 addToolBtn(
   {
     id: "antdv-demo-wrap",
-    icon: "📦",
-    label: "antdv demo: 包一层div",
+    icon: "🤖",
+    label: "ai助手",
     position: "right",
     onClick: (event) => {
       window.console.log("[antdv-demo] wrap clicked, source =", event.source);
-    },
-  },
-  {
-    id: "antdv-demo-goto",
-    icon: "🔗",
-    label: "antdv demo: 跳转 API",
-    position: "right",
-    onClick: (event) => {
-      window.console.log("[antdv-demo] goto clicked, source =", event.source);
     },
   },
 );

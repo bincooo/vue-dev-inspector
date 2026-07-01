@@ -9,7 +9,7 @@
  * fetch api.iconify.design 解析。fetch 失败回退到 tag 前缀字符占位。
  */
 import type { ComponentConfigEntry } from "@vue-dev-inspector/shared";
-// import { loadScript } from "@vue-dev-inspector/utils";
+import { loadScriptSpecifier } from "@vue-dev-inspector/utils";
 
 /**
  * 返回 Ant Design Vue 组件目录。
@@ -17,7 +17,6 @@ import type { ComponentConfigEntry } from "@vue-dev-inspector/shared";
  * 接受一个可选对象留作未来扩展（例如 `prefix`、`enabledGroups`），
  * 当前实现按完整目录返回，参数预留避免破坏性升级。
  */
-
 export default function (): ComponentConfigEntry {
   return {
     name: "antdv",
@@ -36,7 +35,7 @@ export default function (): ComponentConfigEntry {
      * 相对 `./expand.iife.js` / `../dist/expand.iife.js` 全部解不到。
      * 走 pnpm 包解析则始终能定位到 antdv/dist/。
      */
-    // expand: loadScript('@vue-dev-inspector/antdv', './dist/expand.iife.js'),
+    expand: loadScriptSpecifier(import.meta.resolve, 'pkg:.', './dist/expand.iife.js'),
     groups: [
       {
         group: "antdv/通用",
