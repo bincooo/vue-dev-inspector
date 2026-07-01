@@ -5,7 +5,7 @@ import MagicString from "magic-string";
 import {
   API_PREFIX,
   EDITOR_PROTOCOLS,
-} from "@vdi/shared";
+} from "@vue-dev-inspector/shared";
 import type { DevInspectorOptions } from "./options";
 import { DEFAULT_OPTIONS } from "./options";
 import { createInspectorTransform } from "./transform";
@@ -17,7 +17,7 @@ import {
 } from "../../utils/src/paths";
 
 /**
- * 编译后的 overlay 脚本（由 @vdi/overlay 子工程构建产生）。
+ * 编译后的 overlay 脚本（由 @vue-dev-inspector/overlay 子工程构建产生）。
  * 通过文件系统读取单文件 IIFE，避免在插件源码中以字符串形式拼脚本。
  */
 const overlayScript = loadScript('./overlay.iife.js', '../../overlay/dist/overlay.iife.js');

@@ -1,4 +1,4 @@
-# @vdi/core
+# @vue-dev-inspector/core
 
 基于 AST 的 Vue 编译插件 — 在开发模式下为每个 DOM 元素注入源码文件信息，支持鼠标悬停高亮和点击跳转编辑器。
 
@@ -13,7 +13,7 @@
 ## 安装
 
 ```bash
-pnpm add -D @vdi/core
+pnpm add -D @vue-dev-inspector/core
 ```
 
 ## 使用
@@ -22,7 +22,7 @@ pnpm add -D @vdi/core
 // vite.config.ts
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import vueDevInspector from "@vdi/core";
+import vueDevInspector from "@vue-dev-inspector/core";
 
 export default defineConfig({
   plugins: [vueDevInspector(), vue()],

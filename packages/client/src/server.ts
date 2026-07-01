@@ -13,7 +13,7 @@ import {
   type MoveDirection,
   type PropEntry,
 } from "./editor";
-import { API_PREFIX, EDITOR_PROTOCOLS } from "@vdi/shared";
+import { API_PREFIX, EDITOR_PROTOCOLS } from "@vue-dev-inspector/shared";
 
 // ─── Types ────────────────────────────────────────────────
 

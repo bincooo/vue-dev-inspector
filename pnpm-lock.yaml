@@ -75,10 +75,10 @@ importers:
 
   packages/antdv:
     dependencies:
-      '@vdi/shared':
+      '@vue-dev-inspector/shared':
         specifier: workspace:*
         version: link:../shared
-      '@vdi/utils':
+      '@vue-dev-inspector/utils':
         specifier: workspace:*
         version: link:../utils
     devDependencies:
@@ -88,7 +88,7 @@ importers:
 
   packages/client:
     dependencies:
-      '@vdi/shared':
+      '@vue-dev-inspector/shared':
         specifier: workspace:*
         version: link:../shared
 
@@ -98,19 +98,19 @@ importers:
         specifier: ^3.5.38
         version: 3.5.38
     devDependencies:
-      '@vdi/shared':
+      '@vue-dev-inspector/shared':
         specifier: workspace:*
         version: link:../shared
 
   packages/demo:
     devDependencies:
-      '@vdi/antdv':
+      '@vue-dev-inspector/antdv':
         specifier: workspace:*
         version: link:../antdv
-      '@vdi/core':
+      '@vue-dev-inspector/core':
         specifier: workspace:*
         version: link:../core
-      '@vdi/shared':
+      '@vue-dev-inspector/shared':
         specifier: workspace:*
         version: link:../shared
       antdv-next:
@@ -119,7 +119,7 @@ importers:
 
   packages/overlay:
     dependencies:
-      '@vdi/shared':
+      '@vue-dev-inspector/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:

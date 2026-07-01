@@ -4,15 +4,15 @@
 
 **Goal:** 在不破坏现有行为的前提下，为 `vue-dev-inspector` 增加两条扩展能力：(1) 派发"进入审查 / 选中组件"事件回调；(2) 允许用户注册自定义工具按钮，渲染在选中元素右侧。
 
-**Architecture:** 三层职责分明 —— `@vdi/shared` 仅提供类型与常量；`@vdi/overlay` 内部维护 callback Set 与 button Map，并在 inspector 状态机的关键转换点派发；`@vdi/core` 通过 `window.__VDI_HOST__` 桥暴露顶层注册函数 `addToolBtn / onInspect / onSelect`，调用者直接从 `@vdi/core` import 即可使用。
+**Architecture:** 三层职责分明 —— `@vue-dev-inspector/shared` 仅提供类型与常量；`@vue-dev-inspector/overlay` 内部维护 callback Set 与 button Map，并在 inspector 状态机的关键转换点派发；`@vue-dev-inspector/core` 通过 `window.__VDI_HOST__` 桥暴露顶层注册函数 `addToolBtn / onInspect / onSelect`，调用者直接从 `@vue-dev-inspector/core` import 即可使用。
 
 **Tech Stack:** TypeScript、@vue/compiler-core（AST）、MagicString、pnpm monorepo、vitest（overlay 单元测试新引入）、Vite 插件体系。
 
 ## Global Constraints
 
 1. **零破坏性**：现有 4 个硬编码按钮（删除/复制/前后插入）、5 项右键菜单、`componentConfig` 物料抽屉行为完全不变。
-2. **类型主导**：所有扩展点先在 `@vdi/shared` 定义类型，`@vdi/core` 与 `@vdi/overlay` 都从 shared 导入，避免三端各自定义漂移。
-3. **包归属**：仅 `@vdi/shared` 与 `@vdi/overlay` 加新文件/字段；`@vdi/core` 仅导出顶层函数壳子；`@vdi/client` 与 `@vdi/antdv` 不改动（服务端/物料桥无运行时回调语义）。
+2. **类型主导**：所有扩展点先在 `@vue-dev-inspector/shared` 定义类型，`@vue-dev-inspector/core` 与 `@vue-dev-inspector/overlay` 都从 shared 导入，避免三端各自定义漂移。
+3. **包归属**：仅 `@vue-dev-inspector/shared` 与 `@vue-dev-inspector/overlay` 加新文件/字段；`@vue-dev-inspector/core` 仅导出顶层函数壳子；`@vue-dev-inspector/client` 与 `@vue-dev-inspector/antdv` 不改动（服务端/物料桥无运行时回调语义）。
 4. **事件派发边界**：仅派发"进入审查"（`inspecting: false → true`）与"选中/取消选中"（`setSelectedElement`）两类事件；hover 状态切换、`toggle(true → false)` 退场不派发任何事件。
 5. **回调载体**：用 `Set<callback>` 而非 DOM `CustomEvent`；`onInspect` / `onSelect` 返回反注册函数 `() => void`。
 6. **按钮位置**：选中框右侧浮动列表；多按钮垂直堆叠（间距 4px）；同 `id` 重复 `addToolBtn` 视为覆盖而非追加。
@@ -28,7 +28,7 @@
 
 ```
 ┌─────────────────┐  window.__DEV_INSPECTOR_CFG__   ┌─────────────────┐
-│   @vdi/core     │ ────────────────────────────▶  │   @vdi/overlay  │
+│   @vue-dev-inspector/core     │ ────────────────────────────▶  │   @vue-dev-inspector/overlay  │
 │  (Vite plugin)  │   componentEntries + cfg JSON   │   (IIFE runtime)│
 │                 │                                 │                 │
 │  Exports:       │  window.__VDI_HOST__            │  state.ts:      │
@@ -38,7 +38,7 @@
 │  - onSelect     │                                 │                 │
 └─────────────────┘                                 └─────────────────┘
         ▲                                                     ▲
-        │ import { ... } from '@vdi/core'                     │
+        │ import { ... } from '@vue-dev-inspector/core'                     │
         │                                                     │
    ┌────┴─────┐                                       ┌───────┴───────┐
    │ user code│                                       │ 派发点:        │
@@ -49,9 +49,9 @@
 
 **三层职责**：
 
-- **`@vdi/shared`**：仅类型与常量（事件 kind 字符串、按钮位置枚举、注册 API 形状）。零运行时副作用。
-- **`@vdi/core`**：plugin 暴露 `addToolBtn / onInspect / onSelect` 三个顶层函数。函数壳子读 `window.__VDI_HOST__` 并代理到 overlay。
-- **`@vdi/overlay`**：内部维护 `callback Set` 与 `button Map`；inspector 状态机在 `toggle(true)` 和 `setSelectedElement()` 处触发派发；按钮渲染逻辑放在 `inspector.ts` 现有的 `positionActionButtons()` 旁边。
+- **`@vue-dev-inspector/shared`**：仅类型与常量（事件 kind 字符串、按钮位置枚举、注册 API 形状）。零运行时副作用。
+- **`@vue-dev-inspector/core`**：plugin 暴露 `addToolBtn / onInspect / onSelect` 三个顶层函数。函数壳子读 `window.__VDI_HOST__` 并代理到 overlay。
+- **`@vue-dev-inspector/overlay`**：内部维护 `callback Set` 与 `button Map`；inspector 状态机在 `toggle(true)` 和 `setSelectedElement()` 处触发派发；按钮渲染逻辑放在 `inspector.ts` 现有的 `positionActionButtons()` 旁边。
 
 **调用契约**：
 
@@ -132,7 +132,7 @@ import type {
   InspectEvent,
   SelectEvent,
   Unregister,
-} from '@vdi/shared';
+} from '@vue-dev-inspector/shared';
 
 interface VdiHost {
   registerBtn(btns: ActionButtonDef[]): Unregister;
@@ -181,12 +181,12 @@ export function vueDevInspector(options: DevInspectorOptions = {}): Plugin {
 **关键设计点**：
 
 1. **延迟解析 host**：用户代码调用 `addToolBtn` 时 IIFE 已 init（因为 plugin 的 `transformIndexHtml` 注入脚本时同步调用 `init()`），无竞态。
-2. **`vueDevInspector()` 签名不变**：Vite 仍然只识别 Plugin；扩展 API 是顶层函数，调用者 `import { addToolBtn } from '@vdi/core'`。
+2. **`vueDevInspector()` 签名不变**：Vite 仍然只识别 Plugin；扩展 API 是顶层函数，调用者 `import { addToolBtn } from '@vue-dev-inspector/core'`。
 3. **失败语义**：
    - 浏览器外调用 → 抛 `[vdi] addToolBtn / onInspect / onSelect 仅在浏览器端可用`
    - overlay 未加载 → 抛 `[vdi] overlay IIFE 未加载或 init 失败`
 
-`@vdi/core` 不需要 setHost/getHost 模块变量，因为 host 是 IIFE 主动挂到 `window.__VDI_HOST__` 的。
+`@vue-dev-inspector/core` 不需要 setHost/getHost 模块变量，因为 host 是 IIFE 主动挂到 `window.__VDI_HOST__` 的。
 
 ---
 
@@ -220,7 +220,7 @@ import type {
   InspectEvent,
   SelectEvent,
   Unregister,
-} from '@vdi/shared';
+} from '@vue-dev-inspector/shared';
 import { renderToolButtons, clearToolButtons } from './inspector';
 import { parsePosition } from './utils';
 
@@ -594,7 +594,7 @@ describe('extensibility registry', () => {
 修改 `packages/demo/src/App.vue`，在 `<script setup>` 顶部加：
 
 ```ts
-import { addToolBtn, onInspect, onSelect } from '@vdi/core';
+import { addToolBtn, onInspect, onSelect } from '@vue-dev-inspector/core';
 
 addToolBtn(
   { id: 'wrap', icon: '📦', label: '包一层div', position: 'right', onClick: (e) => console.log('[demo] wrap', e.source) },

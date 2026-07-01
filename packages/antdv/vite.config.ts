@@ -1,11 +1,11 @@
 /**
- * @vdi/antdv 浏览器侧拓展脚本构建配置。
+ * @vue-dev-inspector/antdv 浏览器侧拓展脚本构建配置。
  *
  * 与 src/index.ts（Node 平台 ESM 插件）并行，单独输出
  * `dist/expand.iife.js`，供 antdv 工厂函数在
  * `ComponentConfigEntry.expand` 字段注入给 core 插件。
  *
- * IIFE 形式与 @vdi/overlay 保持一致——IIFE 体内可直接调用顶层语句，
+ * IIFE 形式与 @vue-dev-inspector/overlay 保持一致——IIFE 体内可直接调用顶层语句，
  * 无需 module wrapper；core 插件在 transformIndexHtml 末尾以
  * <script type="module"> 包裹。
  *

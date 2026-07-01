@@ -13,7 +13,7 @@ import { renderIcon } from "./icon";
 import type {
   ComponentConfigEntry,
   ComponentGroup,
-} from "@vdi/shared";
+} from "@vue-dev-inspector/shared";
 
 /** 抽屉遮罩（点击非面板区域关闭） */
 let drawerBackdrop: HTMLDivElement | null = null;

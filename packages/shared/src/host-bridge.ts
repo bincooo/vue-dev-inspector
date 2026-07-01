@@ -1,5 +1,5 @@
 /**
- * @vdi/shared host-bridge —— 浏览器侧 addToolBtn / onInspect / onSelect 入口
+ * @vue-dev-inspector/shared host-bridge —— 浏览器侧 addToolBtn / onInspect / onSelect 入口
  *
  * 时序问题：浏览器加载页面时，多个 `<script type="module">` 按文档顺序 defer
  * 执行。demo 主入口（Vite 注入，含用户业务代码）在 `<head>`，overlay IIFE

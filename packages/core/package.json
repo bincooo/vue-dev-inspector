@@ -1,5 +1,5 @@
 {
-  "name": "@vdi/core",
+  "name": "@vue-dev-inspector/core",
   "version": "0.0.1",
   "private": false,
   "type": "module",
@@ -21,6 +21,6 @@
     "@vue/compiler-sfc": "^3.5.38"
   },
   "devDependencies": {
-    "@vdi/shared": "workspace:*"
+    "@vue-dev-inspector/shared": "workspace:*"
   }
 }

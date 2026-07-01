@@ -12,8 +12,8 @@ app.config.globalProperties.window = window;
 
 // 在控制台中提示用户如何使用 DevInspector
 console.log(
-  "%c[Demo App]%c @vdi/core 已集成\n" +
-    "按 Alt+Shift+I 开启审查模式，鼠标悬停高亮元素，点击跳转到编辑器。",
+  "%c[Demo App]%c @vue-dev-inspector/core 已集成\n" +
+  "按 Alt+Shift+I 开启审查模式，鼠标悬停高亮元素，点击跳转到编辑器。",
   "color:#10b981;font-weight:bold",
   "color:inherit",
 );

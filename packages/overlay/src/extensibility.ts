@@ -8,8 +8,8 @@ import type {
   InspectEvent,
   SelectEvent,
   Unregister,
-} from '@vdi/shared';
-import { installHost as sharedInstallHost } from '@vdi/shared';
+} from '@vue-dev-inspector/shared';
+import { installHost as sharedInstallHost } from '@vue-dev-inspector/shared';
 import { state } from './state';
 import { parsePosition } from './utils';
 
@@ -64,11 +64,11 @@ export function emitSelect(target: HTMLElement | null): void {
     target,
     source: parsed
       ? {
-          rootIndex: parsed.rootIndex,
-          file: parsed.file,
-          line: Number(parsed.line),
-          col: Number(parsed.col),
-        }
+        rootIndex: parsed.rootIndex,
+        file: parsed.file,
+        line: Number(parsed.line),
+        col: Number(parsed.col),
+      }
       : null,
   };
   for (const cb of state.selectCallbacks) {
@@ -94,7 +94,7 @@ declare global {
 
 /**
  * 在 overlay init() 末尾调用，把内部注册函数挂到 window.__VDI_HOST__。
- * 内部通过 @vdi/shared 的 installHost 实现，会 flush 早期入队的任务。
+ * 内部通过 @vue-dev-inspector/shared 的 installHost 实现，会 flush 早期入队的任务。
  */
 export function installHost(): void {
   sharedInstallHost({

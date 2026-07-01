@@ -11,7 +11,7 @@ import type {
   EventCallback,
   InspectEvent,
   SelectEvent,
-} from '@vdi/shared';
+} from '@vue-dev-inspector/shared';
 import { emitSelect } from "./extensibility";
 import { renderToolButtons, clearToolButtons } from "./inspector";
 

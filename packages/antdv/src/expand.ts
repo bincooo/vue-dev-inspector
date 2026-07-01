@@ -1,5 +1,5 @@
 /**
- * @vdi/antdv — 浏览器侧拓展脚本。
+ * @vue-dev-inspector/antdv — 浏览器侧拓展脚本。
  *
  * 由 packages/antdv/vite.config.ts 打包为 dist/expand.iife.js，
  * antdv/src/index.ts 通过 `loadScript('./expand.iife.js')` 把本文件
@@ -14,7 +14,7 @@
  * 这里的代码原本散落在 packages/demo/src/inspector-demo.ts，
  * 现迁移到物料库本体作为"开箱即用"演示。
  */
-import { addToolBtn, onInspect, onSelect } from "@vdi/shared";
+import { addToolBtn, onInspect, onSelect } from "@vue-dev-inspector/shared";
 
 addToolBtn(
   {

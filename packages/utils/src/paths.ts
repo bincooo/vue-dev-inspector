@@ -49,14 +49,14 @@ export function resolveProjectRootIndex(roots: string[], id: string): number {
  *     适用于直接调用方：例如 `core/dist/index.js` 这种**未被 bundle** 的真实
  *     文件路径场景，相对路径按 dist/ 目录解析。
  *
- *   loadScript('@vdi/<pkg>', ...candidates)
- *     以 `@vdi/<pkg>` 包根为锚点解析（pnpm 解析 + createRequire）。
+ *   loadScript('@vue-dev-inspector/<pkg>', ...candidates)
+ *     以 `@vue-dev-inspector/<pkg>` 包根为锚点解析（pnpm 解析 + createRequire）。
  *     用于 esbuild / rollup 把本调用方打进另一个 bundle 之后 `import.meta.url`
  *     指向 bundle 文件（而非本包 dist/），相对路径全部失效的场景。
  *     典型例子：Vite 的 config loader 把 antdv 打进
  *     `demo/node_modules/.vite-temp/vite.config.ts.*.mjs`，此时
  *     `import.meta.url` 是临时 mjs 的 URL，相对 `./expand.iife.js` 自然找不到。
- *     `createRequire(import.meta.url).resolve('@vdi/antdv/package.json')`
+ *     `createRequire(import.meta.url).resolve('@vue-dev-inspector/antdv/package.json')`
  *     从 bundle URL 所在目录向上走 pnpm 的 node_modules，定位到 antdv 实体，
  *     再以 `dirname` 拿到 `antdv/dist/`，候选路径再按它解。
  *
@@ -66,7 +66,7 @@ export function loadScript(...args: string[]): string {
   let baseDir: string | undefined;
   let candidates = args;
 
-  // 可选包名前缀：第一个参数匹配 `@vdi/<pkg>` 时，把它当作包名解析
+  // 可选包名前缀：第一个参数匹配 `@vue-dev-inspector/<pkg>` 时，把它当作包名解析
   if (args.length > 0 && /^@vdi\//.test(args[0])) {
     const pkgName = args[0];
     try {

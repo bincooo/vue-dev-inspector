@@ -32,7 +32,7 @@ const FEATURES = [
 const FAQS = [
   { q: '为什么选择 AST 方案而不是正则？', a: 'AST 能精确识别每个 ElementNode 和嵌套结构（v-if/v-for），不会误匹配注释或字符串，位置信息由编译器保证精确。删除/插入等源码操作也走 AST，能正确处理同一行内嵌子元素的场景。' },
   { q: '会影响生产环境吗？', a: '不会。插件通过 configResolved 判断 isDev，仅在 vite serve 时注入属性和 overlay 脚本，生产构建完全无痕。overlay 是独立子工程编译出的单文件 IIFE。' },
-  { q: 'overlay 为什么拆成独立子工程？', a: '原本审查脚本是写在 TS 字符串模板里（string-in-string），难维护、无类型支持。拆成 @vdi/overlay 子工程后，用真实 TS 模块编写、Vite 编译为单文件 IIFE，插件运行时 readFileSync 并注入，配置通过 window.__DEV_INSPECTOR_CFG__ 全局变量传递。' },
+  { q: 'overlay 为什么拆成独立子工程？', a: '原本审查脚本是写在 TS 字符串模板里（string-in-string），难维护、无类型支持。拆成 @vue-dev-inspector/overlay 子工程后，用真实 TS 模块编写、Vite 编译为单文件 IIFE，插件运行时 readFileSync 并注入，配置通过 window.__DEV_INSPECTOR_CFG__ 全局变量传递。' },
   { q: '齿轮按钮和同级插入 ± 按钮是什么？', a: '右下角⚙齿轮按钮：点击开启审查、开启后隐藏、关闭后显示，由 toggleBtn 配置控制。选中元素后选中框上/下边框中点出现 + 按钮，点击在同级上方/下方插入组件并打开组件面板。' },
   { q: '如何与 @vitejs/plugin-vue 协同？', a: '使用 enforce: "pre" 在 Vue 编译前处理，通过 MagicString 修改源码后交给 Vue 插件正常编译。' },
   { q: '为什么用 pnpm monorepo？', a: '将插件、overlay 审查 UI、服务端 client、AST 遍历器、共享工具分离为独立包，各包可独立版本发布、独立测试，依赖关系清晰。dev:demo 脚本会先构建 overlay 产物再启动 demo。' },
@@ -71,7 +71,7 @@ function init() {
         <a href="#guide" class="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white font-medium rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-200">⚡ 快速开始</a>
         <a href="#code" class="flex items-center gap-2 px-6 py-3 bg-white text-slate-700 font-medium rounded-xl border border-slate-200 hover:shadow-md">📂 查看 Monorepo 源码</a>
       </div>
-      <div class="inline-flex items-center gap-3 bg-slate-900 rounded-xl px-5 py-3 shadow-2xl"><span class="text-slate-400">$</span><code class="text-sm text-slate-300 font-mono">pnpm add -D <span class="text-emerald-400">@vdi/core</span></code></div>
+      <div class="inline-flex items-center gap-3 bg-slate-900 rounded-xl px-5 py-3 shadow-2xl"><span class="text-slate-400">$</span><code class="text-sm text-slate-300 font-mono">pnpm add -D <span class="text-emerald-400">@vue-dev-inspector/core</span></code></div>
     </div>
   </section>
 

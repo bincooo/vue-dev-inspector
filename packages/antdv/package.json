@@ -1,5 +1,5 @@
 {
-    "name": "@vdi/antdv",
+    "name": "@vue-dev-inspector/antdv",
     "version": "0.0.1",
     "private": false,
     "type": "module",
@@ -21,8 +21,8 @@
         "build:expand": "vite build"
     },
     "dependencies": {
-        "@vdi/shared": "workspace:*",
-        "@vdi/utils": "workspace:*"
+        "@vue-dev-inspector/shared": "workspace:*",
+        "@vue-dev-inspector/utils": "workspace:*"
     },
     "devDependencies": {
         "vite": "7.3.2"

@@ -1,15 +1,15 @@
 /**
- * @vdi/antdv — Ant Design Vue 组件目录扩展。
+ * @vue-dev-inspector/antdv — Ant Design Vue 组件目录扩展。
  *
  * 用法：
- *   import antdv from "@vdi/antdv";
+ *   import antdv from "@vue-dev-inspector/antdv";
  *   vueDevInspector({ componentConfig: [antdv()] })
  *
  * icon 字段使用 iconify 短串约定：`i-{prefix}:{name}`，由 overlay 运行时
  * fetch api.iconify.design 解析。fetch 失败回退到 tag 前缀字符占位。
  */
-import type { ComponentConfigEntry } from "@vdi/shared";
-import { loadScript } from "@vdi/utils";
+import type { ComponentConfigEntry } from "@vue-dev-inspector/shared";
+// import { loadScript } from "@vue-dev-inspector/utils";
 
 /**
  * 返回 Ant Design Vue 组件目录。
@@ -26,17 +26,17 @@ export default function (): ComponentConfigEntry {
     /**
      * 浏览器侧拓展脚本 —— 物料库自带的 demo / 事件订阅入口。
      *
-     * `loadScript('@vdi/antdv', './dist/expand.iife.js')` 用 antdv 包根作锚点
-     * （通过 `createRequire(import.meta.url).resolve('@vdi/antdv/package.json')`
+     * `loadScript('@vue-dev-inspector/antdv', './dist/expand.iife.js')` 用 antdv 包根作锚点
+     * （通过 `createRequire(import.meta.url).resolve('@vue-dev-inspector/antdv/package.json')`
      * 走 pnpm 包解析），再解相对路径。
      *
-     * 为什么需要 `@vdi/antdv` 锚点：当 antdv 被 Vite 的 esbuild config loader
+     * 为什么需要 `@vue-dev-inspector/antdv` 锚点：当 antdv 被 Vite 的 esbuild config loader
      * 打进 `demo/node_modules/.vite-temp/vite.config.ts.*.mjs` 时，
      * `import.meta.url` 指向的是临时 mjs（不是 antdv/dist/index.js），
      * 相对 `./expand.iife.js` / `../dist/expand.iife.js` 全部解不到。
      * 走 pnpm 包解析则始终能定位到 antdv/dist/。
      */
-    expand: loadScript('@vdi/antdv', './dist/expand.iife.js'),
+    // expand: loadScript('@vue-dev-inspector/antdv', './dist/expand.iife.js'),
     groups: [
       {
         group: "antdv/通用",

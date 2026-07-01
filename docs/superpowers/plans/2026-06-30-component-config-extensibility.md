@@ -4,15 +4,15 @@
 
 **Goal:** 为 `vue-dev-inspector` 增加两条扩展能力：派发"进入审查 / 选中组件"事件回调；允许用户注册自定义工具按钮（`addToolBtn`）渲染在选中元素右侧。
 
-**Architecture:** 三层职责分明 —— `@vdi/shared` 提供类型与常量；`@vdi/overlay` 维护 callback Set 与 button Map，并在 inspector 状态机派发；`@vdi/core` 通过 `window.__VDI_HOST__` 桥暴露 `addToolBtn / onInspect / onSelect` 顶层函数。调用者 `import { addToolBtn } from '@vdi/core'` 即可。
+**Architecture:** 三层职责分明 —— `@vue-dev-inspector/shared` 提供类型与常量；`@vue-dev-inspector/overlay` 维护 callback Set 与 button Map，并在 inspector 状态机派发；`@vue-dev-inspector/core` 通过 `window.__VDI_HOST__` 桥暴露 `addToolBtn / onInspect / onSelect` 顶层函数。调用者 `import { addToolBtn } from '@vue-dev-inspector/core'` 即可。
 
 **Tech Stack:** TypeScript、@vue/compiler-core、pnpm monorepo、vitest@^2（新增到 overlay devDep）、Vite 插件体系。
 
 ## Global Constraints
 
 1. **零破坏性**：现有 4 个硬编码按钮（删除/复制/前后插入）、5 项右键菜单、`componentConfig` 物料抽屉行为完全不变。
-2. **类型主导**：所有扩展点先在 `@vdi/shared` 定义类型；`@vdi/core` 与 `@vdi/overlay` 都从 shared 导入。
-3. **包归属**：仅 `@vdi/shared` 与 `@vdi/overlay` 加新文件/字段；`@vdi/core` 仅导出顶层函数壳子；`@vdi/client` 与 `@vdi/antdv` 不改动。
+2. **类型主导**：所有扩展点先在 `@vue-dev-inspector/shared` 定义类型；`@vue-dev-inspector/core` 与 `@vue-dev-inspector/overlay` 都从 shared 导入。
+3. **包归属**：仅 `@vue-dev-inspector/shared` 与 `@vue-dev-inspector/overlay` 加新文件/字段；`@vue-dev-inspector/core` 仅导出顶层函数壳子；`@vue-dev-inspector/client` 与 `@vue-dev-inspector/antdv` 不改动。
 4. **事件派发边界**：仅派发"进入审查"（`inspecting: false → true`）与"选中/取消选中"（`setSelectedElement`）两类；hover 状态切换、`toggle(true → false)` 退场不派发任何事件。
 5. **回调载体**：用 `Set<callback>` 而非 DOM `CustomEvent`；`onInspect` / `onSelect` 返回反注册函数 `() => void`。
 6. **按钮位置**：选中框右侧浮动列表；多按钮垂直堆叠（间距 4px）；同 `id` 重复 `addToolBtn` 视为覆盖而非追加。
@@ -148,7 +148,7 @@ git commit -m "feat(shared): add extensibility types (ActionButtonDef, InspectEv
 - Modify: `packages/overlay/src/state.ts`
 
 **Interfaces:**
-- Consumes: `ActionButtonDef` / `EventCallback` / `InspectEvent` / `SelectEvent`（来自 `@vdi/shared`）
+- Consumes: `ActionButtonDef` / `EventCallback` / `InspectEvent` / `SelectEvent`（来自 `@vue-dev-inspector/shared`）
 - Produces:
   - `state.toolButtons: Map<string, ActionButtonDef>`
   - `state.inspectCallbacks: Set<EventCallback<InspectEvent>>`
@@ -177,7 +177,7 @@ import type {
   EventCallback,
   InspectEvent,
   SelectEvent,
-} from '@vdi/shared';
+} from '@vue-dev-inspector/shared';
 ```
 
 - [ ] **Step 2: 类型层验证 overlay 通过**
@@ -206,7 +206,7 @@ git commit -m "feat(overlay): add extensibility registry fields to state"
 - Modify: `packages/overlay/package.json`
 
 **Interfaces:**
-- Consumes: `state`（来自 `./state`）、`ActionButtonDef` / `InspectEvent` / `SelectEvent`（来自 `@vdi/shared`）、`parsePosition`（来自 `./utils`）
+- Consumes: `state`（来自 `./state`）、`ActionButtonDef` / `InspectEvent` / `SelectEvent`（来自 `@vue-dev-inspector/shared`）、`parsePosition`（来自 `./utils`）
 - Produces:
   - `registerBtn(btns: ActionButtonDef[]): Unregister`
   - `onInspect(cb: EventCallback<InspectEvent>): Unregister`
@@ -351,7 +351,7 @@ import type {
   InspectEvent,
   SelectEvent,
   Unregister,
-} from '@vdi/shared';
+} from '@vue-dev-inspector/shared';
 import { state } from './state';
 import { parsePosition } from './utils';
 
@@ -473,7 +473,7 @@ git commit -m "feat(overlay): add extensibility runtime (registerBtn/onInspect/o
 
 ```ts
 import { emitInspect } from './extensibility';
-import type { SelectEvent } from '@vdi/shared';
+import type { SelectEvent } from '@vue-dev-inspector/shared';
 ```
 
 - [ ] **Step 2: 在 `inspector.ts` 顶部（已有 `createActionBtn`/`positionActionButtons` 旁边）追加模块级容器与渲染函数**
@@ -711,7 +711,7 @@ git commit -m "feat(overlay): install __VDI_HOST__ window bridge in init()"
 - Modify: `packages/core/src/index.ts`
 
 **Interfaces:**
-- Consumes: `ActionButtonDef` / `EventCallback` / `InspectEvent` / `SelectEvent`（来自 `@vdi/shared`）
+- Consumes: `ActionButtonDef` / `EventCallback` / `InspectEvent` / `SelectEvent`（来自 `@vue-dev-inspector/shared`）
 - Produces:
   - 顶层 export `function addToolBtn(...btns: ActionButtonDef[]): Unregister`
   - 顶层 export `function onInspect(cb: EventCallback<InspectEvent>): Unregister`
@@ -772,7 +772,7 @@ import type {
   InspectEvent,
   SelectEvent,
   Unregister,
-} from '@vdi/shared';
+} from '@vue-dev-inspector/shared';
 ```
 
 - [ ] **Step 2: 验证 core 类型层通过**
@@ -798,7 +798,7 @@ git commit -m "feat(core): expose addToolBtn/onInspect/onSelect top-level functi
 - Modify: `packages/demo/src/App.vue`
 
 **Interfaces:**
-- Consumes: `addToolBtn` / `onInspect` / `onSelect`（来自 `@vdi/core`，Task 6 已实现）
+- Consumes: `addToolBtn` / `onInspect` / `onSelect`（来自 `@vue-dev-inspector/core`，Task 6 已实现）
 - Produces: 用户级 demo 注册调用，便于手动 E2E 验证
 
 - [ ] **Step 1: 修改 `packages/demo/src/App.vue`**
@@ -807,7 +807,7 @@ git commit -m "feat(core): expose addToolBtn/onInspect/onSelect top-level functi
 
 ```ts
 // ─── Inspector 扩展能力 demo 调用 ────────────────────────────
-import { addToolBtn, onInspect, onSelect } from '@vdi/core';
+import { addToolBtn, onInspect, onSelect } from '@vue-dev-inspector/core';
 
 addToolBtn(
   {
@@ -835,7 +835,7 @@ onInspect(() => {
 });
 ```
 
-（如该文件已有 `import { ... } from '@vdi/core';` 行，则合并到现有 import 中，不要重复声明。）
+（如该文件已有 `import { ... } from '@vue-dev-inspector/core';` 行，则合并到现有 import 中，不要重复声明。）
 
 - [ ] **Step 2: 验证 demo 类型层**
 
@@ -930,7 +930,7 @@ pnpm dev:demo
   - §6 测试策略 → Tasks 3, 8
   - §7 范围与 YAGNI → Tasks 全部遵守；Task 8 grep 兜底
 - [x] **Placeholder 扫描**：0 处 TBD/TODO/"implement later"
-- [x] **类型一致性**：`ActionButtonDef` / `InspectEvent` / `SelectEvent` / `EventCallback` / `Unregister` / `ActionButtonPosition` 在 Task 1 定义，Tasks 2-7 全部从 `@vdi/shared` 引用，无重复定义
+- [x] **类型一致性**：`ActionButtonDef` / `InspectEvent` / `SelectEvent` / `EventCallback` / `Unregister` / `ActionButtonPosition` 在 Task 1 定义，Tasks 2-7 全部从 `@vue-dev-inspector/shared` 引用，无重复定义
 - [x] **命名一致性**：注册函数统一 `addToolBtn`；不出现 `addBtn` / `addButton` / `addToolButtons` / `vdiActionBtn`
 - [x] **失败语义**：Task 6 getHost 抛两条具体错信息，与 spec §7.4 一致
 - [x] **错误隔离**：Task 3 emitInspect / emitSelect 内 try/catch

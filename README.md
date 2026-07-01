@@ -5,7 +5,7 @@
 ### 安装
 
 ```
-pnpm add -D @vdi/core
+pnpm add -D @vue-dev-inspector/core
 ```
 
 ### 接入示例
@@ -14,7 +14,7 @@ pnpm add -D @vdi/core
 // vite.config.ts
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import { vueDevInspector } from "@vdi/core";
+import { vueDevInspector } from "@vue-dev-inspector/core";
 
 export default defineConfig({
   plugins: [
