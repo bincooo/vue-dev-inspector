@@ -43,37 +43,65 @@ export function resolveProjectRootIndex(roots: string[], id: string): number {
 /**
  * 加载构建产物。
  *
- * 支持两种调用形式：
- *   loadScript(...candidates)
- *     相对 `import.meta.url` 解析（原始 API）。
- *     适用于直接调用方：例如 `core/dist/index.js` 这种**未被 bundle** 的真实
- *     文件路径场景，相对路径按 dist/ 目录解析。
+ * 支持三种调用形式：
  *
- *   loadScript('@vue-dev-inspector/<pkg>', ...candidates)
- *     以 `@vue-dev-inspector/<pkg>` 包根为锚点解析（pnpm 解析 + createRequire）。
- *     用于 esbuild / rollup 把本调用方打进另一个 bundle 之后 `import.meta.url`
- *     指向 bundle 文件（而非本包 dist/），相对路径全部失效的场景。
- *     典型例子：Vite 的 config loader 把 antdv 打进
- *     `demo/node_modules/.vite-temp/vite.config.ts.*.mjs`，此时
- *     `import.meta.url` 是临时 mjs 的 URL，相对 `./expand.iife.js` 自然找不到。
- *     `createRequire(import.meta.url).resolve('@vue-dev-inspector/antdv/package.json')`
- *     从 bundle URL 所在目录向上走 pnpm 的 node_modules，定位到 antdv 实体，
- *     再以 `dirname` 拿到 `antdv/dist/`，候选路径再按它解。
+ *   1. loadScript(...candidates)
+ *      相对 `import.meta.url` 解析（原始 API）。
+ *      适用于直接调用方：例如 `core/dist/index.js` 这种**未被 bundle** 的真实
+ *      文件路径场景，相对路径按 dist/ 目录解析。
+ *
+ *   2. loadScript('pkg:@vue-dev-inspector/<pkg>', ...candidates)
+ *      以 `@vue-dev-inspector/<pkg>` 包根为锚点解析（pnpm 解析 + createRequire）。
+ *      用于 esbuild / rollup 把本调用方打进另一个 bundle 之后 `import.meta.url`
+ *      指向 bundle 文件（而非本包 dist/），相对路径全部失效的场景。
+ *
+ *   3. loadScript('cdn:<pkg>:<version>', ...candidates)
+ *      CDN 拉取模式。第一个参数形如 `cdn:@scope/name:1.2.3`；后续参数为
+ *      包内相对路径（按声明顺序取第一个成功的）。URL 拼接走用户在
+ *      `vueDevInspector({ cdn })` 注册的 builder；builder 缺位时抛明确错误。
  *
  * 多个候选按顺序尝试，命中即返回；全部失败抛错。
  */
-export function loadScript(...args: string[]): string {
+export function loadScript(...args: string[]): Promise<string> {
   return loadScriptSpecifier(import.meta.resolve, ...args);
 }
 
-export function loadScriptSpecifier(resolve: (specifier: string) => string, ...args: string[]): string {
+export async function loadScriptSpecifier(
+  resolve: (specifier: string) => string,
+  ...args: string[]
+): Promise<string> {
+  if (args.length === 0) {
+    throw new Error("[vdi] loadScript: 至少需要一个参数");
+  }
+
+  // 形式 3：cdn scheme（必须在 pkg: 之前匹配，避免 cdn: 前缀被当成包名）
+  const cdnMatch = /^cdn:([^:]+):([^:]+)$/.exec(args[0]);
+  if (cdnMatch) {
+    const pkg = cdnMatch[1];
+    const version = cdnMatch[2];
+    const candidates = args.slice(1);
+    if (candidates.length === 0) {
+      throw new Error("[vdi] loadScript(cdn:...) 至少需要一个相对路径参数");
+    }
+    const { loadCdnScript } = await import("./cdn.ts");
+    let lastErr: unknown;
+    for (const cd of candidates) {
+      try {
+        return await loadCdnScript(pkg, version, cd);
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw new Error(
+      `[vdi] cdn 所有候选路径均失败: ${candidates.join(", ")}: ${(lastErr as Error)?.message ?? "unknown"}`,
+    );
+  }
+
+  // 形式 2：包名锚点
   let baseDir: string | undefined;
   let candidates = args;
-
-  // 可选包名前缀：第一个参数匹配 `pkg:@vue-dev-inspector/<pkg>` 时，把它当作包名解析
   if (args.length > 0 && /^pkg:/.test(args[0])) {
-    const pkgName = args[0].split(':')[1];
-    console.log('[vdi] loadScript: ' + args);
+    const pkgName = args[0].split(":")[1];
     try {
       // 用 ESM 解析解到包 entry（dist/index.js 或 main 字段），
       // 再 dirname 两次（entry → dist/ → 包根）。这是因为：
@@ -87,12 +115,11 @@ export function loadScriptSpecifier(resolve: (specifier: string) => string, ...a
       baseDir = path.dirname(pkg);
       candidates = args.slice(1);
     } catch (err) {
-      throw new Error(
-        `[vdi] 未找到包 ${pkgName}: ${(err as Error).message}`,
-      );
+      throw new Error(`[vdi] 未找到包 ${pkgName}: ${(err as Error).message}`);
     }
   }
 
+  // 形式 1：本地 fs 读取
   const here = baseDir ?? path.dirname(fileURLToPath(import.meta.url));
   for (const cd of candidates) {
     try {
