@@ -45,22 +45,26 @@ export interface ComponentConfigEntry {
    */
   icon?: string;
   /**
-   * 可选浏览器侧拓展脚本 —— 由 core 插件在 dev 模式下内联到 HTML。
+   * 可选浏览器侧拓展脚本 —— 由 core 插件在 dev 模式下追加到 HTML。
    *
    * 典型场景：物料库自带一段 demo/事件订阅代码（例如 antdv 的 demo 按钮注册、
    * 事件埋点），通过 `addToolBtn` / `onInspect` / `onSelect` 接入 overlay。
    *
-   * 内容由物料库构建时通过 `loadScript('./<out-name>')` 读出，要求是
-   * 已经能被浏览器执行的最终 JS（推荐 IIFE / ESM）。core 插件在
-   * `transformIndexHtml` 末尾追加 `<script type="module">…</script>` 加载。
+   * 内容由物料库构建时通过 `loadScript(...)` 读出 / 算出：
+   *   - `loadScript('pkg:...', './<out-name>')` 返回已构建的 JS 文件文本
+   *     （IIFE / ESM），core 插件会以内联 `<script type="module">…</script>`
+   *     形式注入。
+   *   - `loadScript('cdn:<pkg>:<ver>', './<relPath>')` 返回 CDN 上的 URL
+   *     字符串，core 插件会以 `<script type="module" src="…">` 形式注入，
+   *     **不下载**。
    *
-   * 字段类型允许 `string | Promise<string>`：物料库可在 `componentConfig`
-   * 工厂里直接返回 `loadScript(...)` 的 Promise（避免在工厂外多一层
-   * `.then(...)`），core 插件会在 `configResolved` 阶段统一 await 解析。
+   * 字段类型为 `string`：URL 字符串或内联脚本体都按 string 传，core 在
+   * `transformIndexHtml` 阶段根据"是否以 http(s):// 或 // 开头"决定用
+   * `<script src=...>` 还是内联 `<script>...</script>`。
    *
    * 不填则不注入拓展脚本。
    */
-  expand?: string | Promise<string>;
+  expand?: string;
   groups: ComponentGroup[];
 }
 

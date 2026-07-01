@@ -25,17 +25,12 @@ export default function (): ComponentConfigEntry {
     /**
      * 浏览器侧拓展脚本 —— 物料库自带的 demo / 事件订阅入口。
      *
-     * `loadScript('@vue-dev-inspector/antdv', './dist/expand.iife.js')` 用 antdv 包根作锚点
-     * （通过 `createRequire(import.meta.url).resolve('@vue-dev-inspector/antdv/package.json')`
-     * 走 pnpm 包解析），再解相对路径。
-     *
-     * 为什么需要 `@vue-dev-inspector/antdv` 锚点：当 antdv 被 Vite 的 esbuild config loader
-     * 打进 `demo/node_modules/.vite-temp/vite.config.ts.*.mjs` 时，
-     * `import.meta.url` 指向的是临时 mjs（不是 antdv/dist/index.js），
-     * 相对 `./expand.iife.js` / `../dist/expand.iife.js` 全部解不到。
-     * 走 pnpm 包解析则始终能定位到 antdv/dist/。
+     * 用 `loadScript('cdn:@vue-dev-inspector/antdv:0.0.1', './dist/expand.iife.js')`
+     * 走 cdn scheme：返回的是 CDN 上的 URL 字符串，core 插件在
+     * `transformIndexHtml` 直接以 `<script type="module" src=url>` 注入，
+     * 不下载。cdn 构造器由用户在 `vueDevInspector({ cdn })` 中提供。
      */
-    expand: loadScriptSpecifier(import.meta.resolve, 'pkg:.', './dist/expand.iife.js'),
+    expand: loadScriptSpecifier(import.meta.resolve, 'cdn:@vue-dev-inspector/antdv:0.0.1', './dist/expand.iife.js'),
     groups: [
       {
         group: "antdv/通用",

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
+import { buildCdnUrl } from "./cdn";
 /**
  * 跨平台 POSIX 风格的相对路径转换（用于注入 `data-source-file` 等场景）。
  *
@@ -56,20 +57,22 @@ export function resolveProjectRootIndex(roots: string[], id: string): number {
  *      指向 bundle 文件（而非本包 dist/），相对路径全部失效的场景。
  *
  *   3. loadScript('cdn:<pkg>:<version>', ...candidates)
- *      CDN 拉取模式。第一个参数形如 `cdn:@scope/name:1.2.3`；后续参数为
- *      包内相对路径（按声明顺序取第一个成功的）。URL 拼接走用户在
- *      `vueDevInspector({ cdn })` 注册的 builder；builder 缺位时抛明确错误。
+ *      CDN 模式。第一个参数形如 `cdn:@scope/name:1.2.3`；后续参数为
+ *      包内相对路径（按声明顺序取第一个成功的）。本函数**只拼 URL，不下载**：
+ *      返回值就是 CDN 上的目标文件 URL 字符串。core 插件在
+ *      `transformIndexHtml` 阶段会以 `<script type="module" src="...">`
+ *      形式注入，由浏览器负责拉取。
  *
  * 多个候选按顺序尝试，命中即返回；全部失败抛错。
  */
-export function loadScript(...args: string[]): Promise<string> {
+export function loadScript(...args: string[]): string {
   return loadScriptSpecifier(import.meta.resolve, ...args);
 }
 
-export async function loadScriptSpecifier(
+export function loadScriptSpecifier(
   resolve: (specifier: string) => string,
   ...args: string[]
-): Promise<string> {
+): string {
   if (args.length === 0) {
     throw new Error("[vdi] loadScript: 至少需要一个参数");
   }
@@ -83,11 +86,13 @@ export async function loadScriptSpecifier(
     if (candidates.length === 0) {
       throw new Error("[vdi] loadScript(cdn:...) 至少需要一个相对路径参数");
     }
-    const { loadCdnScript } = await import("./cdn.ts");
+    // 走 buildCdnUrl 顺序尝试；cdn builder 未注册会在第一次尝试时抛错。
+    // 因为现在只是 URL 拼装（无 IO），理论上不应失败 —— 但保留候选重试
+    // 行为以便将来加 builder-side 校验（例如白名单）时无缝扩展。
     let lastErr: unknown;
     for (const cd of candidates) {
       try {
-        return await loadCdnScript(pkg, version, cd);
+        return buildCdnUrl(pkg, version, cd);
       } catch (err) {
         lastErr = err;
       }

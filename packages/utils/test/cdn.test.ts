@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   setCdnBuilder,
   getCdnBuilder,
-  loadCdnScript,
+  buildCdnUrl,
 } from '../src/cdn';
 
 describe('cdn builder injection', () => {
@@ -29,96 +29,61 @@ describe('cdn builder injection', () => {
   });
 });
 
-describe('loadCdnScript', () => {
+describe('buildCdnUrl', () => {
   beforeEach(() => {
     setCdnBuilder(undefined);
   });
   afterEach(() => {
     setCdnBuilder(undefined);
-    vi.restoreAllMocks();
   });
 
-  it('throws when no builder is registered', async () => {
-    await expect(loadCdnScript('foo', '1.0.0', './dist/x.js'))
-      .rejects.toThrow('[vdi] cdn builder 未注册');
+  it('throws when no builder is registered', () => {
+    expect(() => buildCdnUrl('foo', '1.0.0', './dist/x.js'))
+      .toThrow('[vdi] cdn builder 未注册');
   });
 
-  it('fetches URL = baseUrl + relPath (no leading ./)', async () => {
+  it('joins URL = baseUrl + relPath (no leading ./)', () => {
     setCdnBuilder((pkg, ver) => `https://cdn.jsdelivr.net/npm/${pkg}@${ver}`);
-    const fetchSpy = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      text: async () => 'console.log("ok")',
-    }));
-    vi.stubGlobal('fetch', fetchSpy);
 
-    const out = await loadCdnScript('jquery', '3.7.0', './dist/jquery.min.js');
-    expect(out).toBe('console.log("ok")');
-    expect(fetchSpy).toHaveBeenCalledWith(
-      'https://cdn.jsdelivr.net/npm/jquery@3.7.0/dist/jquery.min.js',
-    );
+    const out = buildCdnUrl('jquery', '3.7.0', './dist/jquery.min.js');
+    expect(out).toBe('https://cdn.jsdelivr.net/npm/jquery@3.7.0/dist/jquery.min.js');
   });
 
-  it('fetches URL = baseUrl + relPath when relPath has no leading ./', async () => {
+  it('joins URL = baseUrl + relPath when relPath has no leading ./', () => {
     setCdnBuilder(() => 'https://cdn.example.com/lib');
-    const fetchSpy = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      text: async () => '',
-    }));
-    vi.stubGlobal('fetch', fetchSpy);
 
-    await loadCdnScript('lib', '1.0.0', 'index.js');
-    expect(fetchSpy).toHaveBeenCalledWith('https://cdn.example.com/lib/index.js');
+    expect(buildCdnUrl('lib', '1.0.0', 'index.js'))
+      .toBe('https://cdn.example.com/lib/index.js');
   });
 
-  it('uses baseUrl directly when relPath is empty', async () => {
+  it('uses baseUrl directly when relPath is empty', () => {
     setCdnBuilder(() => 'https://cdn.example.com/full/path.js');
-    const fetchSpy = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      text: async () => 'body',
-    }));
-    vi.stubGlobal('fetch', fetchSpy);
 
-    const out = await loadCdnScript('lib', '1.0.0', '');
-    expect(out).toBe('body');
-    expect(fetchSpy).toHaveBeenCalledWith('https://cdn.example.com/full/path.js');
+    expect(buildCdnUrl('lib', '1.0.0', ''))
+      .toBe('https://cdn.example.com/full/path.js');
   });
 
-  it('throws with [vdi] cdn fetch failed on HTTP 404', async () => {
+  it('does not fetch and returns synchronously', () => {
     setCdnBuilder(() => 'https://cdn.example.com/lib');
-    vi.stubGlobal('fetch', async () => ({
-      ok: false,
-      status: 404,
-      text: async () => '',
-    }));
-
-    await expect(loadCdnScript('lib', '1.0.0', './x.js'))
-      .rejects.toThrow('[vdi] cdn fetch failed: https://cdn.example.com/lib/x.js');
+    // 函数签名是同步的（不返回 Promise）；验证调用本身即得到结果。
+    const out = buildCdnUrl('lib', '1.0.0', './x.js');
+    expect(typeof out).toBe('string');
+    expect(out).toBe('https://cdn.example.com/lib/x.js');
   });
 
-  it('throws with [vdi] cdn fetch failed on network error', async () => {
-    setCdnBuilder(() => 'https://cdn.example.com/lib');
-    vi.stubGlobal('fetch', async () => {
-      throw new Error('ECONNREFUSED');
-    });
+  it('preserves builder-side URL contract (custom CDN)', () => {
+    setCdnBuilder((pkg, ver) => `https://unpkg.com/${pkg}@${ver}`);
 
-    await expect(loadCdnScript('lib', '1.0.0', './x.js'))
-      .rejects.toThrow('[vdi] cdn fetch failed: https://cdn.example.com/lib/x.js: ECONNREFUSED');
+    expect(buildCdnUrl('@scope/lib', '2.0.0', './dist/lib.js'))
+      .toBe('https://unpkg.com/@scope/lib@2.0.0/dist/lib.js');
   });
 
-  it('supports async builder returning Promise<string>', async () => {
+  it('throws when async builder returns a Promise (sync API contract)', () => {
+    // 保留 async builder 类型的兼容能力，但本函数要求同步 URL；
+    // 当 builder 实际返回 Promise 时显式抛错，避免 "[object Promise]" 拼串。
     setCdnBuilder(async (pkg, ver) => `https://cdn.example.com/${pkg}/${ver}`);
-    const fetchSpy = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      text: async () => 'async-builder',
-    }));
-    vi.stubGlobal('fetch', fetchSpy);
 
-    const out = await loadCdnScript('lib', '1.0.0', './x.js');
-    expect(out).toBe('async-builder');
-    expect(fetchSpy).toHaveBeenCalledWith('https://cdn.example.com/lib/1.0.0/x.js');
+    expect(() => buildCdnUrl('lib', '1.0.0', './x.js'))
+      .toThrow('[vdi] cdn builder 必须同步返回 string');
   });
 });

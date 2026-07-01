@@ -21,20 +21,22 @@ import { setCdnBuilder } from "@vue-dev-inspector/utils";
  * 编译后的 overlay 脚本（由 @vue-dev-inspector/overlay 子工程构建产生）。
  * 通过文件系统读取单文件 IIFE，避免在插件源码中以字符串形式拼脚本。
  *
- * 用懒加载 Promise 避免模块顶层 await：tsup 的 `target: es2020` 不支持
- * TLA。`loadOverlayScript()` 在第一次调用时启动读取，缓存 Promise。
- * 仅在 dev 模式下 `transformIndexHtml` 实际触发注入时才读取（生产构建
- * 不会执行该钩子，因此不会触发磁盘 IO）。
+ * 用懒加载单例避免模块顶层 IO：tsup 打包期会做 tree-shaking
+ * 静态分析；只有 dev 模式下 `transformIndexHtml` 实际触发时才会读盘
+ * （非 dev 模式完全跳过 transformIndexHtml 钩子）。
+ *
+ * loadScript 已同步（cdn scheme 改成 URL-only 之后），所以这里用
+ * 同步单例 + try/catch 即可，不需要 Promise 缓存。
  */
-let overlayScriptPromise: Promise<string> | null = null;
-function loadOverlayScript(): Promise<string> {
-  if (!overlayScriptPromise) {
-    overlayScriptPromise = loadScript(
+let _overlayScript: string | null = null;
+function loadOverlayScript(): string {
+  if (_overlayScript == null) {
+    _overlayScript = loadScript(
       './overlay.iife.js',
       '../../overlay/dist/overlay.iife.js',
     );
   }
-  return overlayScriptPromise;
+  return _overlayScript;
 }
 
 /**
@@ -84,19 +86,32 @@ function buildCfgJson(
 }
 
 /**
- * 收集所有 ComponentConfigEntry.expand 拓展脚本体（按声明顺序拼接）。
- * 空集合返回空串；任何非空 entry 都按 <script type="module">…</script> 注入。
+ * 收集所有 ComponentConfigEntry.expand 拓展脚本（按声明顺序拼接）。
+ * 空集合返回空串；每条 entry 按内容形态选一种注入方式：
  *
- * 入参 `resolvedExpands` 由 `configResolved` 阶段 `await Promise.all(...)`
- * 解析得到（ComponentConfigEntry.expand 可能是 Promise<string>），
- * 位置与原始 options.componentConfig 一一对应。
+ *   - URL（`https?://...` 或 `//...`）：emit `<script type="module" src=...>`，
+ *     由浏览器负责拉取；本模块不发起任何网络请求。
+ *   - 其它（构建产物 IIFE/ESM 文本）：emit `<script type="module">…</script>`
+ *     内联。
+ *
+ * 入参直接读 `options.componentConfig`，不再需要 `configResolved` 阶段
+ * 预 await expand（cdn scheme 已是 URL 字符串同步返回，pkg:/本地 scheme
+ * 也已同步）。
  */
-function buildExpandScripts(resolvedExpands: string[]): string {
-  const bodies = resolvedExpands.filter((s) => s.length > 0);
+function buildExpandScripts(componentConfig: { expand?: string }[]): string {
+  const bodies = (componentConfig ?? [])
+    .map((e) => e.expand ?? "")
+    .filter((s) => s.length > 0);
   if (bodies.length === 0) return "";
   return (
-    bodies.map((b) => `<script type="module">\n${b}\n</script>`).join("\n") +
-    "\n"
+    bodies
+      .map((b) => {
+        if (/^https?:\/\//.test(b) || /^\/\//.test(b)) {
+          return `<script type="module" src="${b}"></script>`;
+        }
+        return `<script type="module">\n${b}\n</script>`;
+      })
+      .join("\n") + "\n"
   );
 }
 
@@ -114,15 +129,12 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
   setCdnBuilder(options.cdn);
   let isDev = false;
   let projectRoots: string[] = [];
-  // ComponentConfigEntry.expand 在共享类型里允许 string | Promise<string>；
-  // 在 configResolved 阶段统一 await 解析，后续 transformIndexHtml 同步使用。
-  let resolvedExpands: string[] = [];
 
   return {
     name: "vue-dev-inspector",
     enforce: "pre",
 
-    async configResolved(config) {
+    configResolved(config) {
       isDev = config.command === "serve";
       const userRoots = options.projectRoots;
       if (Array.isArray(userRoots) && userRoots.length > 0) {
@@ -131,16 +143,8 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
       } else {
         projectRoots = [path.resolve(config.root)];
       }
-      // 仅在 dev 模式下预解析 expand 拓展脚本；非 dev 模式下整个
-      // transformIndexHtml 钩子早返回，不必付出 IO 成本。
-      if (isDev) {
-        const entries = options.componentConfig ?? [];
-        resolvedExpands = await Promise.all(
-          entries.map((e) =>
-            Promise.resolve(e.expand).then((v) => v ?? ""),
-          ),
-        );
-      }
+      // 不再预 await expand —— loadScript cdn: scheme 已返回同步 URL 字符串，
+      // pkg:/本地 scheme 也是同步；expand 同步求值放在 transformIndexHtml。
     },
 
     configureServer(server) {
@@ -202,11 +206,11 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
         : null;
     },
 
-    async transformIndexHtml(html) {
+    transformIndexHtml(html) {
       if (!isDev || !options.enabled) return html;
-      const overlayScript = await loadOverlayScript();
+      const overlayScript = loadOverlayScript();
       const cfgJson = buildCfgJson(options, projectRoots);
-      const expandInjection = buildExpandScripts(resolvedExpands);
+      const expandInjection = buildExpandScripts(options.componentConfig ?? []);
       const injection =
         `<script>window.__DEV_INSPECTOR_CFG__=${cfgJson};</script>\n` +
         `<script type="module">\n${overlayScript}\n</script>\n` +
