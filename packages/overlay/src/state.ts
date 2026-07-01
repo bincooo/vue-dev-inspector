@@ -52,6 +52,8 @@ export const state = {
   // ─── extensibility 注册表 ────────────────────────────────
   /** 自定义工具按钮；id → def。同 id 重复 addToolBtn 视为覆盖。 */
   toolButtons: new Map<string, ActionButtonDef>(),
+  /** 当前已渲染到 DOM 的工具按钮元素，供 positionActionButtons 统一排版。 */
+  toolButtonsEls: [] as HTMLDivElement[],
   /** 进入审查模式回调集合。 */
   inspectCallbacks: new Set<EventCallback<InspectEvent>>(),
   /** 选中 / 取消选中回调集合。 */
@@ -100,13 +102,14 @@ export const state = {
   dropDirection: null as DropDirection | null,
 };
 
-/** 选中框旁的 4 个动作按钮：getter 数组，每次访问都拿最新引用。 */
+/** 选中框旁的 4 个动作按钮 + 任意已注册的工具按钮：getter 数组，每次访问都拿最新引用。 */
 export function actionButtons(): (HTMLDivElement | null)[] {
   return [
     state.deleteButton,
     state.copyButton,
     state.insertBeforeButton,
     state.insertAfterButton,
+    ...state.toolButtonsEls,
   ];
 }
 /**

@@ -142,6 +142,12 @@
   box-shadow: 0 1px 4px rgba(59, 130, 246, 0.35);
 }
 
+/* 自定义工具按钮：与 action-btn 共享尺寸 / 字体，仅 box-shadow 略弱以视觉区分。 */
+.__vdi-tool-btn {
+  background: #3b82f6;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.35);
+}
+
 /* 选中框上下边中点的 + 同级插入按钮 */
 .__vdi-insert-btn {
   position: fixed;
@@ -641,16 +647,6 @@ body.__vdi-dragging * {
   color: #cbd5e1;
   font-size: 12px;
   padding: 24px 0;
-}
-
-/* ─── 自定义工具按钮（extensibility 注册式） ──────────────── */
-
-.__vdi-tool-buttons {
-  /* 容器静态占位；动态 left/top 走 JS 内联 */
-}
-
-.__vdi-tool-btn {
-  transition: background 120ms ease, color 120ms ease;
 }
 
 .__vdi-tool-btn:focus {

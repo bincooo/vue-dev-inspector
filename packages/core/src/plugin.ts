@@ -1,55 +1,39 @@
 import type { Plugin } from "vite";
-import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { parse, compileTemplate } from "@vue/compiler-sfc";
 import MagicString from "magic-string";
 import {
   API_PREFIX,
   EDITOR_PROTOCOLS,
-  resolveProjectRootIndex,
-  toPosixRelative,
 } from "@vdi/shared";
 import type { DevInspectorOptions } from "./options";
 import { DEFAULT_OPTIONS } from "./options";
 import { createInspectorTransform } from "./transform";
 import { createDevServer } from "../../client";
+import {
+  resolveProjectRootIndex,
+  toPosixRelative,
+  loadScript,
+} from "../../utils/src/paths";
 
 /**
  * 编译后的 overlay 脚本（由 @vdi/overlay 子工程构建产生）。
  * 通过文件系统读取单文件 IIFE，避免在插件源码中以字符串形式拼脚本。
  */
-const overlayScript = loadOverlayScript();
+const overlayScript = loadScript('./overlay.iife.js', '../../overlay/dist/overlay.iife.js');
 
-function loadOverlayScript(): string {
-  // 当前插件源码位于 packages/core/src/plugin.ts，
-  // overlay 产物位于 packages/overlay/dist/overlay.iife.js
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  const candidates = [
-    path.resolve(here, './overlay.iife.js'),
-    path.resolve(here, "../../overlay/dist/overlay.iife.js"),
-  ];
-  for (const p of candidates) {
-    try {
-      return fs.readFileSync(p, "utf-8");
-    } catch {
-      /* try next */
-    }
-  }
-  throw new Error(
-    "[vdi] 未找到 @vdi/overlay 的构建产物，" +
-    "请先运行 `pnpm -C packages/overlay build`。",
-  );
-}
 
 /** 构造运行时配置对象 (window.__DEV_INSPECTOR_CFG__) 的 JSON 字符串。 */
 function buildCfgJson(
   options: Required<Omit<DevInspectorOptions, "projectRoots">>,
   projectRoots: string[],
 ): string {
-  // 保留每个 entry（含 name），抽屉用 entry 渲染左侧竖列 tab。
-  // 同一 entry 内部多 groups；切换 tab 即切换整组渲染。
-  const componentEntries = options.componentConfig ?? [];
+  // componentEntries 注入浏览器前需要先剥离 expand 字段：
+  // 拓展脚本体可能含 "</script>" 等敏感字串且体积大，不进 JSON 反而更干净；
+  // core 插件自己负责把这些 expand 体追加到 <body> 末尾。
+  const componentEntries = (options.componentConfig ?? []).map(
+    ({ expand: _, ...rest }) => rest,
+  );
   const cfg = {
     attrName: options.attrName,
     protocol: EDITOR_PROTOCOLS[options.editor] || EDITOR_PROTOCOLS.vscode,
@@ -66,6 +50,23 @@ function buildCfgJson(
   // 防御：snippet 字符串里若出现 "</script>" 会切断外层 HTML 的 <script> 块，
   // 全部转义成 <\/script>。JSON.stringify 已处理普通字符转义，仅需补这一刀。
   return JSON.stringify(cfg).replace(/<\/(script)/gi, "<\\/$1");
+}
+
+/**
+ * 收集所有 ComponentConfigEntry.expand 拓展脚本体（按声明顺序拼接）。
+ * 空集合返回空串；任何非空 entry 都按 <script type="module">…</script> 注入。
+ */
+function buildExpandScripts(
+  options: Required<Omit<DevInspectorOptions, "projectRoots">>,
+): string {
+  const bodies = (options.componentConfig ?? [])
+    .map((e) => e.expand)
+    .filter((s): s is string => typeof s === "string" && s.length > 0);
+  if (bodies.length === 0) return "";
+  return (
+    bodies.map((b) => `<script type="module">\n${b}\n</script>`).join("\n") +
+    "\n"
+  );
 }
 
 /**
@@ -151,7 +152,11 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
     transformIndexHtml(html) {
       if (!isDev || !options.enabled) return html;
       const cfgJson = buildCfgJson(options, projectRoots);
-      const injection = `<script>window.__DEV_INSPECTOR_CFG__=${cfgJson};</script>\n<script type="module">\n${overlayScript}\n</script>`;
+      const expandInjection = buildExpandScripts(options);
+      const injection =
+        `<script>window.__DEV_INSPECTOR_CFG__=${cfgJson};</script>\n` +
+        `<script type="module">\n${overlayScript}\n</script>\n` +
+        expandInjection;
       return html.replace("</body>", injection + "\n</body>");
     },
   };

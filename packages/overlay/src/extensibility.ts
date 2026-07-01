@@ -9,6 +9,7 @@ import type {
   SelectEvent,
   Unregister,
 } from '@vdi/shared';
+import { installHost as sharedInstallHost } from '@vdi/shared';
 import { state } from './state';
 import { parsePosition } from './utils';
 
@@ -85,11 +86,22 @@ declare global {
       registerBtn: typeof registerBtn;
       onInspect: typeof onInspect;
       onSelect: typeof onSelect;
+      emitInspect: typeof emitInspect;
+      emitSelect: typeof emitSelect;
     };
   }
 }
 
-/** 在 overlay init() 末尾调用，把内部注册函数挂到 window.__VDI_HOST__。 */
+/**
+ * 在 overlay init() 末尾调用，把内部注册函数挂到 window.__VDI_HOST__。
+ * 内部通过 @vdi/shared 的 installHost 实现，会 flush 早期入队的任务。
+ */
 export function installHost(): void {
-  window.__VDI_HOST__ = { registerBtn, onInspect, onSelect };
+  sharedInstallHost({
+    registerBtn,
+    onInspect,
+    onSelect,
+    emitInspect,
+    emitSelect,
+  });
 }

@@ -1,4 +1,4 @@
 export * from './options';
 export * from './componentConfig';
-export * from './paths';
 export * from './extensibility';
+export * from './host-bridge';

@@ -1,6 +1,6 @@
 {
   "name": "@vdi/core",
-  "version": "0.0.3",
+  "version": "0.0.1",
   "private": false,
   "type": "module",
   "main": "./dist/index.js",
@@ -15,12 +15,12 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc && cp ../overlay/dist/overlay.iife.js dist/overlay.iife.js"
+    "build": "tsup src/index.ts src/plugin-entry.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc && cp ../overlay/dist/overlay.iife.js dist/overlay.iife.js"
   },
   "dependencies": {
     "@vue/compiler-sfc": "^3.5.38"
   },
   "devDependencies": {
-    "@vdi/shared": "^0.0.1"
+    "@vdi/shared": "workspace:*"
   }
 }

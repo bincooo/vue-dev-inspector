@@ -9,15 +9,22 @@
         ".": {
             "types": "./dist/index.d.ts",
             "import": "./dist/index.js"
-        }
+        },
+        "./expand": "./dist/expand.iife.js"
     },
     "files": [
         "dist"
     ],
     "scripts": {
-        "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean"
+        "build": "pnpm run build:plugin && pnpm run build:expand",
+        "build:plugin": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean",
+        "build:expand": "vite build"
     },
     "dependencies": {
-        "@vdi/shared": "^0.0.1"
+        "@vdi/shared": "workspace:*",
+        "@vdi/utils": "workspace:*"
+    },
+    "devDependencies": {
+        "vite": "7.3.2"
     }
 }

@@ -13,7 +13,7 @@ import {
   type MoveDirection,
   type PropEntry,
 } from "./editor";
-import { API_PREFIX, EDITOR_PROTOCOLS, parseSource, safePath } from "@vdi/shared";
+import { API_PREFIX, EDITOR_PROTOCOLS } from "@vdi/shared";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -442,4 +442,54 @@ export function createDevServer(
       });
     }
   });
+}
+
+/**
+ * 解析 `rN:<relativePath>:<line>:<col>` 格式的 source 字符串。
+ *
+ * - N 为非负整数（0-based，对应 projectRoots 序号）。
+ * - 任何不匹配（含旧无前缀格式、缺段、行/列非整数）一律返回 null。
+ * - 拒绝绝对路径（file 不能以 `/` 或盘符开头，避免客户端越权写入）。
+ */
+const SOURCE_RE = /^r(\d+):([^:]+):(\d+):(\d+)$/;
+export interface SourceRef {
+  rootIndex: number;
+  file: string;
+  line: number;
+  col: number;
+}
+
+export function parseSource(value: string): SourceRef | null {
+  if (!value) return null;
+  const m = SOURCE_RE.exec(value);
+  if (!m) return null;
+  const rootIndex = Number(m[1]);
+  const file = m[2];
+  const line = Number(m[3]);
+  const col = Number(m[4]);
+  if (path.isAbsolute(file)) return null;
+  return { rootIndex, file, line, col };
+}
+
+/**
+ * 解析客户端发来的 source 引用并校验安全边界 —— 多根精确版本。
+ *
+ * - 直接定位 `projectRoots[ctx.rootIndex]`，拒绝越界。
+ * - 拒绝空 `file` 与绝对路径（防止客户端逃逸到注册根之外）。
+ * - 校验 `path.resolve(root, file)` 落在对应根范围内。
+ */
+export function safePath(
+  projectRoots: string[],
+  ctx: { rootIndex: number; file: string },
+): { root: string; absolutePath: string } | null {
+  if (!ctx.file) return null;
+  if (path.isAbsolute(ctx.file)) return null;
+  const root = projectRoots[ctx.rootIndex];
+  if (!root) return null;
+  const candidate = path.resolve(root, ctx.file);
+  const sep = root.endsWith(path.sep) ? "" : path.sep;
+  if (candidate === root || candidate.startsWith(root + sep)) {
+    return { root, absolutePath: candidate };
+  }
+  return null;
 }

@@ -11,8 +11,7 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 // 在 monorepo 中直接引用本地插件源码
-// 发布后用户只需: import vueDevInspector from '@vdi/core'
-import { vueDevInspector } from "@vdi/core";
+import vueDevInspector from "@vdi/core";
 import antdv from "@vdi/antdv";
 
 export default defineConfig({
@@ -49,4 +48,7 @@ export default defineConfig({
 
     vue(),
   ],
+  server: {
+    host: '0.0.0.0'
+  }
 });

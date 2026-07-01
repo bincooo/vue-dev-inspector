@@ -16,9 +16,9 @@ export interface ActionButtonDef {
   position: ActionButtonPosition;
   /** 选中状态下点击触发。 */
   onClick: (event: SelectEvent) => void;
-  /** 悬停背景色（可选）；缺省 #3b82f6。 */
+  /** 悬停背景色（可选）；缺省 #2563eb。 */
   hoverColor?: string;
-  /** 基础背景色（可选）；缺省 #ffffff。 */
+  /** 基础背景色（可选）；缺省 #3b82f6，与 __vdi-copy-btn 一致。 */
   baseColor?: string;
 }
 

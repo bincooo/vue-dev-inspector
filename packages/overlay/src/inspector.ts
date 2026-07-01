@@ -29,7 +29,6 @@ import {
 import { openDrawer } from "./drawer";
 import { deleteElementViaApi } from "./menu";
 import { emitInspect } from "./extensibility";
-import type { SelectEvent } from "@vdi/shared";
 
 /** 创建所有 UI 浮层并挂到 DOM */
 export function createUI(): void {
@@ -119,7 +118,7 @@ function setActionButtonsVisible(visible: boolean): void {
   }
 }
 
-/** 定位 复制/删除 按钮到选中框右下角；定位 +/- 同级插入按钮到上下边框中点 */
+/** 定位 复制/删除 按钮到选中框右下角；定位 +/- 同级插入按钮到上下边框中点；工具按钮沿复制按钮向左排开 */
 export function positionActionButtons(): void {
   if (!state.selectedElement) {
     setActionButtonsVisible(false);
@@ -146,93 +145,68 @@ export function positionActionButtons(): void {
   after.style.display = "flex";
   after.style.left = r.left + r.width / 2 - 9 + "px";
   after.style.top = r.bottom - 9 + "px";
+  // 工具按钮：与复制按钮同行，沿用 18px 步长向左排列
+  state.toolButtonsEls.forEach((btn, i) => {
+    btn.style.display = "flex";
+    btn.style.left = r.right - 36 - (i + 1) * 18 + "px";
+    btn.style.top = r.bottom - 18 + "px";
+  });
 }
 
 // ─── 自定义工具按钮（注册式） ────────────────────────────────
 
-let toolButtonContainer: HTMLDivElement | null = null;
+/** 与 __vdi-copy-btn 一致的默认配色，保持视觉风格统一。 */
+const DEFAULT_TOOL_BASE = "#3b82f6";
+const DEFAULT_TOOL_HOVER = "#2563eb";
 
-/** 把当前所有 toolButtons 渲染到选中元素右侧；空集合直接返回。 */
+/** 把当前所有 toolButtons 渲染为与复制/删除按钮同行的 action-btn。空集合直接返回。 */
 export function renderToolButtons(selectedEl: HTMLElement): void {
+  clearToolButtons();
   if (state.toolButtons.size === 0) return;
 
-  if (!toolButtonContainer) {
-    toolButtonContainer = createElement<HTMLDivElement>("div", "__vdi-tool-buttons");
-    Object.assign(toolButtonContainer.style, {
-      position: "fixed",
-      display: "flex",
-      flexDirection: "column",
-      gap: "4px",
-      zIndex: "2147483646",
-      pointerEvents: "auto",
-    });
-    document.body.appendChild(toolButtonContainer);
-  }
-
-  toolButtonContainer.innerHTML = "";
-
   for (const def of state.toolButtons.values()) {
-    const btn = createElement<HTMLButtonElement>("button", "__vdi-tool-btn");
-    btn.textContent = def.icon;
+    const btn = createElement<HTMLDivElement>(
+      "div",
+      "__vdi-action-btn __vdi-tool-btn",
+      def.icon,
+    );
     btn.title = def.label;
     btn.setAttribute("data-tool-btn-id", def.id);
-    Object.assign(btn.style, {
-      width: "28px",
-      height: "28px",
-      border: "none",
-      borderRadius: "4px",
-      background: def.baseColor ?? "#ffffff",
-      cursor: "pointer",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
-      fontSize: "14px",
-    });
-    btn.onmouseenter = () => {
-      btn.style.background = def.hoverColor ?? "#3b82f6";
-      btn.style.color = "#fff";
-    };
-    btn.onmouseleave = () => {
-      btn.style.background = def.baseColor ?? "#ffffff";
-      btn.style.color = "inherit";
-    };
+    btn.onmouseenter = () =>
+      (btn.style.background = def.hoverColor ?? DEFAULT_TOOL_HOVER);
+    btn.onmouseleave = () =>
+      (btn.style.background = def.baseColor ?? DEFAULT_TOOL_BASE);
     btn.onclick = (ev) => {
       ev.stopPropagation();
       const raw = selectedEl.getAttribute(state.attrName);
       const parsed = raw ? parsePosition(raw) : null;
-      const event: SelectEvent = {
+      def.onClick({
         kind: "select",
         at: Date.now(),
         target: selectedEl,
         source: parsed
           ? {
-              rootIndex: parsed.rootIndex,
-              file: parsed.file,
-              line: Number(parsed.line),
-              col: Number(parsed.col),
-            }
+            rootIndex: parsed.rootIndex,
+            file: parsed.file,
+            line: Number(parsed.line),
+            col: Number(parsed.col),
+          }
           : null,
-      };
-      def.onClick(event);
+      });
     };
-    toolButtonContainer.appendChild(btn);
+    state.toolButtonsEls.push(btn);
+    document.body.appendChild(btn);
   }
 
-  positionToolButtons(selectedEl);
+  positionActionButtons();
 }
 
-/** 清空容器内容；保留 DOM 节点以便下次渲染复用。 */
+/** 卸载所有工具按钮 DOM；保留 Map 注册表以便下次选中时重新渲染。 */
 export function clearToolButtons(): void {
-  if (toolButtonContainer) {
-    toolButtonContainer.innerHTML = "";
+  for (const el of state.toolButtonsEls) {
+    el.remove();
   }
-}
-
-function positionToolButtons(selectedEl: HTMLElement): void {
-  if (!toolButtonContainer) return;
-  const rect = getLayoutBox(selectedEl)!.getBoundingClientRect();
-  Object.assign(toolButtonContainer.style, {
-    top: `${rect.top}px`,
-    left: `${rect.right + 4}px`,
-  });
+  state.toolButtonsEls.length = 0;
 }
 
 /** 悬停态 */

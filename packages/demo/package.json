@@ -12,6 +12,7 @@
   "devDependencies": {
     "antdv-next": "^1.3.6",
     "@vdi/core": "workspace:*",
+    "@vdi/shared": "workspace:*",
     "@vdi/antdv": "workspace:*"
   }
 }

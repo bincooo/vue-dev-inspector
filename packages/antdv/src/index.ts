@@ -9,6 +9,7 @@
  * fetch api.iconify.design 解析。fetch 失败回退到 tag 前缀字符占位。
  */
 import type { ComponentConfigEntry } from "@vdi/shared";
+import { loadScript } from "@vdi/utils";
 
 /**
  * 返回 Ant Design Vue 组件目录。
@@ -22,6 +23,20 @@ export default function (): ComponentConfigEntry {
     name: "antdv",
     /** 物料库自身图标 —— 呈现在抽屉左侧 tab 上 */
     icon: "i-ant-design:ant-design-outlined",
+    /**
+     * 浏览器侧拓展脚本 —— 物料库自带的 demo / 事件订阅入口。
+     *
+     * `loadScript('@vdi/antdv', './dist/expand.iife.js')` 用 antdv 包根作锚点
+     * （通过 `createRequire(import.meta.url).resolve('@vdi/antdv/package.json')`
+     * 走 pnpm 包解析），再解相对路径。
+     *
+     * 为什么需要 `@vdi/antdv` 锚点：当 antdv 被 Vite 的 esbuild config loader
+     * 打进 `demo/node_modules/.vite-temp/vite.config.ts.*.mjs` 时，
+     * `import.meta.url` 指向的是临时 mjs（不是 antdv/dist/index.js），
+     * 相对 `./expand.iife.js` / `../dist/expand.iife.js` 全部解不到。
+     * 走 pnpm 包解析则始终能定位到 antdv/dist/。
+     */
+    expand: loadScript('@vdi/antdv', './dist/expand.iife.js'),
     groups: [
       {
         group: "antdv/通用",

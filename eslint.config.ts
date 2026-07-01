@@ -35,6 +35,11 @@ export default [
         rules: {
             // demo 包中的单字组件名（Card, Logo 等）是合理的布局组件
             'vue/multi-word-component-names': 'off',
+            'preserve-caught-error': 'warn',
+            '@typescript-eslint/no-unused-vars': ['error', {
+                varsIgnorePattern: '^_',
+                argsIgnorePattern: '^_',
+            }],
         },
     },
 
