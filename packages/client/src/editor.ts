@@ -32,6 +32,7 @@ export interface ElementProps {
 const DIRECTIVE_PREFIX: Record<string, string> = {
   bind: ":",
   on: "@",
+  slot: "v-slot",
   model: "v-model",
   for: "v-for",
   if: "v-if",
