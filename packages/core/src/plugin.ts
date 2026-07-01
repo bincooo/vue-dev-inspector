@@ -20,8 +20,22 @@ import { setCdnBuilder } from "@vue-dev-inspector/utils";
 /**
  * 编译后的 overlay 脚本（由 @vue-dev-inspector/overlay 子工程构建产生）。
  * 通过文件系统读取单文件 IIFE，避免在插件源码中以字符串形式拼脚本。
+ *
+ * 用懒加载 Promise 避免模块顶层 await：tsup 的 `target: es2020` 不支持
+ * TLA。`loadOverlayScript()` 在第一次调用时启动读取，缓存 Promise。
+ * 仅在 dev 模式下 `transformIndexHtml` 实际触发注入时才读取（生产构建
+ * 不会执行该钩子，因此不会触发磁盘 IO）。
  */
-const overlayScript = await loadScript('./overlay.iife.js', '../../overlay/dist/overlay.iife.js');
+let overlayScriptPromise: Promise<string> | null = null;
+function loadOverlayScript(): Promise<string> {
+  if (!overlayScriptPromise) {
+    overlayScriptPromise = loadScript(
+      './overlay.iife.js',
+      '../../overlay/dist/overlay.iife.js',
+    );
+  }
+  return overlayScriptPromise;
+}
 
 /**
  * 把字节偏移转成 1-based 行号（统计 `offset` 之前的换行符数量 + 1）。
@@ -72,13 +86,13 @@ function buildCfgJson(
 /**
  * 收集所有 ComponentConfigEntry.expand 拓展脚本体（按声明顺序拼接）。
  * 空集合返回空串；任何非空 entry 都按 <script type="module">…</script> 注入。
+ *
+ * 入参 `resolvedExpands` 由 `configResolved` 阶段 `await Promise.all(...)`
+ * 解析得到（ComponentConfigEntry.expand 可能是 Promise<string>），
+ * 位置与原始 options.componentConfig 一一对应。
  */
-function buildExpandScripts(
-  options: Required<Omit<DevInspectorOptions, "projectRoots" | "cdn">>,
-): string {
-  const bodies = (options.componentConfig ?? [])
-    .map((e) => e.expand)
-    .filter((s): s is string => typeof s === "string" && s.length > 0);
+function buildExpandScripts(resolvedExpands: string[]): string {
+  const bodies = resolvedExpands.filter((s) => s.length > 0);
   if (bodies.length === 0) return "";
   return (
     bodies.map((b) => `<script type="module">\n${b}\n</script>`).join("\n") +
@@ -100,12 +114,15 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
   setCdnBuilder(options.cdn);
   let isDev = false;
   let projectRoots: string[] = [];
+  // ComponentConfigEntry.expand 在共享类型里允许 string | Promise<string>；
+  // 在 configResolved 阶段统一 await 解析，后续 transformIndexHtml 同步使用。
+  let resolvedExpands: string[] = [];
 
   return {
     name: "vue-dev-inspector",
     enforce: "pre",
 
-    configResolved(config) {
+    async configResolved(config) {
       isDev = config.command === "serve";
       const userRoots = options.projectRoots;
       if (Array.isArray(userRoots) && userRoots.length > 0) {
@@ -113,6 +130,16 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
         projectRoots = userRoots.map((p) => path.resolve(config.root, p));
       } else {
         projectRoots = [path.resolve(config.root)];
+      }
+      // 仅在 dev 模式下预解析 expand 拓展脚本；非 dev 模式下整个
+      // transformIndexHtml 钩子早返回，不必付出 IO 成本。
+      if (isDev) {
+        const entries = options.componentConfig ?? [];
+        resolvedExpands = await Promise.all(
+          entries.map((e) =>
+            Promise.resolve(e.expand).then((v) => v ?? ""),
+          ),
+        );
       }
     },
 
@@ -175,10 +202,11 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
         : null;
     },
 
-    transformIndexHtml(html) {
+    async transformIndexHtml(html) {
       if (!isDev || !options.enabled) return html;
+      const overlayScript = await loadOverlayScript();
       const cfgJson = buildCfgJson(options, projectRoots);
-      const expandInjection = buildExpandScripts(options);
+      const expandInjection = buildExpandScripts(resolvedExpands);
       const injection =
         `<script>window.__DEV_INSPECTOR_CFG__=${cfgJson};</script>\n` +
         `<script type="module">\n${overlayScript}\n</script>\n` +

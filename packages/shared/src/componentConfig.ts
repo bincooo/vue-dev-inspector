@@ -54,9 +54,13 @@ export interface ComponentConfigEntry {
    * 已经能被浏览器执行的最终 JS（推荐 IIFE / ESM）。core 插件在
    * `transformIndexHtml` 末尾追加 `<script type="module">…</script>` 加载。
    *
+   * 字段类型允许 `string | Promise<string>`：物料库可在 `componentConfig`
+   * 工厂里直接返回 `loadScript(...)` 的 Promise（避免在工厂外多一层
+   * `.then(...)`），core 插件会在 `configResolved` 阶段统一 await 解析。
+   *
    * 不填则不注入拓展脚本。
    */
-  expand?: string;
+  expand?: string | Promise<string>;
   groups: ComponentGroup[];
 }
 
