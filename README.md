@@ -14,7 +14,9 @@ pnpm add -D @vue-dev-inspector/core
 // vite.config.ts
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import { vueDevInspector } from "@vue-dev-inspector/core";
+import vueDevInspector from "@vue-dev-inspector/core";
+// 简易组件物料
+import antdv from "@vue-dev-inspector/antdv";
 
 export default defineConfig({
   plugins: [
@@ -36,6 +38,10 @@ export default defineConfig({
       editor: "vscode",
       // 默认启用齿轮按钮
       toggleBtn: true,
+      // 组件面板拓展 ——
+      // 通过 plugin 形式注入；将来支持 element-plus / 自定义组件目录，
+      // 只需新增对应包并在此处 append 工厂调用。
+      componentConfig: [antdv()],
     }),
     vue(),
   ],
