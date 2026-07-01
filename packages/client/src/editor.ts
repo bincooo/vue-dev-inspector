@@ -53,7 +53,26 @@ function parseTemplate(sfcSource: string, filePath: string) {
   return {
     ast: baseParse(tpl.content, { comments: false }),
     offset: tpl.loc.start.offset,
+    /**
+     * template 内容在 SFC 全文中的起始行号（1-based）。
+     *
+     * AST 给出的 `el.loc.start.line` 是相对 template.content 的 1-based
+     * 行号，而外部传入的 `line` 来自注入属性，是 SFC 全文行号。
+     * 两者差正好是 `<script>...</script>` 等头部块的行数。
+     * 把这个偏移同时存进 `parseTemplate` 的返回值，让所有 `findElementAtLoc`
+     * 调用方都能简单地从"传入 line"还原回"AST line"做匹配。
+     */
+    templateLine: offsetToLine(sfcSource, tpl.loc.start.offset),
   };
+}
+
+/** 把字节偏移转成 1-based 行号（统计 `offset` 之前的换行符 + 1）。 */
+function offsetToLine(code: string, offset: number): number {
+  let line = 1;
+  for (let i = 0; i < offset && i < code.length; i++) {
+    if (code[i] === "\n") line++;
+  }
+  return line;
 }
 
 /** 取一个节点的可递归子节点（覆盖 ROOT/ELEMENT/IF/FOR） */
@@ -74,18 +93,22 @@ function childrenOf(node: RootNode | TemplateChildNode): TemplateChildNode[] {
   }
 }
 
-/** 在模板 AST 中查找位于 (line, col) 的元素节点（line 1-based，column 0-based） */
+/** 在模板 AST 中查找位于 (line, col) 的元素节点（line/col 是 SFC 全文 1-based/0-based）。 */
 function findElementAtLoc(
   ast: RootNode,
   line: number,
   col: number,
+  templateLine: number,
 ): ElementNode | null {
   const stack: (RootNode | TemplateChildNode)[] = [ast];
+  // 把外部传入的全文行号还原成 AST 内部相对 template.content 的行号。
+  // 当 <script> 在 <template> 上方时，templateLine > 1，必须减回去再匹配。
+  const astLine = line - (templateLine - 1);
   while (stack.length) {
     const node = stack.pop()!;
     if (node.type === NodeTypes.ELEMENT) {
       const el = node as ElementNode;
-      if (el.loc.start.line === line && el.loc.start.column === col) return el;
+      if (el.loc.start.line === astLine && el.loc.start.column === col) return el;
     }
     stack.push(...childrenOf(node));
   }
@@ -164,7 +187,7 @@ export function getElementProps(
 ): ElementProps | null {
   const t = parseTemplate(sfcSource, filePath);
   if (!t) return null;
-  const el = findElementAtLoc(t.ast, line, col);
+  const el = findElementAtLoc(t.ast, line, col, t.templateLine);
   return el
     ? { tag: el.tag, selfClosing: !!el.isSelfClosing, props: extractProps(el) }
     : null;
@@ -180,7 +203,7 @@ export function editElementProps(
 ): string {
   const t = parseTemplate(sfcSource, filePath);
   if (!t) return sfcSource;
-  const el = findElementAtLoc(t.ast, line, col);
+  const el = findElementAtLoc(t.ast, line, col, t.templateLine);
   if (!el) return sfcSource;
 
   const range = resolveTagRange(sfcSource, t.offset, el);
@@ -227,7 +250,7 @@ export function deleteElement(
 ): string {
   const t = parseTemplate(sfcSource, filePath);
   if (!t) return sfcSource;
-  const el = findElementAtLoc(t.ast, line, col);
+  const el = findElementAtLoc(t.ast, line, col, t.templateLine);
   if (!el) return sfcSource;
 
   const start = t.offset + el.loc.start.offset;
@@ -400,7 +423,7 @@ export function insertComponent(
 ): string | null {
   const t = parseTemplate(sfcSource, filePath);
   if (!t) return null;
-  const el = findElementAtLoc(t.ast, line, col);
+  const el = findElementAtLoc(t.ast, line, col, t.templateLine);
   if (!el) return null;
 
   // 查组件 schema；没有则按 tag 生成默认片段
@@ -456,7 +479,7 @@ export function duplicateElement(
 ): string | null {
   const t = parseTemplate(sfcSource, filePath);
   if (!t) return null;
-  const el = findElementAtLoc(t.ast, line, col);
+  const el = findElementAtLoc(t.ast, line, col, t.templateLine);
   if (!el) return null;
 
   const start = t.offset + el.loc.start.offset;
@@ -513,9 +536,9 @@ export function moveElement(
 ): string | null {
   const t = parseTemplate(sfcSource, _filePath);
   if (!t) return null;
-  const source = findElementAtLoc(t.ast, srcLine, srcCol);
+  const source = findElementAtLoc(t.ast, srcLine, srcCol, t.templateLine);
   if (!source) return null;
-  const target = findElementAtLoc(t.ast, targetLine, targetCol);
+  const target = findElementAtLoc(t.ast, targetLine, targetCol, t.templateLine);
   if (!target) return null;
   if (isDescendantOrSelf(source, target)) return null;
 

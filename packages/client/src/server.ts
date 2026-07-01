@@ -266,7 +266,19 @@ function handleMoveElement(
   const ctx = resolveSource(projectRoots, body, res);
   if (!ctx) return;
 
-  if (target.file !== ctx.file) {
+  /* target.file 客户端发来的是完整 `rN:<path>:<line>:<col>` 串（formatPosition），
+   * 与 ctx.file（parseSource 已剥成纯路径段）字符串比较会一直 false，
+   * 所以必须先 parseSource 再比对 file / rootIndex 段。 */
+  const targetRef = parseSource(
+    readString(target as unknown as RouteBody, "file"),
+  );
+  if (!targetRef) {
+    json(res, 400, {
+      error: "Invalid target source format; expected r<N>:<path>:<line>:<col>",
+    });
+    return;
+  }
+  if (targetRef.rootIndex !== ctx.rootIndex || targetRef.file !== ctx.file) {
     json(res, 400, { error: "Cross-file move not supported in v1" });
     return;
   }
@@ -282,8 +294,8 @@ function handleMoveElement(
     ctx.file,
     readNumber(body, "line"),
     readNumber(body, "col"),
-    target.line,
-    target.col,
+    targetRef.line,
+    targetRef.col,
     direction,
   );
   if (result === null) {

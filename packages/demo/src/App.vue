@@ -1,3 +1,13 @@
+<script setup>
+import "./style.css";
+import Header from "./components/Header.vue";
+import Hero from "./components/Hero.vue";
+import CardList from "./components/CardList.vue";
+import Card from "./components/Card.vue";
+import Footer from "./components/Footer.vue";
+import AntdTest from "./components/AntdTest.vue";
+</script>
+
 <template>
   <div id="app" class="app-container">
     <Header fixed theme="light" />
@@ -13,13 +23,3 @@
     <Footer copyright="2024" />
   </div>
 </template>
-
-<script setup>
-import "./style.css";
-import Header from "./components/Header.vue";
-import Hero from "./components/Hero.vue";
-import CardList from "./components/CardList.vue";
-import Card from "./components/Card.vue";
-import Footer from "./components/Footer.vue";
-import AntdTest from "./components/AntdTest.vue";
-</script>

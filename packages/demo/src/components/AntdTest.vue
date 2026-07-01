@@ -8,7 +8,7 @@
       <a-button @click="onClick('default')">Default</a-button>
       <a-button type="dashed" @click="onClick('dashed')">Dashed</a-button>
       <a-button type="text" @click="onClick('text')">Text</a-button>
-      <a-button type="link" @click="onClick('link')">Link</a-button>
+      <a-button type="link" disabled @click="onClick('link')">Link</a-button>
       <a-button danger @click="onClick('danger')">Danger</a-button>
     </a-space>
 

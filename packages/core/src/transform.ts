@@ -60,6 +60,19 @@ function formatSourceRef(
  * 包裹整个组件标签，标记只挂在 span 上（不注入到组件标签本身）。
  * 这样可修复 `inheritAttrs:false` / 多根 / Teleport 等
  * 导致 fallthrough attrs 丢失审查标记的第三方组件。
+ *
+ * @param s                 MagicString 实例，作用在整个 SFC 源码上
+ * @param template          SFC 的 template 块描述（含 content 和 loc.start.offset）
+ * @param sourceRef         { rootIndex, relativePath } — 注入到属性值
+ * @param attrName          要注入的属性名，默认 data-source-file
+ * @param wrapComponents    需要用 span 包裹的组件名列表
+ * @param templateLine      template 内容在 SFC 文件中的**起始行号**（1-based）。
+ *                          AST 给出的 `el.loc.start.line` 是相对 template.content
+ *                          的 1-based 行号；当 `<script>` 在 `<template>` 上方时，
+ *                          必须加上 SFC 全文里的偏移，否则点击跳转会落到
+ *                          template 块内偏前的位置（典型差 N 行，N = script 行数）。
+ *                          template 内容通常从行首开始（`<template>\n` 之后），
+ *                          所以列号不需要调整。
  */
 export function createInspectorTransform(
   s: MagicString,
@@ -67,6 +80,7 @@ export function createInspectorTransform(
   sourceRef: { rootIndex: number; relativePath: string },
   attrName: string,
   wrapComponents: string[],
+  templateLine: number,
 ): NodeTransform {
   const wrapSet = wrapComponents.length ? new Set(wrapComponents) : null;
 
@@ -80,9 +94,12 @@ export function createInspectorTransform(
     )
       return;
 
+    // AST 行号是相对 template.content 的 1-based；
+    // 转成 SFC 全文行号要加 template 内容在文件里的起始行。
     const { line, column } = el.loc.start;
+    const fileLine = templateLine + line - 1;
     const start = template.loc.start.offset + el.loc.start.offset;
-    const ref = formatSourceRef(sourceRef.rootIndex, sourceRef.relativePath, line, column);
+    const ref = formatSourceRef(sourceRef.rootIndex, sourceRef.relativePath, fileLine, column);
 
     // 列在 wrapComponents 中的组件：用 span 包裹，标记挂 span
     if (

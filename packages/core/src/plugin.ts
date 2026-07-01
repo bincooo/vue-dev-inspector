@@ -22,6 +22,22 @@ import {
  */
 const overlayScript = loadScript('./overlay.iife.js', '../../overlay/dist/overlay.iife.js');
 
+/**
+ * 把字节偏移转成 1-based 行号（统计 `offset` 之前的换行符数量 + 1）。
+ *
+ * 用于把 AST 节点的相对偏移转换为 SFC 全文行号。当 AST 来源只覆盖了
+ * template 内容（如 compileTemplate 重新解析），其 loc.start 是相对
+ * template.content 的，把字节 offset 攒回全文时需要先把"该字节在全文里
+ * 是第几行"算清楚，再补一行（1-based）。
+ */
+function offsetToLine(code: string, offset: number): number {
+  let line = 1;
+  for (let i = 0; i < offset && i < code.length; i++) {
+    if (code[i] === "\n") line++;
+  }
+  return line;
+}
+
 
 /** 构造运行时配置对象 (window.__DEV_INSPECTOR_CFG__) 的 JSON 字符串。 */
 function buildCfgJson(
@@ -114,6 +130,10 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
       const template = descriptor.template;
       const s = new MagicString(code);
       const relativePath = toPosixRelative(projectRoots[rootIndex], id);
+      // template 内容在 SFC 文件中的起始行号（1-based）。
+      // 当 <script> 在 <template> 上方时，AST 给出的 el.loc.start.line 是相对
+      // template.content 的行号，必须加上这个偏移才能在编辑器里点准位置。
+      const templateLine = offsetToLine(code, template.loc.start.offset);
 
       compileTemplate({
         source: template.content,
@@ -132,6 +152,7 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
               { rootIndex, relativePath },
               options.attrName,
               options.wrapComponents,
+              templateLine,
             ),
           ],
         },
