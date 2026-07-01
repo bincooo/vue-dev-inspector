@@ -46,6 +46,20 @@ describe('getElementProps / directive key extraction', () => {
     expect(result.props).toEqual([{ key: ':src', value: 'url' }]);
   });
 
+  it('preserves v-bind:src long form (no canonicalization to :src)', () => {
+    const sfc = buildSFC('<img v-bind:src="url" />');
+    const { line, col } = locate(sfc);
+    const result = getElementProps(sfc, 'Foo.vue', line, col)!;
+    expect(result.props).toEqual([{ key: 'v-bind:src', value: 'url' }]);
+  });
+
+  it('preserves v-on:click long form (no canonicalization to @click)', () => {
+    const sfc = buildSFC('<button v-on:click="onClick" />');
+    const { line, col } = locate(sfc);
+    const result = getElementProps(sfc, 'Foo.vue', line, col)!;
+    expect(result.props).toEqual([{ key: 'v-on:click', value: 'onClick' }]);
+  });
+
   it('preserves @click arg on v-on', () => {
     const sfc = buildSFC('<button @click="onClick" />');
     const { line, col } = locate(sfc);
@@ -97,8 +111,8 @@ describe('getElementProps / directive key extraction', () => {
     ]);
   });
 
-  it('preserves named slot v-slot:foo via # shorthand', () => {
-    const sfc = buildSFC('<Comp><template #foo="props" /></Comp>');
+  it('preserves named slot v-slot:foo', () => {
+    const sfc = buildSFC('<Comp><template v-slot:foo="props" /></Comp>');
     const { descriptor } = parseSFC(sfc, { filename: 'Foo.vue' });
     const ast = baseParse(descriptor.template!.content, { comments: false });
     const tplNode = locateByTag(ast, 'template')!;
@@ -106,6 +120,17 @@ describe('getElementProps / directive key extraction', () => {
     const tplCol = tplNode.loc.start.column;
     const result = getElementProps(sfc, 'Foo.vue', tplLine, tplCol)!;
     expect(result.props).toEqual([{ key: 'v-slot:foo', value: 'props' }]);
+  });
+
+  it('preserves #foo shorthand as #foo (raw form)', () => {
+    const sfc = buildSFC('<Comp><template #foo="props" /></Comp>');
+    const { descriptor } = parseSFC(sfc, { filename: 'Foo.vue' });
+    const ast = baseParse(descriptor.template!.content, { comments: false });
+    const tplNode = locateByTag(ast, 'template')!;
+    const tplLine = tplNode.loc.start.line;
+    const tplCol = tplNode.loc.start.column;
+    const result = getElementProps(sfc, 'Foo.vue', tplLine, tplCol)!;
+    expect(result.props).toEqual([{ key: '#foo', value: 'props' }]);
   });
 
   it('preserves plain custom directive with no arg', () => {

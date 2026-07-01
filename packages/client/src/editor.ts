@@ -140,37 +140,18 @@ function extractProps(el: ElementNode): PropEntry[] {
 
 /**
  * 把 Vue AST 的 DirectiveNode 还原为源码书写的 key。
- * v-bind:src → :src；v-bind:src.sync → :src.sync；v-bind:[k] → :[k]；
- * v-on:click → @click；v-on:click.once → @click.once；v-on:[ev].once → @[ev].once；
- * v-slot:foo → v-slot:foo；v-access:code → v-access:code；
- * v-access:code.r → v-access:code.r；v-my-dir → v-my-dir；
- * v-bind（无 arg）→ v-bind；v-on（无 arg）→ v-on。
- * 动态 arg（isStatic=false）用 [] 包回 content。modifiers 拼 .mod1.mod2。
- * arg 非 SimpleExpressionNode 抛错，不静默丢数据。
  *
- * 实现注意：
- * - bind/on 在**有 arg** 时走 shorthand（:src / @click），prefix 已含分隔符；
- *   在**无 arg** 时必须走 long form（v-bind / v-on）—— 因为 `:` / `@` 单独
- *   出现不构成合法指令，会让用户读到 ": = gridOptions" 这种无意义结果。
- * - v-slot / v-access / v-my-dir 等其它指令 prefix 是 `v-<name>`，后面
- *   要补 `:` 再接 arg。
+ * 直接返回 `d.rawName` —— Vue parser 在 ondirname / onattribnameend 时
+ * 已经把原始书写形式记录下来（如 `v-bind:src` / `:src` / `@click.prevent` /
+ * `v-access:code.readonly` / `v-bind` / `v-slot:foo` / `#foo`），用它做 key
+ * 可以 1:1 保留源码形式，做 round-trip 时不丢信息、也不强制规范化。
+ *
+ * `rawName` 在 Vue 3 编译路径下必填（`ondirname` 与 `onattribnameend` 都会写），
+ * 但类型签名是 optional；缺失时用 `v-${name}` 兜底，避免极端情况下崩。
  */
 function formatDirectiveKey(d: DirectiveNode): string {
-  if (!d.arg) {
-    if (d.name === "bind") return "v-bind";
-    if (d.name === "on") return "v-on";
-    return DIRECTIVE_PREFIX[d.name] ?? `v-${d.name}`;
-  }
-  if (!isSimpleExp(d.arg)) {
-    throw new Error(
-      `[vdi] unsupported directive arg in extractProps: ${d.name}`,
-    );
-  }
-  const prefix = DIRECTIVE_PREFIX[d.name] ?? `v-${d.name}`;
-  const argStr = d.arg.isStatic ? d.arg.content : `[${d.arg.content}]`;
-  const mods = d.modifiers.map((m) => `.${m.content}`).join("");
-  const sep = d.name === "bind" || d.name === "on" ? "" : ":";
-  return `${prefix}${sep}${argStr}${mods}`;
+  if (d.rawName) return d.rawName;
+  return DIRECTIVE_PREFIX[d.name] ?? `v-${d.name}`;
 }
 
 /**
