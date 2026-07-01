@@ -126,19 +126,47 @@ function extractProps(el: ElementNode): PropEntry[] {
       }
       if (p.type === 7 /* DIRECTIVE */) {
         const d = p as DirectiveNode;
-        const prefix = DIRECTIVE_PREFIX[d.name] ?? `v-${d.name}`;
-        const exp = isSimpleExp(d.exp) ? d.exp.content : "";
-        if (d.name === "bind" || d.name === "on") {
-          return {
-            key: prefix + (isSimpleExp(d.arg) ? d.arg.content : ""),
-            value: exp,
-          };
-        }
-        return { key: prefix, value: d.name === "else" ? "" : exp };
+        const value = isSimpleExp(d.exp)
+          ? d.exp.content
+          : d.name === "else"
+            ? ""
+            : "";
+        return { key: formatDirectiveKey(d), value };
       }
       return null;
     })
     .filter((p): p is PropEntry => p !== null);
+}
+
+/**
+ * 把 Vue AST 的 DirectiveNode 还原为源码书写的 key。
+ * v-bind:src → :src；v-bind:src.sync → :src.sync；v-bind:[k] → :[k]；
+ * v-on:click → @click；v-on:click.once → @click.once；v-on:[ev].once → @[ev].once；
+ * v-slot:foo → v-slot:foo；v-access:code → v-access:code；
+ * v-access:code.r → v-access:code.r；v-my-dir → v-my-dir。
+ * 动态 arg（isStatic=false）用 [] 包回 content。modifiers 拼 .mod1.mod2。
+ * arg 非 SimpleExpressionNode 抛错，不静默丢数据。
+ *
+ * 实现注意：`v-bind:foo` 与 `v-on:foo` 的语法前缀是 `:` / `@`（已含分隔符），
+ * `v-slot:foo` / `v-access:foo` 的语法前缀是 `v-slot` / `v-access`（不含分隔符），
+ * arg 之前还需要一个 `:`。bind/on 走 prefix + argStr（prefix 自带分隔符）；
+ * 其它指令走 prefix + ":" + argStr。
+ */
+function formatDirectiveKey(d: DirectiveNode): string {
+  const prefix = DIRECTIVE_PREFIX[d.name] ?? `v-${d.name}`;
+  if (d.name === "else") return prefix;
+  if (!d.arg) return prefix;
+  if (!isSimpleExp(d.arg)) {
+    throw new Error(
+      `[vdi] unsupported directive arg in extractProps: ${d.name}`,
+    );
+  }
+  const argStr = d.arg.isStatic ? d.arg.content : `[${d.arg.content}]`;
+  const mods = d.modifiers.map((m) => `.${m.content}`).join("");
+  // bind/on 的 prefix 是 `:` / `@`，已含分隔符；其它指令 prefix 是 `v-<name>`，
+  // 后面要补 `:` 再接 arg。
+  const sep = d.name === "bind" || d.name === "on" ? "" : ":";
+  return `${prefix}${sep}${argStr}${mods}`;
 }
 
 /**
