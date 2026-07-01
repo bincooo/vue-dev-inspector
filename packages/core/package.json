@@ -21,6 +21,7 @@
     "@vue/compiler-sfc": "^3.5.38"
   },
   "devDependencies": {
-    "@vue-dev-inspector/shared": "workspace:*"
+    "@vue-dev-inspector/shared": "workspace:*",
+    "@vue-dev-inspector/utils": "workspace:*"
   }
 }

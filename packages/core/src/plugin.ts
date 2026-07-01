@@ -41,7 +41,7 @@ function offsetToLine(code: string, offset: number): number {
 
 /** 构造运行时配置对象 (window.__DEV_INSPECTOR_CFG__) 的 JSON 字符串。 */
 function buildCfgJson(
-  options: Required<Omit<DevInspectorOptions, "projectRoots">>,
+  options: Required<Omit<DevInspectorOptions, "projectRoots" | "cdn">>,
   projectRoots: string[],
 ): string {
   // componentEntries 注入浏览器前需要先剥离 expand 字段：
@@ -73,7 +73,7 @@ function buildCfgJson(
  * 空集合返回空串；任何非空 entry 都按 <script type="module">…</script> 注入。
  */
 function buildExpandScripts(
-  options: Required<Omit<DevInspectorOptions, "projectRoots">>,
+  options: Required<Omit<DevInspectorOptions, "projectRoots" | "cdn">>,
 ): string {
   const bodies = (options.componentConfig ?? [])
     .map((e) => e.expand)

@@ -1,5 +1,6 @@
 /** 共享类型来自 shared 包（API_PREFIX / EDITOR_PROTOCOLS / 组件目录类型） */
 import type { ComponentConfig } from "@vue-dev-inspector/shared";
+import type { CdnBuilder } from "@vue-dev-inspector/utils";
 
 /** DevInspector 配置选项 */
 export interface DevInspectorOptions {
@@ -67,9 +68,21 @@ export interface DevInspectorOptions {
    * @default ['typescript']
    */
   expressionPlugins?: Array<"typescript" | "jsx">;
+  /**
+   * CDN URL 构造器 —— 用于 `loadScript('cdn:<pkg>:<version>', ...)` 模式。
+   *
+   * 用户自定义 CDN 时传入；例如：
+   *   cdn: (pkg, ver) => `https://cdn.jsdelivr.net/npm/${pkg}@${ver}`
+   *
+   * 插件入口处会调用 `setCdnBuilder(this.cdn)` 注入到 utils 模块；
+   * 未配置时 `loadScript` 走 cdn: scheme 抛明确错误。
+   *
+   * 返回值可以是字符串或 Promise<string>（支持异步构造器）。
+   */
+  cdn?: CdnBuilder;
 }
 
-export const DEFAULT_OPTIONS: Required<Omit<DevInspectorOptions, "projectRoots">> = {
+export const DEFAULT_OPTIONS: Required<Omit<DevInspectorOptions, "projectRoots" | "cdn">> = {
   enabled: true,
   exclude: [/node_modules/, /\.d\.ts$/],
   attrName: "data-source-file",
