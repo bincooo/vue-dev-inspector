@@ -1,2 +1,2 @@
-export * from "./paths.ts";
-export * from "./cdn.ts";
+export * from "./paths";
+export * from "./cdn";

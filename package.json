@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "dev:demo": "pnpm -C packages/demo dev",
-    "build:core": "pnpm -C packages/shared build && pnpm -C packages/overlay build && pnpm -C packages/client build && pnpm -C packages/core build",
+    "build:core": "pnpm -C packages/utils build && pnpm -C packages/shared build && pnpm -C packages/overlay build && pnpm -C packages/client build && pnpm -C packages/core build",
     "build:antd": "pnpm -C packages/antdv build",
     "lint": "eslint \"packages/**/*.{ts,tsx,vue}\"",
     "lint:fix": "eslint \"packages/**/*.{ts,tsx,vue}\" --fix",

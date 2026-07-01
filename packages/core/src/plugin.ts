@@ -15,7 +15,7 @@ import {
   toPosixRelative,
   loadScript,
 } from "../../utils/src/paths";
-import { setCdnBuilder } from "@vue-dev-inspector/utils";
+import { setCdnBuilder } from "../../utils/src/cdn";
 
 /**
  * 编译后的 overlay 脚本（由 @vue-dev-inspector/overlay 子工程构建产生）。
@@ -58,7 +58,7 @@ function offsetToLine(code: string, offset: number): number {
 
 /** 构造运行时配置对象 (window.__DEV_INSPECTOR_CFG__) 的 JSON 字符串。 */
 function buildCfgJson(
-  options: Required<Omit<DevInspectorOptions, "projectRoots" | "cdn">>,
+  options: Required<Omit<DevInspectorOptions, "projectRoots" | "expandCdn">>,
   projectRoots: string[],
 ): string {
   // componentEntries 注入浏览器前需要先剥离 expand 字段：
@@ -126,7 +126,7 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
   // 注入 cdn 构造器：用户配置 vueDevInspector({ cdn }) 时由 utils 模块的
   // loadScript('cdn:...') 消费。未配置时 _builder 保持 undefined，
   // loadScript('cdn:...') 调用会抛明确错误。
-  setCdnBuilder(options.cdn);
+  if (options.expandCdn) setCdnBuilder(options.expandCdn);
   let isDev = false;
   let projectRoots: string[] = [];
 

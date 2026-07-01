@@ -11,10 +11,12 @@
  * `transformIndexHtml` 阶段以 `<script type="module" src=url>` 注入。
  * 模块本身不发起任何网络请求 —— 网络层由浏览器处理。
  */
-export type CdnBuilder = (pkg: string, version: string) => string | Promise<string>;
+export type CdnBuilder = (pkg: string, version: string) => string;
 
 /** 模块级 builder 引用 —— 由 `@vue-dev-inspector/core` 在插件入口注入。 */
-let _builder: CdnBuilder | undefined;
+let _builder: CdnBuilder | undefined = (pkg, ver) => {
+  return `//cdn.jsdelivr.net/npm/${pkg}@${ver}/dist/expand.iife.js`;
+};
 
 /** 注册/清空 cdn 构造器；用户没传 `cdn` 选项时 `_builder` 保持 undefined。 */
 export function setCdnBuilder(builder: CdnBuilder | undefined): void {
@@ -29,9 +31,8 @@ export function getCdnBuilder(): CdnBuilder | undefined {
 /**
  * 拼出 CDN 上的目标文件 URL —— 同步、纯字符串拼接、不发起任何网络请求。
  *
- * 拼 URL：`builder(pkg, version)` 返回值 + relPath（去掉前导 `./`）。
+ * 拼 URL：`builder(pkg, version)` 返回值。
  * 例如 builder 返回 `https://cdn.jsdelivr.net/npm/jquery@3.7.0`，
- * relPath `./dist/jquery.min.js` → 最终 URL
  * `https://cdn.jsdelivr.net/npm/jquery@3.7.0/dist/jquery.min.js`。
  *
  * builder 未注册抛 `[vdi] cdn builder 未注册`。
@@ -43,21 +44,10 @@ export function getCdnBuilder(): CdnBuilder | undefined {
 export function buildCdnUrl(
   pkg: string,
   version: string,
-  relPath: string,
 ): string {
   const builder = _builder;
   if (!builder) {
     throw new Error("[vdi] cdn builder 未注册；请在 vueDevInspector({ cdn }) 中提供");
   }
-  const baseUrl = builder(pkg, version);
-  // builder 类型签名允许返回 Promise<string>，但本函数是同步的：
-  // 如果 builder 真的返回了非字符串（比如 Promise 对象），
-  // 我们显式抛错，避免静默地把 "[object Promise]" 拼到 URL 里。
-  if (typeof baseUrl !== "string") {
-    throw new Error(
-      "[vdi] cdn builder 必须同步返回 string；请去掉 builder 的 async 关键字或在调用前 await",
-    );
-  }
-  const cleaned = relPath.replace(/^\.\//, "");
-  return cleaned ? `${baseUrl}/${cleaned}` : baseUrl;
+  return builder(pkg, version);
 }

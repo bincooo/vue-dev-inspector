@@ -1,6 +1,6 @@
 /** 共享类型来自 shared 包（API_PREFIX / EDITOR_PROTOCOLS / 组件目录类型） */
 import type { ComponentConfig } from "@vue-dev-inspector/shared";
-import type { CdnBuilder } from "@vue-dev-inspector/utils";
+import type { CdnBuilder } from "../../utils/src/cdn";
 
 /** DevInspector 配置选项 */
 export interface DevInspectorOptions {
@@ -79,10 +79,10 @@ export interface DevInspectorOptions {
    *
    * 返回值可以是字符串或 Promise<string>（支持异步构造器）。
    */
-  cdn?: CdnBuilder;
+  expandCdn?: CdnBuilder;
 }
 
-export const DEFAULT_OPTIONS: Required<Omit<DevInspectorOptions, "projectRoots" | "cdn">> = {
+export const DEFAULT_OPTIONS: Required<Omit<DevInspectorOptions, "projectRoots" | "expandCdn">> = {
   enabled: true,
   exclude: [/node_modules/, /\.d\.ts$/],
   attrName: "data-source-file",

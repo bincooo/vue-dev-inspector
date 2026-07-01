@@ -18,9 +18,10 @@ export default defineConfig({
   plugins: [
     // ⚠️ vueDevInspector 必须放在 vue() 之前
     vueDevInspector({
-      cdn: (pkg: string, version: string) => {
-        return `https://cdn.jsdelivr.net/npm/${pkg}@${version}`
-      },
+      // 提供expandCdn属性实现定制化cdn
+      // expendCdn: (pkg: string, version: string) => {
+      //   return `https://cdn.jsdelivr.net/npm/${pkg}@${version}/expend.iife.js`
+      // },
       // 仅在 dev 模式下启用（默认 true）
       enabled: true,
 

@@ -66,11 +66,11 @@ export function resolveProjectRootIndex(roots: string[], id: string): number {
  * 多个候选按顺序尝试，命中即返回；全部失败抛错。
  */
 export function loadScript(...args: string[]): string {
-  return loadScriptSpecifier(import.meta.resolve, ...args);
+  return loadScriptSpecifier(undefined, ...args);
 }
 
 export function loadScriptSpecifier(
-  resolve: (specifier: string) => string,
+  resolve?: (specifier: string) => string,
   ...args: string[]
 ): string {
   if (args.length === 0) {
@@ -83,19 +83,14 @@ export function loadScriptSpecifier(
     const pkg = cdnMatch[1];
     const version = cdnMatch[2];
     const candidates = args.slice(1);
-    if (candidates.length === 0) {
-      throw new Error("[vdi] loadScript(cdn:...) 至少需要一个相对路径参数");
-    }
     // 走 buildCdnUrl 顺序尝试；cdn builder 未注册会在第一次尝试时抛错。
     // 因为现在只是 URL 拼装（无 IO），理论上不应失败 —— 但保留候选重试
     // 行为以便将来加 builder-side 校验（例如白名单）时无缝扩展。
     let lastErr: unknown;
-    for (const cd of candidates) {
-      try {
-        return buildCdnUrl(pkg, version, cd);
-      } catch (err) {
-        lastErr = err;
-      }
+    try {
+      return buildCdnUrl(pkg, version);
+    } catch (err) {
+      lastErr = err;
     }
     throw new Error(
       `[vdi] cdn 所有候选路径均失败: ${candidates.join(", ")}: ${(lastErr as Error)?.message ?? "unknown"}`,
@@ -104,24 +99,15 @@ export function loadScriptSpecifier(
 
   // 形式 2：包名锚点
   let baseDir: string | undefined;
-  let candidates = args;
-  if (args.length > 0 && /^pkg:/.test(args[0])) {
-    const pkgName = args[0].split(":")[1];
+  const candidates = args;
+  if (args.length > 0 && resolve) {
     try {
       // 用 ESM 解析解到包 entry（dist/index.js 或 main 字段），
-      // 再 dirname 两次（entry → dist/ → 包根）。这是因为：
-      //   - createRequire(...).resolve(pkgName) 在 exports 只有 import/types
-      //     没有 default 时会抛 "No exports main defined"。
-      //   - createRequire(...).resolve(`${pkgName}/package.json`) 在 exports
-      //     没暴露 ./package.json 时会抛 ERR_PACKAGE_PATH_NOT_EXPORTED。
-      // import.meta.resolve 总能解出 entry（即便 ESM 也能用），不依赖 exports。
-      const entry = resolve(pkgName);
+      const entry = resolve('.');
       const pkg = fileURLToPath(entry);
-      // dirname 两次：entry（dist/index.js） → dist/ → 包根
-      baseDir = path.dirname(path.dirname(pkg));
-      candidates = args.slice(1);
+      baseDir = path.dirname(pkg);
     } catch (err) {
-      throw new Error(`[vdi] 未找到包 ${pkgName}: ${(err as Error).message}`);
+      throw new Error(`[vdi] 未找到包: ${(err as Error).message}`);
     }
   }
 

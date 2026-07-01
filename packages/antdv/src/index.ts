@@ -25,12 +25,14 @@ export default function (): ComponentConfigEntry {
     /**
      * 浏览器侧拓展脚本 —— 物料库自带的 demo / 事件订阅入口。
      *
-     * 用 `loadScript('cdn:@vue-dev-inspector/antdv:0.0.1', './dist/expand.iife.js')`
+     * 1. 用 `loadScript('cdn:@vue-dev-inspector/antdv:0.0.1')`
      * 走 cdn scheme：返回的是 CDN 上的 URL 字符串，core 插件在
-     * `transformIndexHtml` 直接以 `<script type="module" src=url>` 注入，
-     * 不下载。cdn 构造器由用户在 `vueDevInspector({ cdn })` 中提供。
+     * 
+     * 2. 用 `loadScriptSpecifier('./dist/expand.iife.js')`
+     * 走本地包文件字符全量注入body
      */
-    expand: loadScriptSpecifier(import.meta.resolve, 'cdn:@vue-dev-inspector/antdv:0.0.1', './dist/expand.iife.js'),
+    // expand: loadScript('cdn:@vue-dev-inspector/antdv:0.1.0'),
+    expand: loadScriptSpecifier(import.meta.resolve, './dist/expand.iife.js'),
     groups: [
       {
         group: "antdv/通用",
