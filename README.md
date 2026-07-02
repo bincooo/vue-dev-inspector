@@ -66,4 +66,10 @@ pnpm run dev:demo
 
 [在线体验](https://1i0k2-loc.hf.space)
 
+属性编辑与ide联动
+<video src="https://github.com/user-attachments/assets/6ade0f49-0db7-4b89-8975-14dc1f3cf656" controls="controls" width="500" height="300"></video>
+
+内置拓展模板组件插入
+<video src="https://github.com/user-attachments/assets/a5e09b30-47ef-4eb0-af6c-81f5684917c5" controls="controls" width="500" height="300"></video>
+
 ![](./public/2026-06-26_07-19.png)
