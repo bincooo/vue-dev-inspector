@@ -60,6 +60,8 @@ export interface ApiResponse<T = unknown> {
   error?: string;
   props?: PropEntry[];
   components?: Array<{ path: string; name: string }>;
+  script?: import("./types").CodeBlockData;
+  style?: import("./types").CodeBlockData;
   data?: T;
 }
 

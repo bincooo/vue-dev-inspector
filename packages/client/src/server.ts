@@ -10,8 +10,11 @@ import {
   duplicateElement,
   deleteElement,
   moveElement,
+  getSfcBlocks,
+  updateSfcBlock,
   type MoveDirection,
   type PropEntry,
+  type SfcBlockKind,
 } from "./editor";
 import { API_PREFIX, EDITOR_PROTOCOLS } from "@vue-dev-inspector/shared";
 
@@ -144,6 +147,7 @@ function enforceEnum<T extends string>(
 
 const INSERT_DIRECTIONS = ["inside", "before", "after"] as const;
 const MOVE_DIRECTIONS = INSERT_DIRECTIONS;
+const SFC_BLOCK_KINDS = ["script", "style"] as const;
 
 // ─── Editor 路由 ────────────────────────────────────────
 
@@ -309,6 +313,50 @@ function handleMoveElement(
   json(res, 200, { success: true });
 }
 
+/** 读取一个 .vue 文件中的所有可编辑顶层块（script / style）。
+ *  /get-block 请求体只关心 `file` 字段（标定目标文件），line/col 仍按既有约定传递但不参与定位。
+ *  缺失的块在响应中省略；前端据此隐藏对应子面板。 */
+function handleGetBlock(
+  projectRoots: string[],
+  body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  const ctx = resolveSource(projectRoots, body, res);
+  if (!ctx) return;
+  const blocks = getSfcBlocks(ctx.source, ctx.file);
+  // 只挑有效区间（start<=end 且 end>0），避免把空块当「存在」回传。
+  const out: { script?: unknown; style?: unknown } = {};
+  if (blocks.script) out.script = blocks.script;
+  if (blocks.style) out.style = blocks.style;
+  json(res, 200, out);
+}
+
+/** 整块替换 SFC 中的 <script> 或 <style> 并写盘。
+ *  - 通过 `enforceEnum` 把 `kind` 收窄到 `["script","style"]`，非法值回退 script。
+ *  - updateSfcBlock 在缺失块 / 解析失败时返回原源码；这里用 `=== ctx.source` 判定是否实际改动。
+ *  - 实际改动后写盘 + 200；未改动视为 404。 */
+function handleUpdateBlock(
+  projectRoots: string[],
+  body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  const ctx = resolveSource(projectRoots, body, res);
+  if (!ctx) return;
+  const kind = enforceEnum(
+    readString(body, "kind"),
+    SFC_BLOCK_KINDS,
+    "script",
+  ) as SfcBlockKind;
+  const content = readString(body, "content");
+  const result = updateSfcBlock(ctx.source, ctx.file, kind, content);
+  if (result === ctx.source) {
+    json(res, 404, { error: "Block not found" });
+    return;
+  }
+  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
+  json(res, 200, { success: true });
+}
+
 /** 扫描所有 projectRoot 下 .vue 文件（排除 node_modules|dist|.vite），去重后排序合并。 */
 function handleListComponents(
   projectRoots: string[],
@@ -408,6 +456,8 @@ const ROUTES: Record<string, Record<string, RouteHandler>> = {
   "/insert-component": { POST: handleInsertComponent },
   "/duplicate-element": { POST: handleDuplicateElement },
   "/move-element": { POST: handleMoveElement },
+  "/get-block": { POST: handleGetBlock },
+  "/update-block": { POST: handleUpdateBlock },
 };
 
 /**

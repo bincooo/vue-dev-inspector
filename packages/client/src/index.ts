@@ -5,6 +5,8 @@ export {
   insertComponent,
   duplicateElement,
   moveElement,
+  getSfcBlocks,
+  updateSfcBlock,
   COMPONENT_CATALOG,
 } from "./editor";
 export type {
@@ -12,5 +14,7 @@ export type {
   ElementProps,
   ComponentSchema,
   MoveDirection,
+  SfcBlockKind,
+  SfcBlock,
 } from "./editor";
 export { createDevServer } from "./server";

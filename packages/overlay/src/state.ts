@@ -25,6 +25,13 @@ export const clientConfig: ClientCfg = window.__DEV_INSPECTOR_CFG__;
 export type DropDirection = "before" | "inside" | "after";
 
 /** 全局可变状态 — 各模块通过 state.xxx 读写 */
+
+/** 「编辑代码」抽屉的 textarea + 保存按钮句柄（每个块一份）。 */
+type CodeBlockSlot = {
+  textarea: HTMLTextAreaElement;
+  saveBtn: HTMLButtonElement;
+};
+
 export const state = {
   /** 配置常量快捷引用 */
   attrName: clientConfig.attrName,
@@ -80,6 +87,25 @@ export const state = {
 
   /** 组件抽屉 + 抽屉外层遮罩 */
   componentDrawer: null as HTMLDivElement | null,
+
+  /** 「编辑代码」抽屉（与组件抽屉并存的第二个右侧滑出面板）。 */
+  codeDrawer: null as HTMLDivElement | null,
+  /** 抽屉宽度，跨打开会话保留（拖动条 mousedown/move 实时写回）。 */
+  codeDrawerWidth: 560,
+  /** Script/CSS 上下分屏比例（0-1，script 占的比例），跨会话保留。 */
+  codeDrawerSplit: 0.5,
+  /** 当前打开抽屉对应的源文件（每次 openCodeDrawer 重置）。 */
+  codeDrawerContext: null as {
+    rootIndex: number;
+    file: string;
+    line: number;
+    col: number;
+  } | null,
+  /** 每个块对应的 textarea + 保存按钮句柄，供外部更新状态。 */
+  codeDrawerBlocks: {
+    script: null as CodeBlockSlot | null,
+    style: null as CodeBlockSlot | null,
+  },
 
   /** 属性编辑面板 */
   propPanel: null as HTMLDivElement | null,

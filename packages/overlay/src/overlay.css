@@ -659,3 +659,216 @@ body.__vdi-dragging * {
   outline: 2px solid #3b82f6;
   outline-offset: 1px;
 }
+
+/* 「编辑代码」抽屉 ─────────────────────────────────────────── */
+.__vdi-code-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  z-index: 9999;
+  background: #fff;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, sans-serif;
+  transform: translateX(100%);
+  transition: transform 0.2s ease-out;
+  min-width: 320px;
+  max-width: 90vw;
+  /* 左侧 6px 留给拖动条，避免头部/正文内容贴到 resizer 上 */
+  padding-left: 6px;
+  box-sizing: border-box;
+}
+
+/* 左边缘拖动条：6px 宽，绝对定位，hover 时背景变灰。 */
+.__vdi-code-drawer-resizer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+  z-index: 1;
+  background: transparent;
+  transition: background 0.12s;
+}
+
+.__vdi-code-drawer-resizer:hover {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.__vdi-code-drawer-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.__vdi-code-drawer-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.__vdi-code-drawer-subtitle {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 2px;
+  font-family: monospace;
+}
+
+.__vdi-code-drawer-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 18px;
+  overflow: hidden;
+}
+
+/* 中间水平拖动条：6px 高度，全宽，hover 时变蓝。 */
+.__vdi-code-splitter {
+  flex: 0 0 6px;
+  cursor: ns-resize;
+  background: transparent;
+  margin: 4px 0;
+  transition: background 0.12s;
+}
+
+.__vdi-code-splitter:hover,
+.__vdi-code-splitter:active {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.__vdi-code-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #f8fafc;
+  padding: 10px 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.__vdi-code-block-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d4ed8;
+  letter-spacing: 0.5px;
+}
+
+.__vdi-code-editor {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 3px;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* 高亮 <pre>：覆盖 hljs 主题的 padding:1em / background:#fafafa，
+   否则会与 textarea 的 padding/background 错位，caret 偏移。 */
+.__vdi-code-highlight,
+.__vdi-code-highlight code {
+  margin: 0;
+  padding: 8px 10px;
+  background: transparent !important;
+  /* 等宽栈：跨 macOS / Windows / Linux / 中文系统都尽量命中同一宽度；
+     JetBrains Mono / Fira Code 走 webfont（按需引入），缺失时降级到
+     系统 mono 与 monospace。 */
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono",
+    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  font-variant-ligatures: none;
+  color: #1e293b;
+}
+
+.__vdi-code-highlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  white-space: pre;
+  box-sizing: border-box;
+  tab-size: 2;
+  -moz-tab-size: 2;
+}
+
+/* 透明 textarea：caret 可见，文字交给下层高亮 <pre> 显示 */
+.__vdi-code-textarea {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* 与 .__vdi-code-highlight 完全一致，避免不同字体导致 caret 与染色错位 */
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono",
+    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  font-variant-ligatures: none;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: #1e293b;
+  resize: none;
+  box-sizing: border-box;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+  z-index: 1;
+}
+
+.__vdi-code-textarea:focus {
+  outline: none;
+  border-color: #4096ff;
+  box-shadow: 0 0 0 2px rgba(5, 145, 255, 0.1);
+}
+
+.__vdi-code-block-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.__vdi-code-block-hint {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.__vdi-code-save-btn {
+  font-size: 11px;
+  padding: 6px 12px;
+}
+
+.__vdi-code-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.__vdi-code-drawer-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-top: 1px solid #f1f5f9;
+  background: #f8fafc;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.__vdi-code-status {
+  font-size: 11px;
+  color: #475569;
+}

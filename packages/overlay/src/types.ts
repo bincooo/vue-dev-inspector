@@ -47,3 +47,30 @@ export interface PropEntry {
   key: string;
   value: string;
 }
+
+/**
+ * 「编辑代码」抽屉支持的 SFC 顶层块类型（v1 仅 script / style）。
+ * <template> 编辑留作后续；多 <style scoped> 与 <script> + <script setup>
+ * 共存的场景同样留作 v2（参见 plan 末尾的「已知限制」）。
+ */
+export type CodeBlockKind = "script" | "style";
+
+/**
+ * 单个 SFC 块的当前内容与字符偏移区间。
+ *
+ * - `start` / `end` 是「块在 SFC 全文中的字节偏移」，对应 `<script>...</script>`
+ *   这段完整子串（含标签自身）；服务端 update 用这两个值做 MagicString overwrite。
+ * - `content` 仅是标签内的源码（不含 <script> / </script> 标签）。
+ */
+export interface CodeBlockData {
+  kind: CodeBlockKind;
+  content: string;
+  start: number;
+  end: number;
+}
+
+/** /get-block 响应：缺失的块（文件无 <style>）则对应字段省略。 */
+export interface GetBlocksResponse {
+  script?: CodeBlockData;
+  style?: CodeBlockData;
+}

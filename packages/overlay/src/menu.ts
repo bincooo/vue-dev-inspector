@@ -12,6 +12,7 @@ import {
 import { redrawSelection } from "./inspector";
 import { openPanel } from "./panel";
 import { openDrawer } from "./drawer";
+import { openCodeDrawer } from "./code-drawer";
 
 type MenuAction = (
   element: HTMLElement,
@@ -20,7 +21,7 @@ type MenuAction = (
 
 interface MenuItem {
   label: string;
-  action: "open" | "props" | "catalog" | "copy" | "del";
+  action: "open" | "props" | "catalog" | "copy" | "del" | "code";
   isDanger?: boolean;
 }
 
@@ -85,6 +86,7 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
     },
     props: () => openPanel(element),
     catalog: () => openDrawer(),
+    code: () => openCodeDrawer(element),
     copy: () => {
       // 多根场景下 `state.projectRoot` 只代表第一个根；
       // 对兄弟根上的元素直接拼绝对路径会得到错误的协议 URL。
@@ -101,6 +103,7 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
     { label: "📦 在编辑器中打开", action: "open" },
     { label: "⚙️ 编辑属性", action: "props" },
     { label: "🧩 组件面板", action: "catalog" },
+    { label: "✏️ 编辑代码", action: "code" },
     { label: "📋 复制路径", action: "copy" },
     { label: "🗑️ 删除", action: "del", isDanger: true },
   ];

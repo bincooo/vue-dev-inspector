@@ -497,8 +497,7 @@ function isDescendantOrSelf(
   return false;
 }
 
-/**
- * 移动 (srcLine, srcCol) 元素到 (targetLine, targetCol) 处。
+/** 移动 (srcLine, srcCol) 元素到 (targetLine, targetCol) 处。
  *
  * direction 决定与目标元素的相对位置（语义同 insertComponent）：
  *   'before' / 'after' — 同级插入（按目标行缩进重写源码每行前缀）
@@ -583,5 +582,180 @@ export function moveElement(
     s.appendLeft(openTagEnd + 1, "\n" + rewritten);
   }
 
+  return s.toString();
+}
+
+// ─── SFC 顶层块（<script> / <style>）读写 ──────────────────────
+// 用于「编辑代码」抽屉：服务端提供 /get-block 与 /update-block。
+
+/** v1 支持的块类型。多 <style scoped> 与 <script> + <script setup> 共存留作 v2。 */
+export type SfcBlockKind = "script" | "style";
+
+/**
+ * 单个块的定位信息。
+ *
+ * - `content` 是标签内的源码（不含 `<script>` / `</script>`）。
+ * - `start` / `end` 是 SFC 全文字节偏移，**完整覆盖 `<script>...</script>`**
+ *   （含开闭标签）；服务端 update 用这两个值做 MagicString overwrite。
+ */
+export interface SfcBlock {
+  kind: SfcBlockKind;
+  content: string;
+  start: number;
+  end: number;
+}
+
+/**
+ * 把 `attrs` 对象渲染成 `<script lang="ts" setup>` 这段开标签串。
+ * attrs 内布尔 true 表示无值属性（如 `setup`）；
+ * 字符串值属性需渲染成 `key="value"`。
+ *
+ * 输出顺序与 attrs 对象的 key 枚举顺序一致；keys 在大多数现代 JS 引擎
+ * 中保持字面量定义顺序，与 SFC 原始书写顺序近似（v1 不要求严格一致）。
+ */
+function renderOpenTag(attrs: Record<string, string | true>): string {
+  const parts = Object.keys(attrs).map((k) => {
+    const v = attrs[k];
+    return v === true ? ` ${k}` : ` ${k}="${v}"`;
+  });
+  return parts.join("");
+}
+
+/**
+ * 在 `innerStart`（块内首字符 offset）之前向左扫描，定位 `<script` /
+ * `<style` 开标签的 `<` 位置，并把 `innerStart` 前最近一个 `>` 作为开标签结束。
+ *
+ * 跳过 `<script setup lang="ts">` 这种含字符串值的属性：用 `>` 跳过整段
+ * 开标签内容。HTML 中的引号转义在 .vue 文件里极少出现，v1 简单按字面
+ * 处理；最坏情况是 `>` 出现在属性值里时被误判为开标签结尾——遇到时
+ * `<script setup lang=">` 这种非法 SFC 本来就会被 parseSFC 拒绝，所以
+ * 这里没必要再做防御性跳过。
+ */
+function resolveOuterTagStart(
+  source: string,
+  tag: "script" | "style",
+  innerStart: number,
+): number {
+  const needle = `<${tag}`;
+  // 从 innerStart 之前往左找 <script / <style，必须出现在行首或空白之后
+  for (let i = innerStart; i >= 0; i--) {
+    if (source.startsWith(needle, i)) return i;
+  }
+  return -1;
+}
+
+/**
+ * 在 `innerEnd`（块内末字符 offset 之后）向右扫描，定位 `</script>` / `</style>`
+ * 的 `>` 位置（exclusive end）。`<` 必定与 innerEnd 之间只有空白与注释，
+ * 取首个 `<` 即可。
+ */
+function resolveOuterTagEnd(
+  source: string,
+  tag: "script" | "style",
+  innerEnd: number,
+): number {
+  const needle = `</${tag}>`;
+  const idx = source.indexOf(needle, innerEnd);
+  return idx === -1 ? -1 : idx + needle.length;
+}
+
+/**
+ * 读出 SFC 中所有可编辑块。
+ *
+ * - descriptor 缺失或解析报错 → 返回空对象（任一块都视作缺失）。
+ * - 单 <script> 和 <script setup>：v1 优先取 `scriptSetup`，缺则取 `script`。
+ *   多块共存场景在 v1 直接以 `scriptSetup` 覆盖 `script`，让 UI 编辑到
+ *   当前生效的那段；风险与后续改进空间已在 plan 的「已知限制」中标明。
+ * - <style>：v1 只取 `descriptor.styles[0]`；多块（scoped / module）暂不支持。
+ */
+export function getSfcBlocks(
+  sfcSource: string,
+  filePath: string,
+): { script?: SfcBlock; style?: SfcBlock } {
+  const { descriptor, errors } = parseSFC(sfcSource, { filename: filePath });
+  // parseSFC 在缺 <template> 且缺 <script> 时会塞一条错误，但已有的
+  // <style> 仍然可正确解析（描述符照样填充）。v1 宽容处理：只在所有
+  // 块都拿不到（顶层语法都坏了）时才返回空。
+  const hasAnyBlock =
+    descriptor.scriptSetup ||
+    descriptor.script ||
+    descriptor.styles.length > 0;
+  if (errors.length && !hasAnyBlock) return {};
+  const blocks: { script?: SfcBlock; style?: SfcBlock } = {};
+
+  // script / scriptSetup 互斥：先看 scriptSetup（runtime + compile-time 优先级）
+  const scriptSrc = descriptor.scriptSetup ?? descriptor.script;
+  if (scriptSrc && scriptSrc.content.length > 0) {
+    const outerStart = resolveOuterTagStart(sfcSource, "script", scriptSrc.loc.start.offset);
+    const outerEnd = resolveOuterTagEnd(sfcSource, "script", scriptSrc.loc.end.offset);
+    if (outerStart !== -1 && outerEnd !== -1 && outerEnd > outerStart) {
+      blocks.script = {
+        kind: "script",
+        content: scriptSrc.content,
+        start: outerStart,
+        end: outerEnd,
+      };
+    }
+  }
+
+  if (descriptor.styles.length > 0) {
+    const st = descriptor.styles[0];
+    const outerStart = resolveOuterTagStart(sfcSource, "style", st.loc.start.offset);
+    const outerEnd = resolveOuterTagEnd(sfcSource, "style", st.loc.end.offset);
+    if (outerStart !== -1 && outerEnd !== -1 && outerEnd > outerStart) {
+      blocks.style = {
+        kind: "style",
+        content: st.content,
+        start: outerStart,
+        end: outerEnd,
+      };
+    }
+  }
+
+  return blocks;
+}
+
+/**
+ * 把 SFC 中指定块整段替换为 `newContent`（不含 <script> / </script> 标签）。
+ *
+ * - 用 descriptor 读出的 attrs 重组 `<script lang="ts" setup>` 开标签与
+ *   `<style scoped>` 开标签，保证 lang / setup / scoped 等元属性不丢。
+ * - kind 不存在或区间无效 → 原样返回 `sfcSource`，由 handler 据此 404。
+ * - 用 getSfcBlocks 先算出 outer range，再 MagicString overwrite；
+ *   保证完整覆盖 `<script>...</script>`，包括开闭标签。
+ */
+export function updateSfcBlock(
+  sfcSource: string,
+  filePath: string,
+  kind: SfcBlockKind,
+  newContent: string,
+): string {
+  const blocks = getSfcBlocks(sfcSource, filePath);
+  const target = blocks[kind];
+  if (!target) return sfcSource;
+
+  // 重新解析一次取 attrs（getSfcBlocks 没把它们暴露出来）。
+  // 与 getSfcBlocks 一样宽容：缺 <template> 等结构性错误但已解析出对应块
+  // 时，仍可拿到 attrs 完成替换。
+  const { descriptor, errors } = parseSFC(sfcSource, { filename: filePath });
+  const hasAnyBlock =
+    descriptor.scriptSetup ||
+    descriptor.script ||
+    descriptor.styles.length > 0;
+  if (errors.length && !hasAnyBlock) return sfcSource;
+  let attrs: Record<string, string | true>;
+  if (kind === "script") {
+    const sb = descriptor.scriptSetup ?? descriptor.script;
+    if (!sb) return sfcSource;
+    attrs = sb.attrs;
+  } else {
+    if (descriptor.styles.length === 0) return sfcSource;
+    attrs = descriptor.styles[0].attrs;
+  }
+
+  const openTag = `${kind}${renderOpenTag(attrs)}`;
+  const replacement = `<${openTag}>${newContent}</${kind}>`;
+  const s = new MagicString(sfcSource);
+  s.overwrite(target.start, target.end, replacement);
   return s.toString();
 }

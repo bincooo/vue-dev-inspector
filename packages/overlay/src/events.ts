@@ -39,6 +39,7 @@ import {
 import { showMenu } from "./menu";
 import { closePanel, openPanel } from "./panel";
 import { closeDrawer } from "./drawer";
+import { closeCodeDrawer } from "./code-drawer";
 
 /** Heroicons (MIT) 齿轮 SVG path */
 const GEAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg"
@@ -99,11 +100,12 @@ function isShortcut(e: KeyboardEvent): boolean {
   );
 }
 
-/** Esc 关闭的优先级：drag → drawer → panel → 审查 */
+/** Esc 关闭的优先级：drag → drawer → code-drawer → panel → 审查 */
 function handleEscape(): void {
   clearPendingCancel();
   if (state.dragging) return endDrag();
   if (state.componentDrawer) return closeDrawer();
+  if (state.codeDrawer) return closeCodeDrawer();
   if (state.propPanel) return closePanel();
   closeAll();
   toggle(false);
@@ -127,8 +129,14 @@ function handleEscape(): void {
 window.addEventListener(
   "focusin",
   (e) => {
+    if (!(e.target instanceof Node)) return;
     const panel = state.propPanel;
-    if (panel && e.target instanceof Node && panel.contains(e.target)) {
+    if (panel && panel.contains(e.target)) {
+      e.stopImmediatePropagation();
+      return;
+    }
+    const codeDrawer = state.codeDrawer;
+    if (codeDrawer && codeDrawer.contains(e.target)) {
       e.stopImmediatePropagation();
     }
   },
