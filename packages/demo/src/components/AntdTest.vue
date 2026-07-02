@@ -4,13 +4,25 @@
 
     <!-- 按钮组合 -->
     <a-space wrap>
-      <a-button type="primary" @click="onClick('primary')">Primary</a-button>
+      <a-button v-access:code="test" v-bind="gridOptions" type="primary" v-on="gridEvents" @click="onClick('primary')">Primary</a-button>
       <a-button @click="onClick('default')">Default</a-button>
       <a-button type="dashed" @click="onClick('dashed')">Dashed</a-button>
       <a-button type="text" @click="onClick('text')">Text</a-button>
       <a-button type="link" disabled @click="onClick('link')">Link</a-button>
       <a-button danger @click="onClick('danger')">Danger</a-button>
+      <a-button @click="showDrawer">Open Drawer</a-button>
     </a-space>
+
+    <a-drawer
+      v-model:open="open"
+      title="Basic Drawer"
+      :closable="{ 'aria-label': 'Close Button' }"
+    >
+      <p>Some contents...</p>
+      <p>Some contents...</p>
+      <p>Some contents...</p>
+      <a-input v-model:value="text" placeholder="请输入文本" />
+    </a-drawer>
 
     <!-- 标签 / 分割线 -->
     <a-divider style="margin: 16px 0" />
@@ -72,7 +84,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, shallowRef } from "vue";
 
 const text = ref("");
 const pwd = ref("");
@@ -90,6 +102,11 @@ const options = [
 
 function onClick(name) {
   lastClick.value = name;
+}
+
+const open = shallowRef(false)
+function showDrawer() {
+  open.value = true
 }
 </script>
 

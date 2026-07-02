@@ -109,6 +109,32 @@ function handleEscape(): void {
   toggle(false);
 }
 
+/**
+ * 落焦时把抽屉全局 focus-trap 与编辑面板隔离。
+ *
+ * 宿主 antdv-next 的 a-drawer / a-modal 等通过 @v-c/util 的 useLockFocus
+ * 在 window focusin / keydown 上注册全局回调（focus-trap + 焦点回拉）。
+ * panel-mask 是 body 上覆盖在抽屉上层的独立 div，input 的 focusin 冒泡到
+ * window 后会被 syncFocus 立即抢回抽屉内的第一个可聚焦节点，造成
+ *「抽屉内组件编辑面板无法输入字符」的 bug（其他场景无第三方焦点陷阱，故正常）。
+ *
+ * 这里在 capture 阶段对 state.propPanel 子树内的 focusin 调用
+ * stopImmediatePropagation，拦截后续同 capture 阶段的抽屉回调；input
+ * 本身的 input / beforeinput 事件流不受影响，输入恢复正常。
+ *
+ * 非 panel 区域的 focusin 不会被拦截，原有焦点行为不变。
+ */
+window.addEventListener(
+  "focusin",
+  (e) => {
+    const panel = state.propPanel;
+    if (panel && e.target instanceof Node && panel.contains(e.target)) {
+      e.stopImmediatePropagation();
+    }
+  },
+  true,
+);
+
 /** 审查关闭时清掉所有浮层与选中态。 */
 function closeAll(): void {
   state.contextMenu!.style.display = "none";
