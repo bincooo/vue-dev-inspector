@@ -14,7 +14,7 @@ import AntdTest from "./components/AntdTest.vue";
     <main class="content">
       <Hero height="200px" />
       <CardList columns="3" gap="12px">
-        <Card title="功能一" icon="📦" shadow="hover" />
+        <Card title="功能一" icon="📦" shadow="hover"/>
         <Card title="功能二" icon="⚡" shadow="hover" />
         <Card title="功能三" icon="🎯" shadow="hover" />
       </CardList>

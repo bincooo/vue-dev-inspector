@@ -725,7 +725,6 @@ body.__vdi-dragging * {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 12px 18px;
   overflow: hidden;
 }
 
@@ -733,8 +732,7 @@ body.__vdi-dragging * {
 .__vdi-code-splitter {
   flex: 0 0 6px;
   cursor: ns-resize;
-  background: transparent;
-  margin: 4px 0;
+  background: #f8fafc;
   transition: background 0.12s;
 }
 
@@ -747,8 +745,6 @@ body.__vdi-dragging * {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
   background: #f8fafc;
   padding: 10px 12px;
   min-height: 0;
@@ -767,7 +763,6 @@ body.__vdi-dragging * {
   flex: 1 1 auto;
   min-height: 0;
   border: 1px solid #e2e8f0;
-  border-radius: 3px;
   background: #fff;
   overflow: hidden;
 }
@@ -847,8 +842,8 @@ body.__vdi-dragging * {
 }
 
 .__vdi-code-save-btn {
-  font-size: 11px;
-  padding: 6px 12px;
+  font-size: 12px;
+  padding: 8px 12px;
 }
 
 .__vdi-code-save-btn:disabled {
