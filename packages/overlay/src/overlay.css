@@ -64,7 +64,7 @@
   position: fixed;
   z-index: 9999;
   display: none;
-  min-width: 200px;
+  width: 210px;
   padding: 6px 0;
   background: #fff;
   border-radius: 3px;
@@ -153,8 +153,8 @@
   position: fixed;
   z-index: 9998;
   pointer-events: auto;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   padding-bottom: 1px;
   display: none;
   align-items: center;
@@ -768,9 +768,11 @@ body.__vdi-dragging * {
 }
 
 /* 高亮 <pre>：覆盖 hljs 主题的 padding:1em / background:#fafafa，
-   否则会与 textarea 的 padding/background 错位，caret 偏移。 */
+   否则会与 textarea 的 padding/background 错位，caret 偏移。
+   同时选择器覆盖 .hljs + inner <code>，避免长文本下 hljs 给 <code>
+   单独加 padding/background 造成 caret 在末行附近偏移。 */
 .__vdi-code-highlight,
-.__vdi-code-highlight code {
+.__vdi-code-highlight.hljs {
   margin: 0;
   padding: 8px 10px;
   background: transparent !important;
@@ -785,6 +787,20 @@ body.__vdi-dragging * {
   color: #1e293b;
 }
 
+/* 内层 <code>：零 padding / 零 background，避免和 <pre> 的 padding 叠加
+   造成字符渲染起点偏移（与 textarea 唯一的 8/10px padding 对齐）。 */
+.__vdi-code-highlight code,
+.__vdi-code-highlight.hljs code {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  display: block;
+}
+
 .__vdi-code-highlight {
   position: absolute;
   inset: 0;
@@ -794,6 +810,13 @@ body.__vdi-dragging * {
   box-sizing: border-box;
   tab-size: 2;
   -moz-tab-size: 2;
+  /* 与 textarea 严格一致盒模型，避免长文本时 content-box 错位造成 caret 偏移。 */
+  margin: 0;
+  border: 0;
+  /* textarea 用 scrollbar-gutter: stable 预留 17px；pre 是 overflow:hidden
+     不出滚动条，必须用等宽 padding-right 模拟 gutter，否则长内容末行
+     caret 与染色错位 1 个滚动条宽。 */
+  padding-right: calc(10px + 17px);
 }
 
 /* 透明 textarea：caret 可见，文字交给下层高亮 <pre> 显示 */
@@ -819,8 +842,19 @@ body.__vdi-dragging * {
   tab-size: 2;
   -moz-tab-size: 2;
   white-space: pre;
-  overflow: auto;
+  /* 始终显示垂直滚动条 + 保留 scrollbar-gutter，使 textarea 可视盒
+     不因滚动条出现/消失而抖动，与下层 <pre> 永远对齐 */
+  overflow-y: scroll;
+  overflow-x: auto;
+  scrollbar-gutter: stable;
   z-index: 1;
+}
+
+/* 隐藏垂直滚动条但保留滚动能力（与 <pre> 视觉对齐）—— WebKit / Blink。
+   Firefox 不支持该伪元素，但 overflow-y: scroll 已能保留 gutter */
+.__vdi-code-textarea::-webkit-scrollbar {
+  width: 0;
+  background: transparent;
 }
 
 .__vdi-code-textarea:focus {

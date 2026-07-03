@@ -41,12 +41,14 @@ export function createUI(): void {
     "×",
     "#dc2626",
     "#ef4444",
+    "删除组件"
   );
   state.copyButton = createActionBtn(
     "__vdi-action-btn __vdi-copy-btn",
     "⧉",
     "#2563eb",
     "#3b82f6",
+    "复制组件"
   );
   state.insertBeforeButton = makeInsertButton(() => openDrawer("before"));
   state.insertBeforeButton.title = "在同级上方插入组件";
@@ -76,8 +78,12 @@ function createActionBtn(
   text: string,
   hoverColor: string,
   baseColor: string,
+  title?: string
 ): HTMLDivElement {
   const btn = createElement("div", className, text);
+  if (title) {
+    btn.title = title;
+  }
   btn.onmouseenter = () => (btn.style.background = hoverColor);
   btn.onmouseleave = () => (btn.style.background = baseColor);
   return btn;
@@ -133,6 +139,9 @@ export function positionActionButtons(): void {
   const cp = state.copyButton!;
   const before = state.insertBeforeButton!;
   const after = state.insertAfterButton!;
+
+  const half = 7;
+
   del.style.display = "flex";
   del.style.left = r.right - 18 + "px";
   del.style.top = r.bottom - 18 + "px";
@@ -140,11 +149,11 @@ export function positionActionButtons(): void {
   cp.style.left = r.right - 36 + "px";
   cp.style.top = r.bottom - 18 + "px";
   before.style.display = "flex";
-  before.style.left = r.left + r.width / 2 - 9 + "px";
-  before.style.top = r.top - 9 + "px";
+  before.style.left = r.left + r.width / 2 - half + "px";
+  before.style.top = r.top - half + "px";
   after.style.display = "flex";
-  after.style.left = r.left + r.width / 2 - 9 + "px";
-  after.style.top = r.bottom - 9 + "px";
+  after.style.left = r.left + r.width / 2 - half + "px";
+  after.style.top = r.bottom - half + "px";
   // 工具按钮：与复制按钮同行，沿用 18px 步长向左排列
   state.toolButtonsEls.forEach((btn, i) => {
     btn.style.display = "flex";

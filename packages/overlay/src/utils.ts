@@ -63,6 +63,8 @@ export interface ApiResponse<T = unknown> {
   script?: import("./types").CodeBlockData;
   style?: import("./types").CodeBlockData;
   data?: T;
+  /** /resolve-path 响应字段：按当前 rootIndex 拼接出的绝对路径。 */
+  absolutePath?: string;
 }
 
 export function apiRequest<T = unknown>(

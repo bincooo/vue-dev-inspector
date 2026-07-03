@@ -57,7 +57,9 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
   /* 上次右键的按钮仍挂在 DOM 上（display:none 不清节点），先清空避免新旧并存 */
   state.contextMenu!.innerHTML = "";
   state.contextMenu!.style.display = "block";
-  state.contextMenu!.style.left = Math.min(x, innerWidth - 220) + "px";
+  // 读取渲染后宽度做 clamp，避免菜单宽度变更（CSS）与位置夹紧逻辑（TS）之间静默脱钩。
+  const menuW = state.contextMenu!.offsetWidth || 210;
+  state.contextMenu!.style.left = Math.min(x, innerWidth - menuW) + "px";
   state.contextMenu!.style.top = Math.min(y, innerHeight - 200) + "px";
 
   const titleTag = createElement("div", "__vdi-menu-title-tag");
@@ -89,10 +91,22 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
     code: () => openCodeDrawer(element),
     copy: () => {
       // 多根场景下 `state.projectRoot` 只代表第一个根；
-      // 对兄弟根上的元素直接拼绝对路径会得到错误的协议 URL。
-      // 因此这里只复制 `相对路径:行:列`（user 在编辑器/搜索框里仍可粘贴使用），
-      // 打开编辑器走 /open-in-editor，由服务端在多根下解析。
-      navigator.clipboard.writeText(formatPosition(pos));
+      // 旧版只复制 `rN:path:line:col`，编辑器里粘贴不可用。
+      // 现在的语义：异步问服务端 /resolve-path 取绝对路径；网络失败时回落到相对路径。
+      const fallback = formatPosition(pos);
+      apiRequest("/resolve-path", {
+        method: "POST",
+        body: JSON.stringify({ file: fallback }),
+      })
+        .then((res) => {
+          const out = res?.absolutePath
+            ? `${res.absolutePath}:${pos.line}:${pos.col}`
+            : fallback;
+          void navigator.clipboard.writeText(out);
+        })
+        .catch(() => {
+          void navigator.clipboard.writeText(fallback);
+        });
     },
     del: () => {
       void deleteElementViaApi(element);

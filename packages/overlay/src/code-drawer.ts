@@ -172,6 +172,10 @@ interface BlockPanel {
   editorWrap: HTMLDivElement;
   textarea: HTMLTextAreaElement;
   highlight: HTMLPreElement;
+  /** 高亮层内层 <code>，在 buildBlockPanel 时一次建好，scroll 同步直接复用，避免每帧 firstElementChild。 */
+  codeEl: HTMLElement;
+  /** 闭包形式的滚动镜像：捕获 codeEl / textarea 引用，scroll 事件直接调用。 */
+  syncScroll: () => void;
   saveBtn: HTMLButtonElement;
   ref: { textarea: HTMLTextAreaElement; saveBtn: HTMLButtonElement };
   hintEl: HTMLDivElement;
@@ -198,8 +202,8 @@ function buildBlockPanel(label: string, kind: "script" | "style"): BlockPanel {
 
   const highlight = document.createElement("pre");
   highlight.className = "__vdi-code-highlight hljs";
-  const highlightCode = document.createElement("code");
-  highlight.appendChild(highlightCode);
+  const codeEl = document.createElement("code");
+  highlight.appendChild(codeEl);
 
   const textarea = createElement<HTMLTextAreaElement>(
     "textarea",
@@ -226,14 +230,15 @@ function buildBlockPanel(label: string, kind: "script" | "style"): BlockPanel {
 
   root.append(titleEl, editorWrap, actions);
 
-  // 滚动同步：textarea scroll → highlight scroll（保证两层视觉对齐）
-  textarea.addEventListener("scroll", () => {
-    highlight.scrollTop = textarea.scrollTop;
-    highlight.scrollLeft = textarea.scrollLeft;
-  });
+  // 滚动同步：textarea scroll → 高亮层 inner <code> 用 translate3d 仿 scroll
+  // （因为 <pre> 是 overflow:hidden，scrollTop/Left 写入无效，必须用 transform 镜像位置）。
+  const syncScroll = () => {
+    codeEl.style.transform = `translate3d(${-textarea.scrollLeft}px, ${-textarea.scrollTop}px, 0)`;
+  };
+  textarea.addEventListener("scroll", syncScroll);
   // 输入时重新高亮（节流由浏览器渲染节奏隐式提供；高频输入下性能可接受）
   textarea.addEventListener("input", () => {
-    void rerenderHighlight(textarea, highlight);
+    void rerenderHighlight(textarea, codeEl, syncScroll);
   });
   // Tab 键：在 caret 处插入 2 个空格（与 CSS tab-size 一致），
   // 阻止默认的「焦点跳到下一可聚焦元素」行为，避免编辑中断。
@@ -260,6 +265,8 @@ function buildBlockPanel(label: string, kind: "script" | "style"): BlockPanel {
     editorWrap,
     textarea,
     highlight,
+    codeEl,
+    syncScroll,
     saveBtn,
     ref: { textarea, saveBtn },
     hintEl,
@@ -280,7 +287,7 @@ function applyBlock(
   panel.textarea.value = block.content;
   panel.hintEl.textContent =
     kind === "script" ? "对应 <script> 块" : "对应 <style> 块";
-  void rerenderHighlight(panel.textarea, panel.highlight);
+  void rerenderHighlight(panel.textarea, panel.codeEl, panel.syncScroll);
 }
 
 /**
@@ -295,9 +302,9 @@ function applyBlock(
  */
 async function rerenderHighlight(
   textarea: HTMLTextAreaElement,
-  highlight: HTMLPreElement,
+  codeEl: HTMLElement,
+  syncScroll: () => void,
 ): Promise<void> {
-  const codeEl = highlight.firstElementChild as HTMLElement | null;
   const value = textarea.value;
   try {
     if (!highlighterPromise) highlighterPromise = loadHighlighter();
@@ -306,13 +313,12 @@ async function rerenderHighlight(
       language: languageFor(textarea.dataset.kind === "style" ? "style" : "script"),
       ignoreIllegals: true,
     });
-    if (codeEl) codeEl.innerHTML = out.value;
+    codeEl.innerHTML = out.value;
   } catch {
-    if (codeEl) codeEl.textContent = value;
+    codeEl.textContent = value;
   }
   // 同步滚动位置（避免用户输入后高亮行与 caret 错位）
-  highlight.scrollTop = textarea.scrollTop;
-  highlight.scrollLeft = textarea.scrollLeft;
+  syncScroll();
 }
 
 /**

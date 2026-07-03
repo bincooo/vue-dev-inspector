@@ -95,18 +95,16 @@ function readPropEntries(value: unknown): PropEntry[] {
 }
 
 /**
- * 单个文件路由的常见前置：解析 `rN:file:line:col` → 加载源码 → 失败统一 JSON 响应。
+ * `rN:file:line:col` → 安全路径解析。失败统一 JSON 响应（400 / 403）。
  *
- * - 任何不符合 `rN:file:line:col` 格式 → 400
- * - rootIndex 越界 → 400
- * - 文件越出对应根 → 403
- * - 成功返回 `{ file, source, absolutePath, rootIndex }`，file 已剥离 `rN:` 前缀
+ * 返回 `null` 时 res 已写出响应，调用方直接 return 即可。
+ * `resolveSource` 与 `handleResolvePath` 共用：前者再读源码，后者只取路径。
  */
-function resolveSource(
+function resolveMeta(
   projectRoots: string[],
   body: RouteBody,
   res: MiddlewareResponse,
-): { file: string; source: string; absolutePath: string; rootIndex: number } | null {
+): { file: string; absolutePath: string; line: number; col: number; rootIndex: number } | null {
   const raw = readString(body, "file");
   const parsed = parseSource(raw);
   if (!parsed) {
@@ -127,13 +125,27 @@ function resolveSource(
     json(res, 403, { error: "Forbidden" });
     return null;
   }
-  const source = fs.readFileSync(resolved.absolutePath, "utf-8");
   return {
     file: parsed.file,
-    source,
     absolutePath: resolved.absolutePath,
+    line: parsed.line,
+    col: parsed.col,
     rootIndex: parsed.rootIndex,
   };
+}
+
+/**
+ * 加载源码版本的解析：在 `resolveMeta` 之上多读一次文件。
+ */
+function resolveSource(
+  projectRoots: string[],
+  body: RouteBody,
+  res: MiddlewareResponse,
+): { file: string; source: string; absolutePath: string; rootIndex: number } | null {
+  const meta = resolveMeta(projectRoots, body, res);
+  if (!meta) return null;
+  const source = fs.readFileSync(meta.absolutePath, "utf-8");
+  return { ...meta, source };
 }
 
 /** 「限制到该枚举」的窄化 helper；落空回退到 default。 */
@@ -357,6 +369,22 @@ function handleUpdateBlock(
   json(res, 200, { success: true });
 }
 
+/** 把 `rN:file:line:col` 解析为绝对路径 + 行/列，不读文件内容。
+ *  用于「复制路径」之类只需路径 + 行/列、不需要源码的轻量场景。 */
+function handleResolvePath(
+  projectRoots: string[],
+  body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  const meta = resolveMeta(projectRoots, body, res);
+  if (!meta) return;
+  json(res, 200, {
+    absolutePath: meta.absolutePath,
+    line: meta.line,
+    col: meta.col,
+  });
+}
+
 /** 扫描所有 projectRoot 下 .vue 文件（排除 node_modules|dist|.vite），去重后排序合并。 */
 function handleListComponents(
   projectRoots: string[],
@@ -458,6 +486,7 @@ const ROUTES: Record<string, Record<string, RouteHandler>> = {
   "/move-element": { POST: handleMoveElement },
   "/get-block": { POST: handleGetBlock },
   "/update-block": { POST: handleUpdateBlock },
+  "/resolve-path": { POST: handleResolvePath },
 };
 
 /**

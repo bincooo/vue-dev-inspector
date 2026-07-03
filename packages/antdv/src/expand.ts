@@ -14,28 +14,24 @@
  * 这里的代码原本散落在 packages/demo/src/inspector-demo.ts，
  * 现迁移到物料库本体作为"开箱即用"演示。
  */
-import { addToolBtn, onInspect, onSelect } from "@vue-dev-inspector/shared";
+import { onInspect, onSelect } from "@vue-dev-inspector/shared";
 
-addToolBtn(
-  {
-    id: "antdv-demo-wrap",
-    icon: "🤖",
-    label: "ai助手",
-    position: "right",
-    onClick: (event) => {
-      window.console.log("[antdv-demo] wrap clicked, source =", event.source);
-    },
-  },
-);
+// addToolBtn(
+//   {
+//     id: "antdv-demo-wrap",
+//     icon: "🤖",
+//     label: "ai助手",
+//     position: "right",
+//     onClick: (event) => {
+//       window.console.log("[antdv-demo] wrap clicked, source =", event.source);
+//     },
+//   },
+// );
 
 onInspect(() => {
   window.console.log("[antdv-demo] enter inspect mode");
 });
 
 onSelect((event) => {
-  window.console.log(
-    "[antdv-demo] select",
-    event.target?.tagName,
-    event.source,
-  );
+  window.console.log("[antdv-demo] select", event.target?.tagName, event.source);
 });
