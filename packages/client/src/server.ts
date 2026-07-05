@@ -490,21 +490,17 @@ const ROUTES: Record<string, Record<string, RouteHandler>> = {
 };
 
 /**
- * 创建 DevInspector 服务端中间件
- * 统一处理所有 /__dev-inspector-api__/* 请求。
+ * 把 dev server middleware 主干挂到 `server.middlewares`。
  *
- * `projectRoots` 为多根目录列表（monorepo 下跨子工程编辑的支持）；
- * 至少包含一个根路径。单根场景下使用 `[config.root]` 传入即可。
+ * `routes` 决定注册哪些处理器；未命中路由统一 `next()` 交给后续中间件。
  */
-export function createDevServer(
+function attachMiddleware(
   server: ViteDevServer,
   projectRoots: string[],
+  routes: Record<string, Record<string, RouteHandler>>,
 ): void {
   if (projectRoots.length === 0) {
-    // 防御：空数组会让所有请求都返回 403；显式抛错避免静默失败
-    throw new Error(
-      "[vdi] createDevServer received empty projectRoots.",
-    );
+    throw new Error("[vdi] createDevServer received empty projectRoots.");
   }
   server.middlewares.use(async (req, res, next) => {
     const url = req.url || "";
@@ -521,18 +517,33 @@ export function createDevServer(
     }
 
     const pathname = url.split("?")[0].replace(API_PREFIX, "");
-    const handler = ROUTES[pathname]?.[req.method || ""];
+    const handler = routes[pathname]?.[req.method || ""];
     if (!handler) return next();
 
     try {
       const body = await parseBody(req);
       handler(projectRoots, body as RouteBody, res);
     } catch (err: unknown) {
-      json(res, 500, {
-        error: err instanceof Error ? err.message : "Unknown error",
-      });
+      const message = err instanceof Error ? err.message : "Unknown error";
+      console.error(`[vdi] ${pathname} 失败:`, err instanceof Error ? err : message);
+      json(res, 500, { error: message });
     }
   });
+}
+
+/**
+ * 创建 DevInspector 服务端中间件
+ * 统一处理所有 /__dev-inspector-api__/* 请求。
+ *
+ * `projectRoots` 为多根目录列表（monorepo 下跨子工程编辑的支持）；
+ * 至少包含一个根路径。单根场景下使用 `[config.root]` 传入即可。
+ */
+export function createDevServer(
+  server: ViteDevServer,
+  projectRoots: string[],
+): void {
+  console.log(`[vdi] 中间件已挂载，projectRoots=${JSON.stringify(projectRoots)}`);
+  attachMiddleware(server, projectRoots, ROUTES);
 }
 
 /**

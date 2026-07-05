@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "dev:demo": "pnpm -C packages/demo dev",
+    "dev:uni": "pnpm -C packages/uni-demo dev:h5",
     "build:core": "pnpm -C packages/utils build && pnpm -C packages/shared build && pnpm -C packages/overlay build && pnpm -C packages/client build && pnpm -C packages/core build",
+    "build:uni": "pnpm -C packages/utils build && pnpm -C packages/shared build && pnpm -C packages/overlay build && pnpm -C packages/client build && pnpm -C packages/core build && pnpm -C packages/uni build",
     "build:antd": "pnpm -C packages/antdv build",
     "lint": "eslint \"packages/**/*.{ts,tsx,vue}\"",
     "lint:fix": "eslint \"packages/**/*.{ts,tsx,vue}\" --fix",
@@ -37,7 +39,7 @@
     "tsup": "^8.5.1",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.62.0",
-    "vite": "7.3.2",
+    "vite": "^7.3.2",
     "vite-plugin-singlefile": "2.3.0"
   },
   "lint-staged": {

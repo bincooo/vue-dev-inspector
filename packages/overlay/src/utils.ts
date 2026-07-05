@@ -74,7 +74,23 @@ export function apiRequest<T = unknown>(
   return fetch(state.apiPrefix + path, {
     headers: { "Content-Type": "application/json" },
     ...init,
-  }).then((response) => response.json() as Promise<ApiResponse<T>>);
+  }).then((response) => {
+    // 非 2xx 一律 reject —— 只读场景下服务端对写路由回 405 JSON，
+    // 让调用方的 .catch 弹 toast。body 解析失败（如 HTML 404）退回 {} 后
+    // 用 HTTP 状态码兜底，避免 .json() 抛 SyntaxError 把链路吞掉。
+    if (!response.ok) {
+      return response
+        .json()
+        .catch(() => ({}))
+        .then((body) => {
+          const err = new Error(
+            (body as { error?: string })?.error || `HTTP ${response.status}`,
+          );
+          throw err;
+        });
+    }
+    return response.json() as Promise<ApiResponse<T>>;
+  });
 }
 
 /** 读取元素的展示标签（优先取注入的 tag 属性，否则取小写标签名）。 */
@@ -178,4 +194,9 @@ export function logSuccess(msg: string): void {
 /** 「红色」品牌前缀 + 报错信息（首参作标签，第二参接描述）。 */
 export function logError(label: string, detail: string): void {
   console.warn(BRAND + " " + label + "：", detail);
+}
+
+/** 从任意 catch 值提取可读错误信息。 */
+export function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
 }

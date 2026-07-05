@@ -9,6 +9,8 @@ import {
   createElement,
   formatPosition,
   logSuccess,
+  logError,
+  errMsg,
 } from "./utils";
 import type { PropEntry } from "./types";
 
@@ -213,5 +215,8 @@ function submit(): void {
         closePanel();
         logSuccess("属性已更新");
       }
+    })
+    .catch((e: unknown) => {
+      logError("属性更新失败", errMsg(e));
     });
 }

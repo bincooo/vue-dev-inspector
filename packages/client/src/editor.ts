@@ -1,4 +1,13 @@
-import { parse as parseSFC } from "@vue/compiler-sfc";
+import { createRequire } from "node:module";
+
+// ⚠ 必须在 ESM import 之前预热 CJS 缓存
+// @dcloudio/vite-plugin-uni 加载时会将 @vue/shared@3.4.21（无 genCacheKey）装入 CJS 缓存。
+// 这里通过 createRequire 先把 @vue/shared@3.5.38 装入缓存，确保后续 compiler-sfc
+// 内部的 require('@vue/shared') 能拿到正确的 genCacheKey。
+const _require = createRequire(import.meta.url);
+_require("@vue/shared");
+const { parse: parseSFC } = _require("@vue/compiler-sfc");
+
 import { baseParse, NodeTypes } from "@vue/compiler-core";
 import MagicString from "magic-string";
 import type {

@@ -1,0 +1,12 @@
+{
+  "name": "uni-dev-inspector-demo",
+  "appid": "",
+  "description": "H5 verification for vue-dev-inspector uni package",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": "viewportPx",
+  "h5": {
+    "title": "uni-dev-inspector demo",
+    "router": { "mode": "hash" }
+  }
+}

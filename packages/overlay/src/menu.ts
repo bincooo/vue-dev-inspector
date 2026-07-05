@@ -8,6 +8,8 @@ import {
   getElementTagName,
   createElement,
   formatPosition,
+  logError,
+  errMsg,
 } from "./utils";
 import { redrawSelection } from "./inspector";
 import { openPanel } from "./panel";
@@ -44,12 +46,16 @@ export function deleteElementViaApi(element: HTMLElement): Promise<unknown> {
       col: +pos.col,
       tag: getElementTagName(element),
     }),
-  }).then(() => {
-    if (state.selectedElement === element) {
-      setSelectedElement(null);
-      redrawSelection();
-    }
-  });
+  })
+    .then(() => {
+      if (state.selectedElement === element) {
+        setSelectedElement(null);
+        redrawSelection();
+      }
+    })
+    .catch((e: unknown) => {
+      logError("删除失败", errMsg(e));
+    });
 }
 
 export function showMenu(x: number, y: number, element: HTMLElement): void {

@@ -29,7 +29,7 @@ import { setCdnBuilder } from "../../utils/src/cdn";
  * 同步单例 + try/catch 即可，不需要 Promise 缓存。
  */
 let _overlayScript: string | null = null;
-function loadOverlayScript(): string {
+export function loadOverlayScript(): string {
   if (_overlayScript == null) {
     _overlayScript = loadScript(
       './overlay.iife.js',
@@ -47,7 +47,7 @@ function loadOverlayScript(): string {
  * template.content 的，把字节 offset 攒回全文时需要先把"该字节在全文里
  * 是第几行"算清楚，再补一行（1-based）。
  */
-function offsetToLine(code: string, offset: number): number {
+export function offsetToLine(code: string, offset: number): number {
   let line = 1;
   for (let i = 0; i < offset && i < code.length; i++) {
     if (code[i] === "\n") line++;
@@ -57,7 +57,7 @@ function offsetToLine(code: string, offset: number): number {
 
 
 /** 构造运行时配置对象 (window.__DEV_INSPECTOR_CFG__) 的 JSON 字符串。 */
-function buildCfgJson(
+export function buildCfgJson(
   options: Required<Omit<DevInspectorOptions, "projectRoots" | "expandCdn">>,
   projectRoots: string[],
 ): string {
@@ -98,7 +98,7 @@ function buildCfgJson(
  * 预 await expand（cdn scheme 已是 URL 字符串同步返回，pkg:/本地 scheme
  * 也已同步）。
  */
-function buildExpandScripts(componentConfig: { expand?: string }[]): string {
+export function buildExpandScripts(componentConfig: { expand?: string }[]): string {
   const bodies = (componentConfig ?? [])
     .map((e) => e.expand ?? "")
     .filter((s) => s.length > 0);

@@ -16,11 +16,13 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc",
+    "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc --external @vue/compiler-core",
     "test": "vitest run"
   },
   "dependencies": {
-    "@vue-dev-inspector/shared": "workspace:*"
+    "@vue-dev-inspector/shared": "workspace:*",
+    "@vue/compiler-core": "^3.5.38",
+    "@vue/shared": "^3.5.38"
   },
   "devDependencies": {
     "vitest": "^2.1.0"

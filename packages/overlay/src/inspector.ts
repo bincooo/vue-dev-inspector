@@ -25,6 +25,8 @@ import {
   getLayoutBox,
   positionOverlay,
   logInfo,
+  logError,
+  errMsg,
 } from "./utils";
 import { openDrawer } from "./drawer";
 import { deleteElementViaApi } from "./menu";
@@ -107,9 +109,13 @@ export function duplicateElement(element: HTMLElement): void {
   apiRequest("/duplicate-element", {
     method: "POST",
     body: JSON.stringify({ file: formatPosition(pos), line: +pos.line, col: +pos.col }),
-  }).then((response) => {
-    if (response && response.success) logInfo("元素已复制");
-  });
+  })
+    .then((response) => {
+      if (response && response.success) logInfo("元素已复制");
+    })
+    .catch((e: unknown) => {
+      logError("复制失败", errMsg(e));
+    });
 }
 
 /** 删除元素 — 服务端写盘后由 HMR 重渲染，本函数只清审查层选中态。 */

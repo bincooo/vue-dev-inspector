@@ -1,0 +1,37 @@
+{
+  "name": "@vue-dev-inspector/uni",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@vue-dev-inspector/core": "workspace:*",
+    "@vue-dev-inspector/utils": "workspace:*",
+    "@vue-dev-inspector/client": "workspace:*",
+    "@vue/compiler-sfc": "^3.5.38",
+    "@vue/shared": "^3.5.38",
+    "magic-string": "^0.30.21"
+  },
+  "peerDependencies": {
+    "vite": "^7.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.17",
+    "typescript": "5.9.3",
+    "tsup": "^8.5.1"
+  }
+}

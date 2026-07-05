@@ -216,12 +216,16 @@ function buildDrawer(direction: DropDirection, hint: string): void {
               componentTag: item.tag,
               direction,
             }),
-          }).then((response) => {
-            if (response && response.success) {
-              footer.textContent = "已插入 " + item.tag + "（HMR 刷新中）";
-            } else
-              footer.textContent = (response && response.error) || "插入失败";
-          });
+          })
+            .then((response) => {
+              if (response && response.success) {
+                footer.textContent = "已插入 " + item.tag + "（HMR 刷新中）";
+              } else
+                footer.textContent = (response && response.error) || "插入失败";
+            })
+            .catch((e: unknown) => {
+              footer.textContent = e instanceof Error ? e.message : "插入失败";
+            });
         };
         list.appendChild(row);
       });
