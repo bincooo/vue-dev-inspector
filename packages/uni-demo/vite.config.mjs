@@ -3,24 +3,18 @@
  *
  * uni H5 demo —— 验证 @vue-dev-inspector/uni 的端到端行为。
  *
- * ⚠ @vue/shared 别名：@dcloudio/vite-plugin-uni 内置的 uniResolveIdPlugin
- * 会把 `@vue/shared` 解析到它自带的 3.4.21（无 normalizeCssVarValue）。
- * 而 devDependencies 里的 @vue/runtime-core@3.5.38 依赖 normalizeCssVarValue，
- * 直接 build 会 rollup 报 "is not exported"。这里显式 alias 把 @vue/shared
- * 指向项目内的 3.5.38 版本，覆盖 uni 的 3.4.21 内置解析。
+ * ⚠ Vue 版本对齐：@dcloudio/vite-plugin-uni（及其 @vitejs/plugin-vue@5.2.4
+ * 与 uni-cli-shared）写死 @vue/compiler-*@3.4.21，编译 SFC 用 3.4.21。
+ * 因此本 demo 的 vue 运行时也必须用 3.4.21 —— 若用 3.5.x 运行时，
+ * 编译期(3.4)与运行期(3.5)版本错配，HMR rerender 会抛 "_" is read-only
+ * （3.4 编译的 _hoisted/_withCtx 产物与 3.5 运行时的 _cache 契约不符；
+ * 全量刷新能容忍，热更新不能）。inspector 自身的 @vue-dev-inspector/uni
+ * 内部用自带 @vue/compiler-sfc@3.5.38 仅做源码定位注入，与运行时无关。
  */
 import { defineConfig } from "vite";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import { uniDevInspector } from "@vue-dev-inspector/uni";
+import uview from "@vue-dev-inspector/uview";
 import uni from "@dcloudio/vite-plugin-uni";
-
-// 配置文件所在目录（= uni-demo 根），用相对路径定位 3.5.38 的 @vue/shared
-const configDir = path.dirname(fileURLToPath(import.meta.url));
-const vueSharedEsm = path.resolve(
-  configDir,
-  "node_modules/@vue/shared/dist/shared.esm-bundler.js",
-);
 
 function resolvePlugin(module, options) {
   return (module?.default || module)(options)
@@ -35,13 +29,10 @@ export default defineConfig({
       exclude: [/node_modules/],
       projectRoots: ["."],
       phoneShell: true,
+      // 组件面板 —— uview-pro 物料描述（tag/label/icon/snippet）
+      componentConfig: [uview()],
     }),
     resolvePlugin(uni),
   ],
-  resolve: {
-    alias: {
-      "@vue/shared": vueSharedEsm,
-    },
-  },
   server: { host: "0.0.0.0" },
 });

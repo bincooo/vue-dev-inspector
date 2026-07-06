@@ -14,7 +14,7 @@
 const BASE_W = 375;
 
 /** 屏幕内容区顶部留白（含刘海 + 状态栏），基准 px */
-const SCREEN_PAD_TOP = 52;
+const SCREEN_PAD_TOP = 65;
 
 // 听筒
 const SPEAKER_W = 60, SPEAKER_H = 4, SPEAKER_TOP = 7;
@@ -72,8 +72,8 @@ function buildCss(cfg: PhoneShellConfig): string {
     `[data-vdi-phone-btn-l3]{top:${px(BTN_L3_TOP)};left:-${px(BTN_EXT)};width:${px(BTN_W)};height:${px(BTN_L3_H)}}`,
     `[data-vdi-phone-btn-right]{top:${px(BTN_RIGHT_TOP)};right:-${px(BTN_EXT)};width:${px(BTN_W)};height:${px(BTN_RIGHT_H)};box-shadow:inset 1px 0 2px rgba(255,255,255,.06);border-radius:0 3px 3px 0}`,
     `[data-vdi-phone-notch]{position:absolute;left:50%;transform:translateX(-50%);width:${px(NOTCH_W)};height:${px(NOTCH_H)};background:#0d0d0d;border-radius:0 0 ${px(NOTCH_R)} ${px(NOTCH_R)};z-index:55}`,
-    `[data-vdi-phone-screen]{position:relative;width:100%;height:100%;z-index:50;padding:${rnd(SCREEN_PAD_TOP)}px 4px 0 4px;box-sizing:border-box;background:#fff;border-radius:${px(PHONE_RADIUS)};overflow-y:auto;overflow-x:hidden}`,
-    `[data-vdi-phone-screen] uni-page-head,[data-vdi-phone-screen] .uni-page-head{position:absolute!important;top:0!important;left:0!important;right:0!important;width:100%!important;z-index:50;padding-top:20px;height: 50px}`,
+    `[data-vdi-phone-screen]{position:relative;width:100%;height:100%;z-index:50;padding:${rnd(SCREEN_PAD_TOP)}px 0 0 0;box-sizing:border-box;background:#fff;border-radius:${px(PHONE_RADIUS)};overflow-y:auto;overflow-x:hidden}`,
+    `[data-vdi-phone-screen] uni-page-head,[data-vdi-phone-screen] .uni-page-head{position:absolute!important;top:0!important;left:0!important;right:0!important;width:100%!important;z-index:50;padding-top:20px;height: 65px}`,
     `[data-vdi-phone-bar]{position:absolute;bottom:${px(BAR_BOTTOM)};left:50%;transform:translateX(-50%);width:${px(BAR_W)};height:${px(BAR_H)};background:rgba(128,128,128,.5);border-radius:3px;z-index:100}`,
   ].join("");
 }

@@ -1,0 +1,6 @@
+/**
+ * uni.scss —— uni-app 编译期自动注入到每个组件样式作用域，用于共享 SCSS 变量。
+ *
+ * 引入 uview-pro 主题变量（颜色、尺寸 token），供 `u-*` 组件样式引用。
+ */
+@import "uview-pro/theme.scss";

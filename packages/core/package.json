@@ -15,10 +15,12 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/plugin-entry.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc && cp ../overlay/dist/overlay.iife.js dist/overlay.iife.js"
+    "build": "tsup src/index.ts src/plugin-entry.ts --format esm --platform node --dts --sourcemap --clean --external @vue/compiler-sfc --external @vue/compiler-core --external @vue/shared && cp ../overlay/dist/overlay.iife.js dist/overlay.iife.js"
   },
   "dependencies": {
-    "@vue/compiler-sfc": "^3.5.38"
+    "@vue/compiler-core": "^3.5.38",
+    "@vue/compiler-sfc": "^3.5.38",
+    "@vue/shared": "^3.5.38"
   },
   "devDependencies": {
     "@vue-dev-inspector/shared": "workspace:*",

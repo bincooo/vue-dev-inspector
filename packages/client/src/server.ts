@@ -252,6 +252,8 @@ function handleInsertComponent(
     INSERT_DIRECTIONS,
     "inside",
   );
+  // 面板透传的 snippet（非空时优先于服务端 catalog）；空串视作未传
+  const snippet = readString(body, "snippet") || undefined;
   const result = insertComponent(
     ctx.source,
     ctx.file,
@@ -259,6 +261,7 @@ function handleInsertComponent(
     readNumber(body, "col"),
     tag,
     direction,
+    snippet,
   );
   if (result === null) {
     json(res, 404, { error: "Target element not found" });

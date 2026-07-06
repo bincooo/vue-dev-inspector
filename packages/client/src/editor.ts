@@ -412,6 +412,12 @@ export function insertComponent(
   col: number,
   componentTag: string,
   direction: "inside" | "before" | "after" = "inside",
+  /**
+   * 调用方（组件面板）显式指定的 snippet，原样写入 .vue。
+   * 非空时优先于 COMPONENT_CATALOG 查找；未传/空串则回退到 catalog
+   * 或 `<tag />`，保持对 antdv 等老调用方的向后兼容。
+   */
+  snippetOverride?: string,
 ): string | null {
   const t = parseTemplate(sfcSource, filePath);
   if (!t) return null;
@@ -420,7 +426,8 @@ export function insertComponent(
 
   // 查组件 schema；没有则按 tag 生成默认片段
   const schema = COMPONENT_CATALOG.find((c) => c.tag === componentTag);
-  const snippet = schema ? componentSnippet(schema) : `<${componentTag} />`;
+  const snippet = snippetOverride
+    || (schema ? componentSnippet(schema) : `<${componentTag} />`);
 
   const s = new MagicString(sfcSource);
 
