@@ -1,5 +1,6 @@
 import type { Plugin } from "vite";
 import path from "node:path";
+import fs from "node:fs";
 import { parse, compileTemplate } from "@vue/compiler-sfc";
 import MagicString from "magic-string";
 import {
@@ -53,6 +54,29 @@ export function offsetToLine(code: string, offset: number): number {
     if (code[i] === "\n") line++;
   }
   return line;
+}
+
+/**
+ * 磁盘文件中 `<template>` 内容起始行号（1-based）。
+ *
+ * `el.loc.start.line` 是相对 `template.content` 的，前置插件改的是 template
+ * 之前的内容、不会动 template 内部，所以 astLine 在磁盘 / 内存中一致；
+ * 只有 `templateLine` 需要回到磁盘取。列号同理不受影响（template 内容起始
+ * 列通常为 0）。
+ *
+ * 与 `client/src/server.ts` 的处理器一致：每次直接 readFileSync + parse，
+ * 不做缓存——dev 期文件反复变动，缓存命中率低且引入 mtime 精度风险，
+ * 不值得。读盘失败（虚拟模块、权限等）返回 -1，调用方回落到内存 code 的偏移。
+ */
+function getDiskTemplateLine(diskPath: string): number {
+  try {
+    const diskCode = fs.readFileSync(diskPath, "utf8");
+    const { descriptor, errors } = parse(diskCode, { filename: diskPath });
+    if (errors.length || !descriptor.template) return -1;
+    return offsetToLine(diskCode, descriptor.template.loc.start.offset);
+  } catch {
+    return -1;
+  }
 }
 
 
@@ -169,7 +193,15 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
       // template 内容在 SFC 文件中的起始行号（1-based）。
       // 当 <script> 在 <template> 上方时，AST 给出的 el.loc.start.line 是相对
       // template.content 的行号，必须加上这个偏移才能在编辑器里点准位置。
-      const templateLine = offsetToLine(code, template.loc.start.offset);
+      //
+      // 必须取**磁盘文件**的行号，而非 transform 收到的 `code`：`enforce:"pre"`
+      // 链中靠前的插件（如 unplugin-vue-setup-extend-plus）会在 <template> 之前
+      // 前置注入内容，把 <template> 整体下推，使内存 code 的 templateLine 偏大，
+      // 进而把 data-source-file 的行号整体抬高（编辑器打开磁盘文件就会跳错行）。
+      // 磁盘读失败时回落到内存 code 的偏移，保持旧行为。
+      const diskLine = getDiskTemplateLine(id);
+      const templateLine =
+        diskLine >= 0 ? diskLine : offsetToLine(code, template.loc.start.offset);
 
       compileTemplate({
         source: template.content,
