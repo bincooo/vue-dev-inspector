@@ -17,9 +17,9 @@ const BASE_W = 375;
 const SCREEN_PAD_TOP = 52;
 
 // 听筒
-const SPEAKER_W = 60, SPEAKER_H = 4, SPEAKER_TOP = 9;
+const SPEAKER_W = 60, SPEAKER_H = 4, SPEAKER_TOP = 7;
 // 前置摄像头
-const CAM_SIZE = 10, CAM_LEFT = 44, CAM_TOP = 6;
+const CAM_SIZE = 10, CAM_LEFT = 44, CAM_TOP = 4;
 // 侧边按钮
 const BTN_W = 3, BTN_EXT = 8; // 宽度 + 伸出量
 const BTN_L1_TOP = 130, BTN_L1_H = 24;
@@ -27,7 +27,7 @@ const BTN_L2_TOP = 166, BTN_L2_H = 52;
 const BTN_L3_TOP = 230, BTN_L3_H = 52;
 const BTN_RIGHT_TOP = 170, BTN_RIGHT_H = 80;
 // 刘海
-const NOTCH_W = 140, NOTCH_H = 26, NOTCH_R = 18;
+const NOTCH_W = 140, NOTCH_H = 22, NOTCH_R = 18;
 // Home bar
 const BAR_BOTTOM = 8, BAR_W = 134, BAR_H = 5;
 // 手机边框圆角
