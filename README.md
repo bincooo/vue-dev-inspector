@@ -64,7 +64,9 @@ pnpm run dev:demo
 3. 审查中按 `Esc` 逐级关闭（drag / drawer / panel / 审查）
 4. 按住 `Ctrl` 拖动已选中元素可调整位置
 
-[在线体验](https://1i0k2-loc.hf.space)
+[在线体验(电脑端)](https://1i0k2-loc.hf.space)
+
+[在线体验(移动端)](https://1i0k2-iloc.hf.space)
 
 属性编辑与ide联动
 <video src="https://github.com/user-attachments/assets/6ade0f49-0db7-4b89-8975-14dc1f3cf656" controls="controls" width="500" height="300"></video>
