@@ -27,7 +27,7 @@ import {
   formatPosition,
   parsePosition,
 } from "./utils";
-import type { CodeBlockData, GetBlocksResponse } from "./types";
+import type { CodeBlockData, GetBlocksResponse, ChildTextData } from "./types";
 import { loadHighlighter, languageFor } from "./cdn";
 
 /** 抽屉滑出/滑入动画时长（与组件抽屉一致）。 */
@@ -53,7 +53,7 @@ export function closeCodeDrawer(): void {
   const drawer = state.codeDrawer;
   state.codeDrawer = null;
   state.codeDrawerContext = null;
-  state.codeDrawerBlocks = { script: null, style: null };
+  state.codeDrawerBlocks = { script: null, style: null, childText: null };
   if (codeBackdrop) {
     codeBackdrop.remove();
     codeBackdrop = null;
@@ -132,8 +132,15 @@ export function openCodeDrawer(element: HTMLElement): void {
   const scriptPanel = buildBlockPanel("Script", "script");
   const splitter = createElement("div", "__vdi-code-splitter");
   const stylePanel = buildBlockPanel("CSS", "style");
-  body.append(scriptPanel.root, splitter, stylePanel.root);
-  applySplitRatio(body, scriptPanel.root, stylePanel.root, state.codeDrawerSplit);
+  // 第三个区域：子节点文本（懒加载，初始折叠成窄条，不参与 script/style 的 2 路 splitter）。
+  const childPanel = buildBlockPanel("子节点文本", "childtext");
+  body.append(scriptPanel.root, splitter, stylePanel.root, childPanel.root);
+  applySplitRatio(
+    body,
+    scriptPanel.root,
+    stylePanel.root,
+    state.codeDrawerSplit,
+  );
   installSplitter(splitter, body, scriptPanel.root, stylePanel.root);
 
   // 拉取
@@ -151,14 +158,14 @@ export function openCodeDrawer(element: HTMLElement): void {
       }
       applyBlock(scriptPanel, response.script, "script");
       applyBlock(stylePanel, response.style, "style");
+      // 缺块也保留 ref（面板始终显示）；childText 面板常驻，ref 直接存。
       state.codeDrawerBlocks = {
-        script: response.script ? scriptPanel.ref : null,
-        style: response.style ? stylePanel.ref : null,
+        script: scriptPanel.ref,
+        style: stylePanel.ref,
+        childText: childPanel.ref,
       };
-      const hasAny = !!(response.script || response.style);
-      status.textContent = hasAny
-        ? "编辑后点击对应保存按钮回写源码（HMR 自动刷新）"
-        : "该文件没有 <script> 或 <style> 块";
+      // 缺块时 applyBlock 已在面板内提示「保存将新建」，状态栏统一引导文案。
+      status.textContent = "编辑后点击对应保存按钮回写源码（HMR 自动刷新）";
     })
     .catch(() => {
       status.textContent = "网络错误";
@@ -179,6 +186,10 @@ interface BlockPanel {
   saveBtn: HTMLButtonElement;
   ref: { textarea: HTMLTextAreaElement; saveBtn: HTMLButtonElement };
   hintEl: HTMLDivElement;
+  /** style 块新建时是否 scoped 的复选框；仅 style 面板非 null。 */
+  scopedCheckbox: HTMLInputElement | null;
+  /** 子节点文本面板的「📝 编辑」按钮（懒加载入口）；仅 childtext 面板非 null。 */
+  editBtn: HTMLButtonElement | null;
 }
 
 /**
@@ -186,15 +197,21 @@ interface BlockPanel {
  *
  * DOM 结构：
  *   root
- *   ├─ title (Script / CSS)
+ *   ├─ title (Script / CSS / 子节点文本)
  *   ├─ editor-wrap  (position: relative)
  *   │   ├─ highlight <pre><code>  (底层，渲染高亮 HTML；pointer-events: none)
  *   │   └─ textarea              (上层，文本透明 + caret 可见)
- *   └─ actions (hint + Save 按钮)
+ *   └─ actions (hint + [scoped 复选框] + [编辑按钮] + Save 按钮)
  *
  * 仅组装 DOM 骨架；高亮由 installHighlight 在拿到内容后渲染。
+ * - style 面板：多一个 scoped 复选框（仅块缺失、新建时显示）。
+ * - childtext 面板：多一个「📝 编辑」按钮（懒加载入口），初始折叠成窄条
+ *   （editor-wrap / saveBtn 隐藏，root 收缩为 0 0 auto），点编辑后展开。
  */
-function buildBlockPanel(label: string, kind: "script" | "style"): BlockPanel {
+function buildBlockPanel(
+  label: string,
+  kind: "script" | "style" | "childtext",
+): BlockPanel {
   const root = createElement("div", "__vdi-code-block");
   const titleEl = createElement("div", "__vdi-code-block-title", label);
 
@@ -217,16 +234,62 @@ function buildBlockPanel(label: string, kind: "script" | "style"): BlockPanel {
 
   const hintEl = createElement("div", "__vdi-code-block-hint", "");
 
+  // style 面板：scoped 复选框（新建块时勾选用）。
+  let scopedCheckbox: HTMLInputElement | null = null;
+  if (kind === "style") {
+    scopedCheckbox = document.createElement("input");
+    scopedCheckbox.type = "checkbox";
+    scopedCheckbox.checked = true;
+    scopedCheckbox.className = "__vdi-code-scoped-input";
+    const scopedLabel = createElement<HTMLLabelElement>(
+      "label",
+      "__vdi-code-scoped",
+    );
+    scopedLabel.append(scopedCheckbox, document.createTextNode(" scoped"));
+    // 默认隐藏：块已存在时不显示（由 applyBlock 控制可见性）。
+    scopedLabel.style.display = "none";
+    hintEl.after(scopedLabel);
+  }
+
   const saveBtn = createElement<HTMLButtonElement>(
     "button",
     "__vdi-save-btn __vdi-code-save-btn",
     "💾 保存",
   );
+
+  // childtext 面板：懒加载「📝 编辑」按钮 + 初始折叠态。
+  let editBtn: HTMLButtonElement | null = null;
+  if (kind === "childtext") {
+    editBtn = createElement<HTMLButtonElement>(
+      "button",
+      "__vdi-save-btn __vdi-code-edit-btn",
+      "📝 编辑",
+    );
+    editorWrap.style.display = "none";
+    saveBtn.style.display = "none";
+    root.style.flex = "0 0 auto";
+  }
+
+  // 保存按钮：script/style 走 submitBlock（style 透传 scoped）；childtext 走 submitChildText。
   saveBtn.onclick = () => {
-    void submitBlock(kind, textarea.value, saveBtn);
+    if (kind === "childtext") {
+      void submitChildText(textarea.value, saveBtn, panel);
+    } else {
+      const scoped = kind === "style" ? scopedCheckbox?.checked : undefined;
+      void submitBlock(kind, textarea.value, saveBtn, scoped);
+    }
   };
+
+  // 编辑按钮：懒加载子节点源码并展开面板。
+  if (editBtn) {
+    editBtn.onclick = () => {
+      void loadChildText(panel);
+    };
+  }
+
   const actions = createElement("div", "__vdi-code-block-actions");
   actions.append(hintEl, saveBtn);
+  if (editBtn) actions.appendChild(editBtn);
 
   root.append(titleEl, editorWrap, actions);
 
@@ -259,7 +322,7 @@ function buildBlockPanel(label: string, kind: "script" | "style"): BlockPanel {
     textarea.dispatchEvent(new Event("input"));
   });
 
-  return {
+  const panel: BlockPanel = {
     root,
     titleEl,
     editorWrap,
@@ -270,23 +333,39 @@ function buildBlockPanel(label: string, kind: "script" | "style"): BlockPanel {
     saveBtn,
     ref: { textarea, saveBtn },
     hintEl,
+    scopedCheckbox,
+    editBtn,
   };
+  return panel;
 }
 
-/** 应用服务端响应到块面板：写入内容、设置可见性、首次渲染高亮。 */
+/** 应用服务端响应到块面板：写入内容、设置可见性、首次渲染高亮。
+ *
+ * 缺块时不再隐藏整面板 —— 仍显示空编辑区 + 保存按钮，让用户能新增块。
+ * style 面板在缺块时显示 scoped 复选框（块已存在时按原 attrs 保留，隐藏复选框）。 */
 function applyBlock(
   panel: BlockPanel,
   block: CodeBlockData | undefined,
   kind: "script" | "style",
 ): void {
-  if (!block) {
-    panel.root.style.display = "none";
-    return;
-  }
   panel.root.style.display = "";
-  panel.textarea.value = block.content;
-  panel.hintEl.textContent =
-    kind === "script" ? "对应 <script> 块" : "对应 <style> 块";
+  if (!block) {
+    panel.textarea.value = "";
+    panel.hintEl.textContent =
+      kind === "script"
+        ? '无 <script> 块，保存将新建 <script setup lang="ts">'
+        : "无 <style> 块，保存将新建";
+    if (kind === "style" && panel.scopedCheckbox) {
+      panel.scopedCheckbox.parentElement!.style.display = "";
+    }
+  } else {
+    panel.textarea.value = block.content;
+    panel.hintEl.textContent =
+      kind === "script" ? "对应 <script> 块" : "对应 <style> 块";
+    if (kind === "style" && panel.scopedCheckbox) {
+      panel.scopedCheckbox.parentElement!.style.display = "none";
+    }
+  }
   void rerenderHighlight(panel.textarea, panel.codeEl, panel.syncScroll);
 }
 
@@ -309,8 +388,11 @@ async function rerenderHighlight(
   try {
     if (!highlighterPromise) highlighterPromise = loadHighlighter();
     const hljs = await highlighterPromise;
+    const lang = languageFor(
+      textarea.dataset.kind as "script" | "style" | "childtext",
+    );
     const out = hljs.highlight(value, {
-      language: languageFor(textarea.dataset.kind === "style" ? "style" : "script"),
+      language: lang,
       ignoreIllegals: true,
     });
     codeEl.innerHTML = out.value;
@@ -326,36 +408,41 @@ async function rerenderHighlight(
  *
  * 服务端写盘成功 → 状态栏显示「已保存（HMR 刷新中）」；失败显示 error。
  * 保存期间禁用按钮，避免重复点击。
+ *
+ * `scoped` 仅对 style 新建块生效：块已存在时服务端按原 attrs 保留，忽略该字段。
  */
 async function submitBlock(
   kind: "script" | "style",
   content: string,
   btn: HTMLButtonElement,
+  scoped?: boolean,
 ): Promise<void> {
   const ctx = state.codeDrawerContext;
   if (!ctx) return;
-  const status = state.codeDrawer?.querySelector<HTMLSpanElement>(
-    ".__vdi-code-status",
-  );
+  const status =
+    state.codeDrawer?.querySelector<HTMLSpanElement>(".__vdi-code-status");
   const original = btn.textContent;
   btn.disabled = true;
   btn.textContent = "保存中…";
   try {
+    const payload: Record<string, unknown> = {
+      file: formatPosition(ctx),
+      kind,
+      content,
+    };
+    if (kind === "style" && scoped !== undefined) payload.scoped = scoped;
     const response = await apiRequest<{ success?: boolean; error?: string }>(
       "/update-block",
       {
         method: "POST",
-        body: JSON.stringify({
-          file: formatPosition(ctx),
-          kind,
-          content,
-        }),
+        body: JSON.stringify(payload),
       },
     );
     if (response && response.success) {
       if (status) status.textContent = `${labelOf(kind)} 已保存（HMR 刷新中）`;
     } else {
-      if (status) status.textContent = (response && response.error) || "保存失败";
+      if (status)
+        status.textContent = (response && response.error) || "保存失败";
     }
   } catch {
     if (status) status.textContent = "网络错误";
@@ -367,6 +454,125 @@ async function submitBlock(
 
 function labelOf(kind: "script" | "style"): string {
   return kind === "script" ? "Script" : "CSS";
+}
+
+/**
+ * 懒加载选中元素的子节点源码并展开「子节点文本」面板。
+ *
+ * 点击「📝 编辑」按钮触发：调 /get-child-text 取 (file,line,col) 元素
+ * 开标签与闭标签之间的源码 → 填入 textarea → 展开 editorWrap + 保存按钮、
+ * 收起编辑按钮、root 从折叠窄条（0 0 auto）切到共享纵向空间（1 1 0）。
+ * 元素无子节点（自闭合 / 空配对）时 content 为空，提示「可输入后保存新增」。
+ */
+async function loadChildText(panel: BlockPanel): Promise<void> {
+  const ctx = state.codeDrawerContext;
+  if (!ctx) return;
+  const status =
+    state.codeDrawer?.querySelector<HTMLSpanElement>(".__vdi-code-status");
+  const editBtn = panel.editBtn;
+  if (!editBtn) return;
+  const original = editBtn.textContent;
+  editBtn.disabled = true;
+  editBtn.textContent = "加载中…";
+  try {
+    const res = await apiRequest("/get-child-text", {
+      method: "POST",
+      body: JSON.stringify({
+        file: formatPosition(ctx),
+        line: ctx.line,
+        col: ctx.col,
+      }),
+    });
+    // 服务端成功直接返回 ChildTextData（{ content, start, end }），
+    // 失败（404）已由 apiRequest reject；这里按原形态取字段。
+    const data = res as unknown as ChildTextData;
+    panel.textarea.value = data?.content ?? "";
+    // 展开：显示编辑器与保存按钮，收起编辑按钮，root 参与纵向 flex 分配。
+    panel.editorWrap.style.display = "";
+    panel.saveBtn.style.display = "";
+    editBtn.style.display = "none";
+    panel.root.style.flex = "1 1 0";
+    panel.root.style.minHeight = "140px";
+    panel.hintEl.textContent = data?.content
+      ? "对应元素子节点源码，保存后整体替换"
+      : "该元素无子节点源码（可输入后保存新增）";
+    void rerenderHighlight(panel.textarea, panel.codeEl, panel.syncScroll);
+    if (status) status.textContent = "子节点源码已加载";
+  } catch (e) {
+    if (status)
+      status.textContent = e instanceof Error ? e.message : "加载失败";
+  } finally {
+    editBtn.disabled = false;
+    editBtn.textContent = original;
+  }
+}
+
+/**
+ * 把「子节点文本」面板的最新内容提交到服务端 /update-child-text。
+ *
+ * 服务端用 AST 定位 (line,col) 元素，整体替换其子节点源码区间；
+ * 自闭合元素 + 非空内容会转为配对标签。保存交互模式与 submitBlock 一致。
+ *
+ * 保存成功后调用 collapseChildText 退出编辑态——折叠回只显示「📝 编辑」按钮的
+ * 窄条，清空 textarea/高亮，下次点「编辑」重新从服务端拉取最新内容。
+ * 保存失败则保持编辑态，方便用户改后重试。
+ */
+async function submitChildText(
+  content: string,
+  btn: HTMLButtonElement,
+  panel: BlockPanel,
+): Promise<void> {
+  const ctx = state.codeDrawerContext;
+  if (!ctx) return;
+  const status =
+    state.codeDrawer?.querySelector<HTMLSpanElement>(".__vdi-code-status");
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "保存中…";
+  try {
+    const response = await apiRequest<{ success?: boolean; error?: string }>(
+      "/update-child-text",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          file: formatPosition(ctx),
+          line: ctx.line,
+          col: ctx.col,
+          content,
+        }),
+      },
+    );
+    if (response && response.success) {
+      if (status) status.textContent = "子节点源码已保存（HMR 刷新中）";
+      collapseChildText(panel);
+    } else {
+      if (status)
+        status.textContent = (response && response.error) || "保存失败";
+    }
+  } catch (e) {
+    if (status)
+      status.textContent = e instanceof Error ? e.message : "网络错误";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+/**
+ * 把「子节点文本」面板折叠回初始窄条态（退出编辑）。
+ *
+ * 隐藏 editorWrap + 保存按钮、重新显示「📝 编辑」按钮、root 从 `1 1 0` 收回 `0 0 auto`、
+ * 清空 textarea 与高亮层、hint 改回引导文案。由 submitChildText 在保存成功后调用。
+ */
+function collapseChildText(panel: BlockPanel): void {
+  panel.editorWrap.style.display = "none";
+  panel.saveBtn.style.display = "none";
+  if (panel.editBtn) panel.editBtn.style.display = "";
+  panel.root.style.flex = "0 0 auto";
+  panel.root.style.minHeight = "";
+  panel.textarea.value = "";
+  panel.codeEl.textContent = "";
+  panel.hintEl.textContent = "点击「编辑」加载子节点源码";
 }
 
 /**
@@ -438,10 +644,7 @@ function installSplitter(
  * 公式 `startWidth - dx` 恰好实现：dx 为负时 -dx 为正，加宽；dx 为正时收窄。
  * 限制在 [MIN_WIDTH, 90vw]。
  */
-function installResize(
-  resizer: HTMLDivElement,
-  drawer: HTMLDivElement,
-): void {
+function installResize(resizer: HTMLDivElement, drawer: HTMLDivElement): void {
   let startX = 0;
   let startWidth = 0;
   let dragging = false;
@@ -450,10 +653,7 @@ function installResize(
     if (!dragging) return;
     const dx = e.clientX - startX;
     const maxWidth = Math.floor(window.innerWidth * 0.9);
-    const nextWidth = Math.max(
-      MIN_WIDTH,
-      Math.min(maxWidth, startWidth - dx),
-    );
+    const nextWidth = Math.max(MIN_WIDTH, Math.min(maxWidth, startWidth - dx));
     drawer.style.width = nextWidth + "px";
   };
 
@@ -471,7 +671,8 @@ function installResize(
     e.stopPropagation();
     dragging = true;
     startX = e.clientX;
-    startWidth = parseInt(drawer.style.width || "0", 10) || state.codeDrawerWidth;
+    startWidth =
+      parseInt(drawer.style.width || "0", 10) || state.codeDrawerWidth;
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
   });

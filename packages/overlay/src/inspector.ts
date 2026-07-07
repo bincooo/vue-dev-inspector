@@ -11,11 +11,7 @@
  *   redrawDropIndicator   拖拽中按 dropTarget/dropDirection 重绘放置指示器
  *   startDrag / endDrag   drag mode 进出
  */
-import {
-  state,
-  actionButtons,
-  setSelectedElement,
-} from "./state";
+import { state, actionButtons, setSelectedElement } from "./state";
 import {
   parsePosition,
   apiRequest,
@@ -34,29 +30,41 @@ import { emitInspect } from "./extensibility";
 
 /** 创建所有 UI 浮层并挂到 DOM */
 export function createUI(): void {
-  state.hoverOverlay = createElement<HTMLDivElement>("div", "__vdi-hover-overlay");
-  state.selectOverlay = createElement<HTMLDivElement>("div", "__vdi-select-overlay");
+  state.hoverOverlay = createElement<HTMLDivElement>(
+    "div",
+    "__vdi-hover-overlay",
+  );
+  state.selectOverlay = createElement<HTMLDivElement>(
+    "div",
+    "__vdi-select-overlay",
+  );
   state.tagTip = createElement<HTMLDivElement>("div", "__vdi-tag-tip");
-  state.contextMenu = createElement<HTMLDivElement>("div", "__vdi-context-menu");
+  state.contextMenu = createElement<HTMLDivElement>(
+    "div",
+    "__vdi-context-menu",
+  );
   state.deleteButton = createActionBtn(
     "__vdi-action-btn __vdi-delete-btn",
     "×",
     "#dc2626",
     "#ef4444",
-    "删除组件"
+    "删除组件",
   );
   state.copyButton = createActionBtn(
     "__vdi-action-btn __vdi-copy-btn",
     "⧉",
     "#2563eb",
     "#3b82f6",
-    "复制组件"
+    "复制组件",
   );
   state.insertBeforeButton = makeInsertButton(() => openDrawer("before"));
   state.insertBeforeButton.title = "在同级上方插入组件";
   state.insertAfterButton = makeInsertButton(() => openDrawer("after"));
   state.insertAfterButton.title = "在同级下方插入组件";
-  state.dropIndicator = createElement<HTMLDivElement>("div", "__vdi-drop-indicator");
+  state.dropIndicator = createElement<HTMLDivElement>(
+    "div",
+    "__vdi-drop-indicator",
+  );
   state.dropIndicator.style.display = "none";
 
   for (const el of [
@@ -80,7 +88,7 @@ function createActionBtn(
   text: string,
   hoverColor: string,
   baseColor: string,
-  title?: string
+  title?: string,
 ): HTMLDivElement {
   const btn = createElement("div", className, text);
   if (title) {
@@ -108,7 +116,11 @@ export function duplicateElement(element: HTMLElement): void {
   const pos = parsePosition(element.getAttribute(state.attrName)!)!;
   apiRequest("/duplicate-element", {
     method: "POST",
-    body: JSON.stringify({ file: formatPosition(pos), line: +pos.line, col: +pos.col }),
+    body: JSON.stringify({
+      file: formatPosition(pos),
+      line: +pos.line,
+      col: +pos.col,
+    }),
   })
     .then((response) => {
       if (response && response.success) logInfo("元素已复制");
@@ -201,11 +213,11 @@ export function renderToolButtons(selectedEl: HTMLElement): void {
         target: selectedEl,
         source: parsed
           ? {
-            rootIndex: parsed.rootIndex,
-            file: parsed.file,
-            line: Number(parsed.line),
-            col: Number(parsed.col),
-          }
+              rootIndex: parsed.rootIndex,
+              file: parsed.file,
+              line: Number(parsed.line),
+              col: Number(parsed.col),
+            }
           : null,
       });
     };
@@ -297,7 +309,8 @@ export function redrawDropIndicator(): void {
   indicator.style.left = rect.left - 2 + "px";
   indicator.style.width = rect.width + 4 + "px";
   if (dir === "before" || dir === "after") {
-    indicator.style.top = (dir === "before" ? rect.top : rect.bottom) - 1 + "px";
+    indicator.style.top =
+      (dir === "before" ? rect.top : rect.bottom) - 1 + "px";
     indicator.style.height = "2px";
   } else {
     indicator.style.top = rect.top - 2 + "px";

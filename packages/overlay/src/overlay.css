@@ -461,12 +461,14 @@ body.__vdi-dragging * {
   user-select: none;
   white-space: nowrap;
   overflow: hidden;
-  transition: background 0.12s ease-out, color 0.12s ease-out;
+  transition:
+    background 0.12s ease-out,
+    color 0.12s ease-out;
   position: relative;
 }
 
 .__vdi-drawer-tab::after {
-  content: '';
+  content: "";
   position: absolute;
   height: 100%;
   width: 3px;
@@ -487,7 +489,7 @@ body.__vdi-dragging * {
   color: inherit;
 }
 
-.__vdi-drawer-tab-icon>svg {
+.__vdi-drawer-tab-icon > svg {
   width: 18px;
   height: 18px;
   display: block;
@@ -616,7 +618,7 @@ body.__vdi-dragging * {
   border: 1px solid #d2d2d2;
 }
 
-.__vdi-drawer-item-icon>svg {
+.__vdi-drawer-item-icon > svg {
   width: 18px;
   height: 18px;
   display: block;
@@ -778,8 +780,9 @@ body.__vdi-dragging * {
   /* 等宽栈：跨 macOS / Windows / Linux / 中文系统都尽量命中同一宽度；
      JetBrains Mono / Fira Code 走 webfont（按需引入），缺失时降级到
      系统 mono 与 monospace。 */
-  font-family: "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono",
-    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family:
+    "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 12px;
   line-height: 1.5;
   font-variant-ligatures: none;
@@ -825,8 +828,9 @@ body.__vdi-dragging * {
   width: 100%;
   height: 100%;
   /* 与 .__vdi-code-highlight 完全一致，避免不同字体导致 caret 与染色错位 */
-  font-family: "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono",
-    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family:
+    "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 12px;
   line-height: 1.5;
   font-variant-ligatures: none;
@@ -899,4 +903,31 @@ body.__vdi-dragging * {
 .__vdi-code-status {
   font-size: 11px;
   color: #475569;
+}
+
+/* style 面板新建块时的 scoped 复选框 —— 缺块时由 applyBlock 显示 */
+.__vdi-code-scoped {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #475569;
+  cursor: pointer;
+  user-select: none;
+}
+
+.__vdi-code-scoped-input {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* 子节点文本面板的「📝 编辑」按钮（懒加载入口）—— 复用 save-btn 尺寸，浅灰底区分 */
+.__vdi-code-edit-btn {
+  background: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+}
+
+.__vdi-code-edit-btn:hover {
+  background: #e2e8f0;
 }

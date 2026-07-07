@@ -11,7 +11,7 @@ import type {
   EventCallback,
   InspectEvent,
   SelectEvent,
-} from '@vue-dev-inspector/shared';
+} from "@vue-dev-inspector/shared";
 import { emitSelect } from "./extensibility";
 import { renderToolButtons, clearToolButtons } from "./inspector";
 
@@ -37,7 +37,7 @@ export const state = {
   attrName: clientConfig.attrName,
   protocol: clientConfig.protocol,
   /** 多根目录列表 — monorepo 跨子工程编辑的标识 */
-  projectRoots: clientConfig.projectRoots ?? ['.'],
+  projectRoots: clientConfig.projectRoots ?? ["."],
   apiPrefix: clientConfig.apiPrefix,
   tagAttr: clientConfig.tagAttr,
   editor: clientConfig.editor,
@@ -105,6 +105,7 @@ export const state = {
   codeDrawerBlocks: {
     script: null as CodeBlockSlot | null,
     style: null as CodeBlockSlot | null,
+    childText: null as CodeBlockSlot | null,
   },
 
   /** 属性编辑面板 */

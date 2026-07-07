@@ -17,19 +17,32 @@ const BASE_W = 375;
 // const SCREEN_PAD_TOP = 65;
 
 // 听筒
-const SPEAKER_W = 60, SPEAKER_H = 4, SPEAKER_TOP = 7;
+const SPEAKER_W = 60,
+  SPEAKER_H = 4,
+  SPEAKER_TOP = 7;
 // 前置摄像头
-const CAM_SIZE = 10, CAM_LEFT = 44, CAM_TOP = 4;
+const CAM_SIZE = 10,
+  CAM_LEFT = 44,
+  CAM_TOP = 4;
 // 侧边按钮
-const BTN_W = 3, BTN_EXT = 8; // 宽度 + 伸出量
-const BTN_L1_TOP = 130, BTN_L1_H = 24;
-const BTN_L2_TOP = 166, BTN_L2_H = 52;
-const BTN_L3_TOP = 230, BTN_L3_H = 52;
-const BTN_RIGHT_TOP = 170, BTN_RIGHT_H = 80;
+const BTN_W = 3,
+  BTN_EXT = 8; // 宽度 + 伸出量
+const BTN_L1_TOP = 130,
+  BTN_L1_H = 24;
+const BTN_L2_TOP = 166,
+  BTN_L2_H = 52;
+const BTN_L3_TOP = 230,
+  BTN_L3_H = 52;
+const BTN_RIGHT_TOP = 170,
+  BTN_RIGHT_H = 80;
 // 刘海
-const NOTCH_W = 140, NOTCH_H = 22, NOTCH_R = 18;
+const NOTCH_W = 140,
+  NOTCH_H = 22,
+  NOTCH_R = 18;
 // Home bar
-const BAR_BOTTOM = 8, BAR_W = 134, BAR_H = 5;
+const BAR_BOTTOM = 8,
+  BAR_W = 134,
+  BAR_H = 5;
 // 手机边框圆角
 const PHONE_RADIUS = 30;
 
@@ -47,9 +60,11 @@ export interface PhoneShellConfig {
 export function resolvePhoneShell(
   raw?: boolean | { width?: number; height?: number },
 ): PhoneShellConfig {
-  if (raw === false || raw === undefined) return { enabled: false, width: 375, height: 812 };
+  const w = 340, h = 750;
+  if (raw === false || raw === undefined)
+    return { enabled: false, width: w, height: h };
   const obj = raw === true ? {} : raw;
-  return { enabled: true, width: obj.width ?? 375, height: obj.height ?? 812 };
+  return { enabled: true, width: obj.width ?? w, height: obj.height ?? h };
 }
 
 // ─── CSS 生成 ─────────────────────────────────────────────────
@@ -120,7 +135,7 @@ export function buildPhoneShellScript(cfg: PhoneShellConfig): string {
       // getSystemInfoSync/getWindowInfo/upx2px 等，所有组件自动对齐手机框。
       if(!window.__vdi_uni_patched){
         window.__vdi_uni_patched=true;
-        var UW=${cfg.width},UH=${cfg.height},USB=${Math.round(NOTCH_H * cfg.width / BASE_W)};
+        var UW=${cfg.width},UH=${cfg.height},USB=${Math.round((NOTCH_H * cfg.width) / BASE_W)};
         var upatch=function(o){if(!o)return o;o.windowWidth=UW;o.windowHeight=UH;o.screenWidth=UW;o.screenHeight=UH;o.statusBarHeight=USB;if(!o.safeArea)o.safeArea={};o.safeArea.left=0;o.safeArea.right=UW;o.safeArea.top=USB;o.safeArea.bottom=UH;o.safeArea.width=UW;o.safeArea.height=UH-USB;if(!o.safeAreaInsets)o.safeAreaInsets={};o.safeAreaInsets.top=USB;o.safeAreaInsets.bottom=0;o.safeAreaInsets.left=0;o.safeAreaInsets.right=0;return o;};
         var uwrap=function(u){if(!u||u.__vdi_wrapped)return;try{["getSystemInfoSync","getWindowInfo","getDeviceInfo","getAppBaseInfo","getSystemSetting"].forEach(function(k){if(typeof u[k]==="function"){var o=u[k];try{Object.defineProperty(u,k,{configurable:true,writable:true,value:function(){return upatch(o.call(this));}});}catch(e){try{u[k]=function(){return upatch(o.call(this));};}catch(e2){}}}});if(typeof u.upx2px==="function"){try{Object.defineProperty(u,"upx2px",{configurable:true,writable:true,value:function(r){return Number(r)*UW/750;}});}catch(e){try{u.upx2px=function(r){return Number(r)*UW/750;};}catch(e2){}}}u.__vdi_wrapped=true;}catch(e){console.warn("[vdi] uni patch failed",e);}};
         try{var ucur=window.uni;if(ucur)uwrap(ucur);Object.defineProperty(window,"uni",{configurable:true,get:function(){return ucur;},set:function(v){ucur=v;uwrap(v);}});}catch(e){console.warn("[vdi] window.uni setter failed",e);}
@@ -146,7 +161,7 @@ export function buildPhoneShellScript(cfg: PhoneShellConfig): string {
       body.appendChild(shell);
       new MutationObserver(function(ms){for(var i=0;i<ms.length;i++){var ad=ms[i].addedNodes;for(var j=0;j<ad.length;j++){var n=ad[j];if(n.nodeType!==1)continue;if(n.tagName==="UNI-PAGE-HEAD"||(n.classList&&n.classList.contains("uni-page-head"))){if(!screen.contains(n))screen.insertBefore(n,screen.firstChild)}}}}).observe(body,{childList:true,subtree:true});
       setTimeout(function(){if(!screen.firstChild){var app=document.getElementById("app");if(app&&!screen.contains(app))screen.appendChild(app);}},1000);
-    }();`
+    }();`;
 
   return `<script>${body}</script>`;
 }

@@ -43,7 +43,10 @@ const loaded = new Set<string>();
  *   - <script> 用 onload 回调等执行完成；window.hljs 在 onload 后可用。
  *   - <link> 没有可靠 onload：默认立即 resolve（DOM 加载是异步但对我们只关心是否注册成功）。
  */
-function injectOnce(tag: "link" | "script", attrs: Record<string, string>): Promise<void> {
+function injectOnce(
+  tag: "link" | "script",
+  attrs: Record<string, string>,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const key = tag + ":" + JSON.stringify(attrs);
     if (loaded.has(key)) {
@@ -52,7 +55,9 @@ function injectOnce(tag: "link" | "script", attrs: Record<string, string>): Prom
     }
     loaded.add(key);
 
-    const el = document.createElement(tag) as HTMLLinkElement | HTMLScriptElement;
+    const el = document.createElement(tag) as
+      | HTMLLinkElement
+      | HTMLScriptElement;
     for (const [k, v] of Object.entries(attrs)) {
       el.setAttribute(k, v);
     }
@@ -85,16 +90,18 @@ export async function loadHighlighter(): Promise<{
     }),
     injectOnce("script", { src: HIGHLIGHT_BUNDLE }),
   ]);
-  const hljs = (window as unknown as {
-    hljs?: {
-      highlight: (
-        code: string,
-        options: { language: string; ignoreIllegals?: boolean },
-      ) => { value: string };
-      registerLanguage: (name: string, lang: unknown) => void;
-      getLanguage: (name: string) => unknown;
-    };
-  }).hljs;
+  const hljs = (
+    window as unknown as {
+      hljs?: {
+        highlight: (
+          code: string,
+          options: { language: string; ignoreIllegals?: boolean },
+        ) => { value: string };
+        registerLanguage: (name: string, lang: unknown) => void;
+        getLanguage: (name: string) => unknown;
+      };
+    }
+  ).hljs;
   if (!hljs) {
     throw new Error("highlight.js failed to attach window.hljs");
   }
@@ -103,8 +110,11 @@ export async function loadHighlighter(): Promise<{
 
 /**
  * 按 kind 把内容映射到 highlight.js 的语言名。
- * v1 仅两种；多块 / 多语言的扩展可后续在此处加 switch。
+ * v1 仅 script/style；childtext（子节点源码，HTML/Vue 模板片段）走 xml。
+ * 多块 / 多语言的扩展可后续在此处加 switch。
  */
-export function languageFor(kind: "script" | "style"): string {
-  return kind === "script" ? "javascript" : "css";
+export function languageFor(kind: "script" | "style" | "childtext"): string {
+  if (kind === "script") return "javascript";
+  if (kind === "style") return "css";
+  return "xml";
 }

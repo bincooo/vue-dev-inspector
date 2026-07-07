@@ -116,7 +116,10 @@ export function findInspectableElement(
 ): HTMLElement | null {
   let node = target as HTMLElement | null;
   while (node && node !== document.documentElement) {
-    if (node.nodeType === Node.ELEMENT_NODE && node.getAttribute(state.attrName))
+    if (
+      node.nodeType === Node.ELEMENT_NODE &&
+      node.getAttribute(state.attrName)
+    )
       return node;
     node = node.parentElement;
   }

@@ -11,7 +11,12 @@
  *   keydown      Esc 逐级关闭（drag / drawer / panel / 审查）+ 快捷键开关
  *   scroll/resize 重绘 overlay 与 drop indicator
  */
-import { state, clientConfig, actionButtons, setSelectedElement } from "./state";
+import {
+  state,
+  clientConfig,
+  actionButtons,
+  setSelectedElement,
+} from "./state";
 import {
   findInspectableElement,
   createElement,
@@ -361,7 +366,8 @@ export function init(): void {
       })
         .then((response) => {
           if (response && response.success) logInfo("元素已移动");
-          else logError("move 失败", (response && response.error) || "未知错误");
+          else
+            logError("move 失败", (response && response.error) || "未知错误");
         })
         .catch(() => logError("move 失败", "网络错误"));
     },
@@ -422,7 +428,9 @@ export function init(): void {
     state.gearButton = gearButton;
   }
 
-  logSuccess("Ready — " + formatShortcut(clientConfig.shortcut) + " to inspect");
+  logSuccess(
+    "Ready — " + formatShortcut(clientConfig.shortcut) + " to inspect",
+  );
   // 抑制可能的 unused 警告
   void formatPosition;
 }

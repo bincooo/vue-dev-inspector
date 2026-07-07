@@ -6,6 +6,8 @@
  * overlay IIFE 启动时读取。
  */
 import type { ComponentConfigEntry } from "@vue-dev-inspector/shared";
+// 从 shared 重导出，保持 overlay 内 `import type { ... } from "./types"` 的单一入口。
+export type { ChildTextData } from "@vue-dev-inspector/shared";
 
 export interface ClientCfg {
   attrName: string;

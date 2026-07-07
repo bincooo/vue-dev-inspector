@@ -12,6 +12,8 @@ import {
   moveElement,
   getSfcBlocks,
   updateSfcBlock,
+  getChildText,
+  updateChildText,
   type MoveDirection,
   type PropEntry,
   type SfcBlockKind,
@@ -57,11 +59,7 @@ function parseBody(req: RouteRequest): Promise<unknown> {
 }
 
 /** 解析失败/拒绝统一 JSON 响应（含 CORS 头）。 */
-function json(
-  res: MiddlewareResponse,
-  status: number,
-  data: unknown,
-): void {
+function json(res: MiddlewareResponse, status: number, data: unknown): void {
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -104,7 +102,13 @@ function resolveMeta(
   projectRoots: string[],
   body: RouteBody,
   res: MiddlewareResponse,
-): { file: string; absolutePath: string; line: number; col: number; rootIndex: number } | null {
+): {
+  file: string;
+  absolutePath: string;
+  line: number;
+  col: number;
+  rootIndex: number;
+} | null {
   const raw = readString(body, "file");
   const parsed = parseSource(raw);
   if (!parsed) {
@@ -141,7 +145,12 @@ function resolveSource(
   projectRoots: string[],
   body: RouteBody,
   res: MiddlewareResponse,
-): { file: string; source: string; absolutePath: string; rootIndex: number } | null {
+): {
+  file: string;
+  source: string;
+  absolutePath: string;
+  rootIndex: number;
+} | null {
   const meta = resolveMeta(projectRoots, body, res);
   if (!meta) return null;
   const source = fs.readFileSync(meta.absolutePath, "utf-8");
@@ -154,7 +163,9 @@ function enforceEnum<T extends string>(
   allowed: readonly T[],
   fallback: T,
 ): T {
-  return (allowed as readonly string[]).includes(value) ? (value as T) : fallback;
+  return (allowed as readonly string[]).includes(value)
+    ? (value as T)
+    : fallback;
 }
 
 const INSERT_DIRECTIONS = ["inside", "before", "after"] as const;
@@ -348,8 +359,10 @@ function handleGetBlock(
 
 /** 整块替换 SFC 中的 <script> 或 <style> 并写盘。
  *  - 通过 `enforceEnum` 把 `kind` 收窄到 `["script","style"]`，非法值回退 script。
- *  - updateSfcBlock 在缺失块 / 解析失败时返回原源码；这里用 `=== ctx.source` 判定是否实际改动。
- *  - 实际改动后写盘 + 200；未改动视为 404。 */
+ *  - updateSfcBlock 在块存在时整体替换、块缺失时新建并追加到末尾（v2 新增）；
+ *    `scoped` 仅对 style 新建生效。
+ *  - 用 `=== ctx.source` 判定是否实际改动：新建路径必定改动，不会误判 404；
+ *    仅当解析失败、原样返回源码时才落 404。 */
 function handleUpdateBlock(
   projectRoots: string[],
   body: RouteBody,
@@ -363,9 +376,60 @@ function handleUpdateBlock(
     "script",
   ) as SfcBlockKind;
   const content = readString(body, "content");
-  const result = updateSfcBlock(ctx.source, ctx.file, kind, content);
+  const scoped = !!body.scoped;
+  const result = updateSfcBlock(ctx.source, ctx.file, kind, content, {
+    scoped,
+  });
   if (result === ctx.source) {
     json(res, 404, { error: "Block not found" });
+    return;
+  }
+  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
+  json(res, 200, { success: true });
+}
+
+/** 读取 (line, col) 元素的全部子节点源码区间（开标签 > 与闭标签 </tag> 之间）。
+ *  用于「编辑代码」抽屉的「子节点文本」列懒加载。元素未找到返回 404。 */
+function handleGetChildText(
+  projectRoots: string[],
+  body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  const ctx = resolveSource(projectRoots, body, res);
+  if (!ctx) return;
+  const result = getChildText(
+    ctx.source,
+    ctx.file,
+    readNumber(body, "line"),
+    readNumber(body, "col"),
+  );
+  if (!result) {
+    json(res, 404, { error: "Element not found" });
+    return;
+  }
+  json(res, 200, result);
+}
+
+/** 用新内容整体替换 (line, col) 元素的子节点源码区间并写盘。
+ *  - 自闭合元素 + 非空内容：转为配对标签 `<tag>内容</tag>`。
+ *  - 元素未找到 / 开标签定位失败返回 404。 */
+function handleUpdateChildText(
+  projectRoots: string[],
+  body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  const ctx = resolveSource(projectRoots, body, res);
+  if (!ctx) return;
+  const content = readString(body, "content");
+  const result = updateChildText(
+    ctx.source,
+    ctx.file,
+    readNumber(body, "line"),
+    readNumber(body, "col"),
+    content,
+  );
+  if (result === null) {
+    json(res, 404, { error: "Element not found" });
     return;
   }
   fs.writeFileSync(ctx.absolutePath, result, "utf-8");
@@ -411,10 +475,7 @@ function handleListComponents(
       if (ent.isDirectory()) {
         walk(rootIndex, root, full);
       } else if (ent.isFile() && ent.name.endsWith(".vue")) {
-        const rel = path
-          .relative(root, full)
-          .split(path.sep)
-          .join("/");
+        const rel = path.relative(root, full).split(path.sep).join("/");
         const key = `r${rootIndex}:${rel}`;
         if (seen.has(key)) continue;
         seen.add(key);
@@ -422,7 +483,8 @@ function handleListComponents(
       }
     }
   }
-  for (let i = 0; i < projectRoots.length; i++) walk(i, projectRoots[i], projectRoots[i]);
+  for (let i = 0; i < projectRoots.length; i++)
+    walk(i, projectRoots[i], projectRoots[i]);
   components.sort((a, b) => a.path.localeCompare(b.path));
   json(res, 200, { components });
 }
@@ -489,6 +551,8 @@ const ROUTES: Record<string, Record<string, RouteHandler>> = {
   "/move-element": { POST: handleMoveElement },
   "/get-block": { POST: handleGetBlock },
   "/update-block": { POST: handleUpdateBlock },
+  "/get-child-text": { POST: handleGetChildText },
+  "/update-child-text": { POST: handleUpdateChildText },
   "/resolve-path": { POST: handleResolvePath },
 };
 
@@ -528,7 +592,10 @@ function attachMiddleware(
       handler(projectRoots, body as RouteBody, res);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";
-      console.error(`[vdi] ${pathname} 失败:`, err instanceof Error ? err : message);
+      console.error(
+        `[vdi] ${pathname} 失败:`,
+        err instanceof Error ? err : message,
+      );
       json(res, 500, { error: message });
     }
   });
@@ -545,7 +612,9 @@ export function createDevServer(
   server: ViteDevServer,
   projectRoots: string[],
 ): void {
-  console.log(`[vdi] 中间件已挂载，projectRoots=${JSON.stringify(projectRoots)}`);
+  console.log(
+    `[vdi] 中间件已挂载，projectRoots=${JSON.stringify(projectRoots)}`,
+  );
   attachMiddleware(server, projectRoots, ROUTES);
 }
 

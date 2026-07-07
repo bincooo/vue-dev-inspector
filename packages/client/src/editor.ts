@@ -18,6 +18,7 @@ import type {
   DirectiveNode,
   SimpleExpressionNode,
 } from "@vue/compiler-core";
+import type { ChildTextData } from "@vue-dev-inspector/shared";
 
 /**
  * 一条属性（保持源码书写形式）
@@ -103,7 +104,8 @@ function findElementAtLoc(
     const node = stack.pop()!;
     if (node.type === NodeTypes.ELEMENT) {
       const el = node as ElementNode;
-      if (el.loc.start.line === astLine && el.loc.start.column === col) return el;
+      if (el.loc.start.line === astLine && el.loc.start.column === col)
+        return el;
     }
     stack.push(...childrenOf(node));
   }
@@ -426,8 +428,9 @@ export function insertComponent(
 
   // 查组件 schema；没有则按 tag 生成默认片段
   const schema = COMPONENT_CATALOG.find((c) => c.tag === componentTag);
-  const snippet = snippetOverride
-    || (schema ? componentSnippet(schema) : `<${componentTag} />`);
+  const snippet =
+    snippetOverride ||
+    (schema ? componentSnippet(schema) : `<${componentTag} />`);
 
   const s = new MagicString(sfcSource);
 
@@ -499,10 +502,7 @@ export type MoveDirection = "before" | "inside" | "after";
  *
  * 用 AST 节点引用做相等性比较（loc.start.offset 唯一）。
  */
-function isDescendantOrSelf(
-  source: ElementNode,
-  target: ElementNode,
-): boolean {
+function isDescendantOrSelf(source: ElementNode, target: ElementNode): boolean {
   if (source === target) return true;
   const stack: (RootNode | TemplateChildNode)[] = [source];
   while (stack.length) {
@@ -575,7 +575,10 @@ export function moveElement(
   if (direction === "before" || direction === "after") {
     const rewritten = reindent(source.loc.source, targetIndent);
     if (direction === "before") {
-      s.appendLeft(sfcSource.lastIndexOf("\n", targetStart) + 1, rewritten + "\n");
+      s.appendLeft(
+        sfcSource.lastIndexOf("\n", targetStart) + 1,
+        rewritten + "\n",
+      );
     } else {
       s.appendRight(targetEnd, "\n" + rewritten);
     }
@@ -693,17 +696,23 @@ export function getSfcBlocks(
   // <style> 仍然可正确解析（描述符照样填充）。v1 宽容处理：只在所有
   // 块都拿不到（顶层语法都坏了）时才返回空。
   const hasAnyBlock =
-    descriptor.scriptSetup ||
-    descriptor.script ||
-    descriptor.styles.length > 0;
+    descriptor.scriptSetup || descriptor.script || descriptor.styles.length > 0;
   if (errors.length && !hasAnyBlock) return {};
   const blocks: { script?: SfcBlock; style?: SfcBlock } = {};
 
   // script / scriptSetup 互斥：先看 scriptSetup（runtime + compile-time 优先级）
   const scriptSrc = descriptor.scriptSetup ?? descriptor.script;
   if (scriptSrc && scriptSrc.content.length > 0) {
-    const outerStart = resolveOuterTagStart(sfcSource, "script", scriptSrc.loc.start.offset);
-    const outerEnd = resolveOuterTagEnd(sfcSource, "script", scriptSrc.loc.end.offset);
+    const outerStart = resolveOuterTagStart(
+      sfcSource,
+      "script",
+      scriptSrc.loc.start.offset,
+    );
+    const outerEnd = resolveOuterTagEnd(
+      sfcSource,
+      "script",
+      scriptSrc.loc.end.offset,
+    );
     if (outerStart !== -1 && outerEnd !== -1 && outerEnd > outerStart) {
       blocks.script = {
         kind: "script",
@@ -716,7 +725,11 @@ export function getSfcBlocks(
 
   if (descriptor.styles.length > 0) {
     const st = descriptor.styles[0];
-    const outerStart = resolveOuterTagStart(sfcSource, "style", st.loc.start.offset);
+    const outerStart = resolveOuterTagStart(
+      sfcSource,
+      "style",
+      st.loc.start.offset,
+    );
     const outerEnd = resolveOuterTagEnd(sfcSource, "style", st.loc.end.offset);
     if (outerStart !== -1 && outerEnd !== -1 && outerEnd > outerStart) {
       blocks.style = {
@@ -734,9 +747,12 @@ export function getSfcBlocks(
 /**
  * 把 SFC 中指定块整段替换为 `newContent`（不含 <script> / </script> 标签）。
  *
- * - 用 descriptor 读出的 attrs 重组 `<script lang="ts" setup>` 开标签与
+ * - 块存在时：用 descriptor 读出的 attrs 重组 `<script lang="ts" setup>` 开标签与
  *   `<style scoped>` 开标签，保证 lang / setup / scoped 等元属性不丢。
- * - kind 不存在或区间无效 → 原样返回 `sfcSource`，由 handler 据此 404。
+ * - 块**缺失**时（v2 新增）：不再返回原源码触发 404，而是**新建并追加到 SFC 末尾**——
+ *   script → `<script setup lang="ts">`，style → `<style${scoped ? " scoped" : ""}>`。
+ *   `createOpts.scoped` 仅对 style 新建生效；script 固定 `setup lang="ts"`（Vue3+TS 约定）。
+ *   追加前自动补换行，避免与既有末尾粘连。
  * - 用 getSfcBlocks 先算出 outer range，再 MagicString overwrite；
  *   保证完整覆盖 `<script>...</script>`，包括开闭标签。
  */
@@ -745,19 +761,22 @@ export function updateSfcBlock(
   filePath: string,
   kind: SfcBlockKind,
   newContent: string,
+  /**
+   * 仅在块缺失、需要新建时生效。
+   * - `scoped`：style 块新建时是否带 `scoped`（默认 false）。
+   */
+  createOpts?: { scoped?: boolean },
 ): string {
   const blocks = getSfcBlocks(sfcSource, filePath);
   const target = blocks[kind];
-  if (!target) return sfcSource;
+  if (!target) return createSfcBlock(sfcSource, kind, newContent, createOpts);
 
   // 重新解析一次取 attrs（getSfcBlocks 没把它们暴露出来）。
   // 与 getSfcBlocks 一样宽容：缺 <template> 等结构性错误但已解析出对应块
   // 时，仍可拿到 attrs 完成替换。
   const { descriptor, errors } = parseSFC(sfcSource, { filename: filePath });
   const hasAnyBlock =
-    descriptor.scriptSetup ||
-    descriptor.script ||
-    descriptor.styles.length > 0;
+    descriptor.scriptSetup || descriptor.script || descriptor.styles.length > 0;
   if (errors.length && !hasAnyBlock) return sfcSource;
   let attrs: Record<string, string | true>;
   if (kind === "script") {
@@ -773,5 +792,130 @@ export function updateSfcBlock(
   const replacement = `<${openTag}>${newContent}</${kind}>`;
   const s = new MagicString(sfcSource);
   s.overwrite(target.start, target.end, replacement);
+  return s.toString();
+}
+
+/**
+ * 在 SFC 末尾新建一个 `<script setup lang="ts">` 或 `<style>` 块。
+ *
+ * 由 `updateSfcBlock` 在目标块缺失时调用，使「编辑代码」抽屉对无 `<script>` /
+ * 无 `<style>` 的文件也能通过保存新增块。
+ *
+ * - script：固定 `<script setup lang="ts">`（Vue3 + TS 约定，与 demo 一致）。
+ * - style：`<style>` 或 `<style scoped>`，由 `createOpts.scoped` 决定。
+ * - 追加到 SFC 末尾；若源码未以换行结尾则先补一个 `\n`，避免与既有内容粘连。
+ *   末尾再补一个 `\n`，符合多数 .vue 文件以换行结尾的惯例。
+ */
+function createSfcBlock(
+  sfcSource: string,
+  kind: SfcBlockKind,
+  newContent: string,
+  createOpts?: { scoped?: boolean },
+): string {
+  const attrs: Record<string, string | true> =
+    kind === "script"
+      ? { setup: true, lang: "ts" }
+      : createOpts?.scoped
+        ? { scoped: true }
+        : {};
+  const openTag = `${kind}${renderOpenTag(attrs)}`;
+  const block = `<${openTag}>\n${newContent}\n</${kind}>`;
+  const prefix = sfcSource.endsWith("\n") ? "" : "\n";
+  const s = new MagicString(sfcSource);
+  s.appendLeft(sfcSource.length, prefix + block + "\n");
+  return s.toString();
+}
+
+// ─── 选中元素的子节点源码读写 ──────────────────────────────
+// 用于「编辑代码」抽屉的「子节点文本」列：服务端提供 /get-child-text 与 /update-child-text。
+
+/**
+ * 取 (line, col) 元素开标签 `>` 与闭标签 `</tag>` 之间的全部子节点源码。
+ *
+ * - 配对元素：`content = sfcSource.slice(openTagEnd+1, closeTagStart)`，
+ *   start/end 对应该区间（用于 update 的 MagicString overwrite）。
+ * - 自闭合元素：无子节点，返回零长度区间 `{ content: "", start: openTagEnd+1, end: openTagEnd+1 }`。
+ * - 元素未找到 / 开标签定位失败返回 null，handler 据此 404。
+ *
+ * 例：`<div>1<span>2</span>3</div>` → content = `1<span>2</span>3`。
+ */
+export function getChildText(
+  sfcSource: string,
+  filePath: string,
+  line: number,
+  col: number,
+): ChildTextData | null {
+  const t = parseTemplate(sfcSource, filePath);
+  if (!t) return null;
+  const el = findElementAtLoc(t.ast, line, col, t.templateLine);
+  if (!el) return null;
+
+  const range = resolveTagRange(sfcSource, t.offset, el);
+  if (!range) return null;
+  const innerStart = range.openTagEnd + 1;
+
+  if (el.isSelfClosing) {
+    return { content: "", start: innerStart, end: innerStart };
+  }
+
+  // 元素完整源码区间末尾即 `</tag>` 之后；`</tag>` 长度 = `</` + tag + `>` = tag.length + 3。
+  const elementEnd = t.offset + el.loc.start.offset + el.loc.source.length;
+  const closeTagLen = el.tag.length + 3;
+  const closeTagStart = elementEnd - closeTagLen;
+  if (closeTagStart < innerStart) {
+    // 防御：闭标签起点早于开标签之后（理论上不应发生），按空区间处理。
+    return { content: "", start: innerStart, end: innerStart };
+  }
+  return {
+    content: sfcSource.slice(innerStart, closeTagStart),
+    start: innerStart,
+    end: closeTagStart,
+  };
+}
+
+/**
+ * 用 `newContent` 整体替换 (line, col) 元素的全部子节点源码区间。
+ *
+ * - 配对元素：`[innerStart, closeTagStart)` 非零长度用 `overwrite`；
+ *   零长度（原无子节点，如 `<div></div>`）用 `prependRight`（MagicString
+ *   不允许 overwrite 零长度区间，沿用 editElementProps 的约束）。
+ * - 自闭合元素 + newContent 非空：`/>` → `>`，再 appendLeft `newContent + </tag>`，
+ *   与 insertComponent 的自闭合路径语义一致；newContent 为空则原样返回（无改动）。
+ * - 元素未找到 / 开标签定位失败返回 null，handler 据此 404。
+ */
+export function updateChildText(
+  sfcSource: string,
+  filePath: string,
+  line: number,
+  col: number,
+  newContent: string,
+): string | null {
+  const t = parseTemplate(sfcSource, filePath);
+  if (!t) return null;
+  const el = findElementAtLoc(t.ast, line, col, t.templateLine);
+  if (!el) return null;
+
+  const range = resolveTagRange(sfcSource, t.offset, el);
+  if (!range) return null;
+  const innerStart = range.openTagEnd + 1;
+  const s = new MagicString(sfcSource);
+
+  if (el.isSelfClosing) {
+    if (!newContent) return s.toString();
+    // `<tag .../>` → `<tag ...>` + newContent + `</tag>`
+    s.overwrite(range.openTagEnd, range.openTagEnd + 2, ">");
+    s.appendLeft(range.openTagEnd + 2, newContent + "</" + el.tag + ">");
+    return s.toString();
+  }
+
+  const elementEnd = t.offset + el.loc.start.offset + el.loc.source.length;
+  const closeTagLen = el.tag.length + 3;
+  const closeTagStart = elementEnd - closeTagLen;
+  if (innerStart === closeTagStart) {
+    // 零长度区间：用 prependRight 插入，避免 overwrite 抛错。
+    s.prependRight(innerStart, newContent);
+  } else {
+    s.overwrite(innerStart, closeTagStart, newContent);
+  }
   return s.toString();
 }
