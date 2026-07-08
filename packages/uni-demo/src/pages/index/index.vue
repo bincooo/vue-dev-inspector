@@ -7,8 +7,6 @@
   </view>
 </template>
 
-<script setup lang="ts"></script>
-
 <style scoped>
 .page {
   padding: 24rpx;

@@ -232,7 +232,7 @@ function buildBlockPanel(
 
   editorWrap.append(highlight, textarea);
 
-  const hintEl = createElement("div", "__vdi-code-block-hint", "");
+  const hintEl = createElement("div", "__vdi-code-block-hint", "点击「编辑」加载子节点源码");
 
   // style 面板：scoped 复选框（新建块时勾选用）。
   let scopedCheckbox: HTMLInputElement | null = null;
@@ -572,7 +572,6 @@ function collapseChildText(panel: BlockPanel): void {
   panel.root.style.minHeight = "";
   panel.textarea.value = "";
   panel.codeEl.textContent = "";
-  panel.hintEl.textContent = "点击「编辑」加载子节点源码";
 }
 
 /**

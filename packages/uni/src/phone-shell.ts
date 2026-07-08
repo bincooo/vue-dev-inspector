@@ -60,7 +60,8 @@ export interface PhoneShellConfig {
 export function resolvePhoneShell(
   raw?: boolean | { width?: number; height?: number },
 ): PhoneShellConfig {
-  const w = 340, h = 750;
+  const w = 340,
+    h = 750;
   if (raw === false || raw === undefined)
     return { enabled: false, width: w, height: h };
   const obj = raw === true ? {} : raw;
@@ -77,7 +78,7 @@ function buildCss(cfg: PhoneShellConfig): string {
 
   // 单行 CSS：模板字面量换行会在注入到 JS 字符串时破坏语法
   return [
-    `[data-vdi-phone-shell]{--vdi-w:${cfg.width}px;--vdi-h:${cfg.height}px;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;padding:28px 0;box-sizing:border-box}`,
+    `[data-vdi-phone-shell]{--vdi-w:${px(cfg.width)};--vdi-h:${px(cfg.height)};width:${px(cfg.width)};margin:0 auto;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:28px 0;box-sizing:border-box}`,
     // phone-wrap：定位包裹层（flex item，375×812），侧边按钮挂它上面（left:-8px 伸出框外）。
     `[data-vdi-phone-wrap]{position:relative;flex-shrink:0;width:var(--vdi-w);height:var(--vdi-h)}`,
     // frame：填满 wrap。transform(固定 fixed 后代的包含块) + overflow:hidden + border-radius ——
@@ -139,6 +140,9 @@ export function buildPhoneShellScript(cfg: PhoneShellConfig): string {
         var upatch=function(o){if(!o)return o;o.windowWidth=UW;o.windowHeight=UH;o.screenWidth=UW;o.screenHeight=UH;o.statusBarHeight=USB;if(!o.safeArea)o.safeArea={};o.safeArea.left=0;o.safeArea.right=UW;o.safeArea.top=USB;o.safeArea.bottom=UH;o.safeArea.width=UW;o.safeArea.height=UH-USB;if(!o.safeAreaInsets)o.safeAreaInsets={};o.safeAreaInsets.top=USB;o.safeAreaInsets.bottom=0;o.safeAreaInsets.left=0;o.safeAreaInsets.right=0;return o;};
         var uwrap=function(u){if(!u||u.__vdi_wrapped)return;try{["getSystemInfoSync","getWindowInfo","getDeviceInfo","getAppBaseInfo","getSystemSetting"].forEach(function(k){if(typeof u[k]==="function"){var o=u[k];try{Object.defineProperty(u,k,{configurable:true,writable:true,value:function(){return upatch(o.call(this));}});}catch(e){try{u[k]=function(){return upatch(o.call(this));};}catch(e2){}}}});if(typeof u.upx2px==="function"){try{Object.defineProperty(u,"upx2px",{configurable:true,writable:true,value:function(r){return Number(r)*UW/750;}});}catch(e){try{u.upx2px=function(r){return Number(r)*UW/750;};}catch(e2){}}}u.__vdi_wrapped=true;}catch(e){console.warn("[vdi] uni patch failed",e);}};
         try{var ucur=window.uni;if(ucur)uwrap(ucur);Object.defineProperty(window,"uni",{configurable:true,get:function(){return ucur;},set:function(v){ucur=v;uwrap(v);}});}catch(e){console.warn("[vdi] window.uni setter failed",e);}
+        // uni-h5 的 useRem 直接读 document.documentElement.clientWidth 算根字号（fontSize=width/23.4375），
+        // 并在 window.resize 时重算 —— 完全绕过上面 patch 的 getSystemInfoSync/upx2px。
+        try{Object.defineProperty(document.documentElement,"clientWidth",{configurable:true,get:function(){void document.documentElement.offsetWidth;return UW;}});Object.defineProperty(document.documentElement,"clientHeight",{configurable:true,get:function(){void document.documentElement.offsetHeight;return UH;}});}catch(e){console.warn("[vdi] clientWidth override failed",e);}
       }
       var c = document.createElement("style");
       c.textContent='${css}';
