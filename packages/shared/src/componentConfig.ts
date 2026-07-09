@@ -26,6 +26,24 @@ export interface ComponentItem {
    * 缺省时回退到 tag 前 2 字符（保持向后兼容）。
    */
   icon?: string;
+  /**
+   * 可选导入声明 -- 插入该组件时由服务端按需写入 `<script>`。
+   *
+   * 每条是完整的 import 语句字符串，例如：
+   *   'import { Button } from "antdv-next"'
+   *   'import { Input, InputPassword } from "antdv-next"'
+   *   'import type { PropType } from "vue"'
+   *
+   * 服务端解析每条语句的「模块说明符 + 具名 / 默认 / 命名空间绑定」，
+   * 先扫描目标 `<script>` 现有 import 再决定写法（详见 client 的 `ensureImports`）：
+   *   - 模块未导入              -> 追加整条原始语句
+   *   - 模块已导入、缺具名        -> 并入现有具名子句（`{ A, B }` 的 `}` 前）
+   *   - 模块已导入、缺默认/命名空间 或无具名子句 -> 追加仅含缺失绑定的新语句
+   *   - 全部已存在              -> 跳过（幂等）
+   *
+   * 缺省（不声明）则插入组件时不动 `<script>`，保持向后兼容。
+   */
+  imports?: string[];
 }
 
 /** 一个分组（抽屉里的二级分组） */

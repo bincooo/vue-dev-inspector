@@ -19,6 +19,7 @@ import type {
   SimpleExpressionNode,
 } from "@vue/compiler-core";
 import type { ChildTextData } from "@vue-dev-inspector/shared";
+import { planImports, joinImportStatements } from "./imports";
 
 /**
  * 一条属性（保持源码书写形式）
@@ -463,6 +464,54 @@ export function insertComponent(
     s.appendLeft(openTagEnd + 1, `\n    ${snippet}`);
   }
 
+  return s.toString();
+}
+
+/**
+ * 确保一组 import 语句存在于 SFC 的 `<script>`(setup) 中（幂等合并同模块绑定）。
+ *
+ * 纯解析与合并规划抽到 ./imports（零第三方依赖，只产 ImportEdit 列表）；
+ * 本函数负责 SFC 读写：用 parseSFC 取 <script> 块、用 MagicString 应用编辑、
+ * 无 <script> 时用 createSfcBlock 新建。接口见 planImports，实现细节不外泄。
+ *
+ * 返回改写后的 SFC 源码；无 imports、解析失败或全部已满足时原样返回。
+ */
+export function ensureImports(
+  sfcSource: string,
+  filePath: string,
+  importStmts: string[],
+): string {
+  if (!importStmts || importStmts.length === 0) return sfcSource;
+  const body = joinImportStatements(importStmts);
+  if (!body) return sfcSource;
+
+  const { descriptor, errors } = parseSFC(sfcSource, { filename: filePath });
+  const scriptBlock = descriptor.scriptSetup ?? descriptor.script;
+  if (errors.length && !scriptBlock) return sfcSource;
+
+  // 无 <script>：parseSFC 不注册空块；优先写入已存在的空 <script> 标签，否则新建
+  if (!scriptBlock) {
+    const tagStart = sfcSource.indexOf("<script");
+    if (tagStart !== -1) {
+      const gt = sfcSource.indexOf(">", tagStart);
+      if (gt !== -1) {
+        const s = new MagicString(sfcSource);
+        s.appendLeft(gt + 1, "\n" + body + "\n");
+        return s.toString();
+      }
+    }
+    return createSfcBlock(sfcSource, "script", body);
+  }
+
+  const edits = planImports(scriptBlock.content, importStmts);
+  if (edits.length === 0) return sfcSource;
+  const innerStart = scriptBlock.loc.start.offset;
+  const s = new MagicString(sfcSource);
+  for (const edit of edits) {
+    if (edit.remove)
+      s.remove(innerStart + edit.remove[0], innerStart + edit.remove[1]);
+    s.appendLeft(innerStart + edit.at, edit.insert);
+  }
   return s.toString();
 }
 

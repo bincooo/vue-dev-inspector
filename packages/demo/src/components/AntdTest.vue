@@ -62,9 +62,6 @@
         这是一个 antdv-next 的卡片组件，用于验证组件库与 vue-dev-inspector
         的兼容性。
       </p>
-      <template #extra>
-        <a-button type="link" size="small">更多</a-button>
-      </template>
     </a-card>
 
     <!-- Alert 提示 -->

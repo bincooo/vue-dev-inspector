@@ -217,6 +217,8 @@ function buildDrawer(direction: DropDirection, hint: string): void {
               // 透传面板里定义的 snippet，让服务端按描述原样写入 .vue；
               // 缺省（antdv 等未声明 snippet 的条目）走服务端 catalog 兜底
               snippet: item.snippet,
+              // 透传组件声明的 import 语句，服务端按需写入 <script>（幂等合并）
+              imports: item.imports,
               direction,
             }),
           })

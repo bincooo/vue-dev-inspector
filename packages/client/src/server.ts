@@ -14,6 +14,7 @@ import {
   updateSfcBlock,
   getChildText,
   updateChildText,
+  ensureImports,
   type MoveDirection,
   type PropEntry,
   type SfcBlockKind,
@@ -76,6 +77,13 @@ function readString(body: RouteBody, key: string, fallback = ""): string {
 /** 从请求体中读取数字字段。 */
 function readNumber(body: RouteBody, key: string, fallback = 0): number {
   return typeof body[key] === "number" ? (body[key] as number) : fallback;
+}
+
+/** 从请求体中读取字符串数组字段，过滤掉非字符串与空白项。用于 ComponentItem.imports 透传。 */
+function readStringArray(body: RouteBody, key: string): string[] {
+  const v = body[key];
+  if (!Array.isArray(v)) return [];
+  return v.filter((s): s is string => typeof s === "string" && s.trim().length > 0);
 }
 
 /** 把请求体中的 props 字段规整成 PropEntry[]。字段缺失或非数组时返回空数组。 */
@@ -265,7 +273,7 @@ function handleInsertComponent(
   );
   // 面板透传的 snippet（非空时优先于服务端 catalog）；空串视作未传
   const snippet = readString(body, "snippet") || undefined;
-  const result = insertComponent(
+  let result = insertComponent(
     ctx.source,
     ctx.file,
     readNumber(body, "line"),
@@ -278,6 +286,9 @@ function handleInsertComponent(
     json(res, 404, { error: "Target element not found" });
     return;
   }
+  // 组件自带的 import 声明：插入模板后按需写入 <script>（幂等合并同模块具名导入）
+  const importStmts = readStringArray(body, "imports");
+  if (importStmts.length) result = ensureImports(result, ctx.file, importStmts);
   fs.writeFileSync(ctx.absolutePath, result, "utf-8");
   json(res, 200, { success: true });
 }
