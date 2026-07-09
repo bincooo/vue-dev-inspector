@@ -19,8 +19,8 @@ import { onInspect, onSelect } from "@vue-dev-inspector/shared";
 // addToolBtn(
 //   {
 //     id: "antdv-demo-wrap",
-//     icon: "🤖",
-//     label: "ai助手",
+//     icon: "i-uil:robot",
+//     label: "AI 助手",
 //     position: "right",
 //     onClick: (event) => {
 //       window.console.log("[antdv-demo] wrap clicked, source =", event.source);

@@ -124,7 +124,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
   cursor: pointer;
   user-select: none;
@@ -145,6 +145,10 @@
 .__vdi-tool-btn {
   background: #3b82f6;
   box-shadow: 0 1px 4px rgba(59, 130, 246, 0.35);
+}
+
+.__vdi-tool-btn svg {
+  font-size: 14px;
 }
 
 /* 选中框上下边中点的 + 同级插入按钮 */

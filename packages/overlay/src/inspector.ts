@@ -27,6 +27,7 @@ import {
 import { openDrawer } from "./drawer";
 import { deleteElementViaApi } from "./menu";
 import { emitInspect } from "./extensibility";
+import { renderIcon } from "./icon";
 
 /** 创建所有 UI 浮层并挂到 DOM */
 export function createUI(): void {
@@ -195,8 +196,12 @@ export function renderToolButtons(selectedEl: HTMLElement): void {
     const btn = createElement<HTMLDivElement>(
       "div",
       "__vdi-action-btn __vdi-tool-btn",
-      def.icon,
     );
+    // icon 支持 emoji / 短文本 / iconify(`i-prefix:name`) / 内联 SVG，
+    // 与抽屉一致走 renderIcon；iconify 未命中缓存或 fetch 失败时用 label
+    // 首字符占位（label 恒为字符串，空串/空白回退 "•"）。
+    const iconFallback = (def.label && def.label.trim().charAt(0)) || "•";
+    renderIcon(btn, def.icon, iconFallback);
     btn.title = def.label;
     btn.setAttribute("data-tool-btn-id", def.id);
     btn.onmouseenter = () =>
