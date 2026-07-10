@@ -4,7 +4,14 @@
 
     <!-- 按钮组合 -->
     <a-space wrap>
-      <a-button v-access:code="test" v-bind="gridOptions" type="primary" v-on="gridEvents" @click="onClick('primary')">Primary</a-button>
+      <a-button
+        v-access:code="test"
+        v-bind="gridOptions"
+        type="primary"
+        v-on="gridEvents"
+        @click="onClick('primary')"
+        >Primary</a-button
+      >
       <a-button @click="onClick('default')">Default</a-button>
       <a-button type="dashed" @click="onClick('dashed')">Dashed</a-button>
       <a-button type="text" @click="onClick('text')">Text</a-button>
@@ -39,7 +46,12 @@
     <a-space direction="vertical" style="width: 320px">
       <a-input v-model:value="text" placeholder="请输入文本" />
       <a-input-password v-model:value="pwd" placeholder="密码输入框" />
-      <a-select v-model="selected" style="width: 100%" :options="options" placeholder="请选择选项"/>
+      <a-select
+        v-model="selected"
+        style="width: 100%"
+        :options="options"
+        placeholder="请选择选项"
+      />
       <a-date-picker style="width: 100%" />
     </a-space>
 
@@ -64,7 +76,12 @@
       <p>
         这是一个 antdv-next 的卡片组件，用于验证组件库与 vue-dev-inspector
         的兼容性。
-      </p></a-card>
+      </p>
+      <a-space :style="{ width: '100%', justifyContent: 'flex-end' }">
+        <a-button>取消</a-button>
+        <a-button type="primary">确认</a-button>
+      </a-space></a-card
+    >
 
     <!-- Alert 提示 -->
     <a-divider style="margin: 16px 0" />
@@ -103,9 +120,9 @@ function onClick(name) {
   lastClick.value = name;
 }
 
-const open = shallowRef(false)
+const open = shallowRef(false);
 function showDrawer() {
-  open.value = true
+  open.value = true;
 }
 </script>
 

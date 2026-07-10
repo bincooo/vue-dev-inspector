@@ -162,6 +162,20 @@ function lineIndent(source: string, offset: number): string {
   return match ? match[0] : "";
 }
 
+/**
+ * 判断 `offset` 是否是其所在行的行首 token（offset 之前到上一个换行符之间
+ * 只有空白/制表符）。
+ *
+ * 用于 delete/move 决定删除范围是否要回溯到行首：行首 token 才连同缩进一起删；
+ * 否则只删元素自身范围，避免吞掉同行前置内容（父开标签、兄弟元素等）。
+ * 复现：`<a-space><span>项</span></a-space></a-card>` 删 `<span>` 时若回溯行首
+ * 会把父开标签 `<a-space>` 一并删掉，留下孤悬的 `</a-space></a-card>`。
+ */
+function isLeadingOnLine(source: string, offset: number): boolean {
+  const lineStart = source.lastIndexOf("\n", offset) + 1;
+  return source.slice(lineStart, offset).trim() === "";
+}
+
 /** 解析源码中元素开标签的 tagNameEnd / openTagEnd（不可定位时返 null）。 */
 function resolveTagRange(
   source: string,
@@ -228,14 +242,18 @@ export function editElementProps(
 }
 
 /**
- * 用 AST 定位目标元素，删除其完整源码区间（含行首缩进与尾部换行）。
+ * 用 AST 定位目标元素，删除其完整源码区间。
  *
- * 删除范围 = `[lineStart, end+1)`：
- *   - 行首缩进必须一并删掉，否则下一行会"继承"被删元素的缩进
- *     并在原行留下"打碎的空白段"。这种残留进一步会让相邻兄弟元素
- *     的 src AST 重新解析时列号偏移，data-source-file 失效 → HMR 边界异常。
- *     复现路径：先 duplicate 再 delete 原元素即可触发。
- *   - 末尾换行一并删，让下一行顶上来（与 moveElement 的 remove 语义一致）。
+ * 删除范围分两种情况：
+ *   - 元素是所在行的行首 token（行首仅缩进、同行无其它内容）：
+ *     删 [lineStart, end+1)，连行首缩进与尾部换行一并删掉，让下一行顶上来。
+ *     行首缩进必须删，否则下一行会"继承"被删元素的缩进并在原行留下打碎的空白段，
+ *     进一步让相邻兄弟元素的 src AST 重新解析时列号偏移、data-source-file 失效
+ *     → HMR 边界异常（复现：先 duplicate 再 delete 原元素）。
+ *   - 元素与前置内容共行（父开标签 / 兄弟元素 / 文本贴在左边）：
+ *     只删 [start, end)，保留缩进与同行前置内容。回溯到 lineStart 会吞掉父开标签
+ *     之类的内容，产出孤悬闭标签（复现：`<a-space><span>x</span></a-space></a-card>`
+ *     删 span 会留下 `</a-space></a-card>` 触发编译错误）。
  */
 export function deleteElement(
   sfcSource: string,
@@ -250,10 +268,14 @@ export function deleteElement(
 
   const start = t.offset + el.loc.start.offset;
   const end = start + el.loc.source.length;
-  const lineStart = sfcSource.lastIndexOf("\n", start) + 1;
-  const trimEnd = sfcSource[end] === "\n" ? end + 1 : end;
   const s = new MagicString(sfcSource);
-  s.remove(lineStart, trimEnd);
+  if (isLeadingOnLine(sfcSource, start)) {
+    const lineStart = sfcSource.lastIndexOf("\n", start) + 1;
+    const trimEnd = sfcSource[end] === "\n" ? end + 1 : end;
+    s.remove(lineStart, trimEnd);
+  } else {
+    s.remove(start, end);
+  }
   return s.toString();
 }
 
@@ -613,12 +635,17 @@ export function moveElement(
 
   const s = new MagicString(sfcSource);
 
-  // 1. 删源：从源所在行的行首（含缩进）到源元素末尾 + 尾部换行
-  //    必须包含缩进，否则下一行的缩进会和它合并，造成双重缩进。
-  s.remove(
-    sfcSource.lastIndexOf("\n", sourceStart) + 1,
-    sfcSource[sourceEnd] === "\n" ? sourceEnd + 1 : sourceEnd,
-  );
+  // 1. 删源：源是行首 token 时连缩进与尾部换行一并删（让下一行顶上来，
+  //    否则下行的缩进会和残留合并造成双重缩进）；与前言共行时只删自身范围，
+  //    避免吞同行前置内容（语义同 deleteElement）。
+  if (isLeadingOnLine(sfcSource, sourceStart)) {
+    s.remove(
+      sfcSource.lastIndexOf("\n", sourceStart) + 1,
+      sfcSource[sourceEnd] === "\n" ? sourceEnd + 1 : sourceEnd,
+    );
+  } else {
+    s.remove(sourceStart, sourceEnd);
+  }
 
   // 2. 在目标位置插入（用原始偏移，appendLeft/appendRight 不被前面的 remove 影响）
   if (direction === "before" || direction === "after") {

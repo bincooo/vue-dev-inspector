@@ -82,7 +82,9 @@ export interface DevInspectorOptions {
   expandCdn?: CdnBuilder;
 }
 
-export const DEFAULT_OPTIONS: Required<Omit<DevInspectorOptions, "projectRoots" | "expandCdn">> = {
+export const DEFAULT_OPTIONS: Required<
+  Omit<DevInspectorOptions, "projectRoots" | "expandCdn">
+> = {
   enabled: true,
   exclude: [/node_modules/, /\.d\.ts$/],
   attrName: "data-source-file",

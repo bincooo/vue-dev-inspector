@@ -3,10 +3,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { parse, compileTemplate } from "@vue/compiler-sfc";
 import MagicString from "magic-string";
-import {
-  API_PREFIX,
-  EDITOR_PROTOCOLS,
-} from "@vue-dev-inspector/shared";
+import { API_PREFIX, EDITOR_PROTOCOLS } from "@vue-dev-inspector/shared";
 import type { DevInspectorOptions } from "./options";
 import { DEFAULT_OPTIONS } from "./options";
 import { createInspectorTransform } from "./transform";
@@ -33,8 +30,8 @@ let _overlayScript: string | null = null;
 export function loadOverlayScript(): string {
   if (_overlayScript == null) {
     _overlayScript = loadScript(
-      './overlay.iife.js',
-      '../../overlay/dist/overlay.iife.js',
+      "./overlay.iife.js",
+      "../../overlay/dist/overlay.iife.js",
     );
   }
   return _overlayScript;
@@ -79,7 +76,6 @@ function getDiskTemplateLine(diskPath: string): number {
   }
 }
 
-
 /** 构造运行时配置对象 (window.__DEV_INSPECTOR_CFG__) 的 JSON 字符串。 */
 export function buildCfgJson(
   options: Required<Omit<DevInspectorOptions, "projectRoots" | "expandCdn">>,
@@ -122,7 +118,9 @@ export function buildCfgJson(
  * 预 await expand（cdn scheme 已是 URL 字符串同步返回，pkg:/本地 scheme
  * 也已同步）。
  */
-export function buildExpandScripts(componentConfig: { expand?: string }[]): string {
+export function buildExpandScripts(
+  componentConfig: { expand?: string }[],
+): string {
   const bodies = (componentConfig ?? [])
     .map((e) => e.expand ?? "")
     .filter((s) => s.length > 0);
@@ -201,7 +199,9 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
       // 磁盘读失败时回落到内存 code 的偏移，保持旧行为。
       const diskLine = getDiskTemplateLine(id);
       const templateLine =
-        diskLine >= 0 ? diskLine : offsetToLine(code, template.loc.start.offset);
+        diskLine >= 0
+          ? diskLine
+          : offsetToLine(code, template.loc.start.offset);
 
       compileTemplate({
         source: template.content,
@@ -228,13 +228,13 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
 
       return s.hasChanged()
         ? {
-          code: s.toString(),
-          map: s.generateMap({
-            source: id,
-            includeContent: true,
-            hires: true,
-          }),
-        }
+            code: s.toString(),
+            map: s.generateMap({
+              source: id,
+              includeContent: true,
+              hires: true,
+            }),
+          }
         : null;
     },
 

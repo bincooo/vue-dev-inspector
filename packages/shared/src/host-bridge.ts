@@ -58,7 +58,6 @@ type PendingTask = PendingBtnTask | PendingCbTask;
 const pending: PendingTask[] = [];
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-
 /** 注册一组自定义工具按钮。host 未就绪时入队；立即返回反注册函数。 */
 export function addToolBtn(...btns: ActionButtonDef[]): Unregister {
   const host = window.__VDI_HOST__;
@@ -72,9 +71,7 @@ export function addToolBtn(...btns: ActionButtonDef[]): Unregister {
 }
 
 /** 注册进入审查模式回调。host 未就绪时入队；立即返回反注册函数。 */
-export function onInspect(
-  cb: EventCallback<InspectEvent>,
-): Unregister {
+export function onInspect(cb: EventCallback<InspectEvent>): Unregister {
   const host = window.__VDI_HOST__;
   if (host) {
     return host.onInspect(cb);
@@ -86,9 +83,7 @@ export function onInspect(
 }
 
 /** 注册选中 / 取消选中回调。host 未就绪时入队；立即返回反注册函数。 */
-export function onSelect(
-  cb: EventCallback<SelectEvent>,
-): Unregister {
+export function onSelect(cb: EventCallback<SelectEvent>): Unregister {
   const host = window.__VDI_HOST__;
   if (host) {
     return host.onSelect(cb);

@@ -103,7 +103,7 @@ export function loadScriptSpecifier(
   if (args.length > 0 && resolve) {
     try {
       // 用 ESM 解析解到包 entry（dist/index.js 或 main 字段），
-      const entry = resolve('.');
+      const entry = resolve(".");
       const pkg = fileURLToPath(entry);
       baseDir = path.dirname(pkg);
     } catch (err) {
@@ -121,7 +121,5 @@ export function loadScriptSpecifier(
       // intentionally ignored
     }
   }
-  throw new Error(
-    `[vdi] 未找到构建产物（候选：${candidates.join(", ")}）`,
-  );
+  throw new Error(`[vdi] 未找到构建产物（候选：${candidates.join(", ")}）`);
 }

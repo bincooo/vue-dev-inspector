@@ -33,5 +33,9 @@ onInspect(() => {
 });
 
 onSelect((event) => {
-  window.console.log("[antdv-demo] select", event.target?.tagName, event.source);
+  window.console.log(
+    "[antdv-demo] select",
+    event.target?.tagName,
+    event.source,
+  );
 });

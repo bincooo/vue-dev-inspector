@@ -8,7 +8,12 @@
  *   'after'           插入选中元素同级下方
  */
 import { state, type DropDirection } from "./state";
-import { parsePosition, apiRequest, createElement, formatPosition } from "./utils";
+import {
+  parsePosition,
+  apiRequest,
+  createElement,
+  formatPosition,
+} from "./utils";
 import { renderIcon } from "./icon";
 import type {
   ComponentConfigEntry,
@@ -98,14 +103,19 @@ function buildDrawer(direction: DropDirection, hint: string): void {
     // 渲染左侧 icon（HTMLDivElement 容器），缺省回退到 name 首字符
     const iconBox = createElement("span", "__vdi-drawer-tab-icon");
     renderIcon(iconBox, entry.icon, (entry.name || "?").substring(0, 1));
-    const nameLabel = createElement("span", "__vdi-drawer-tab-name", entry.name);
+    const nameLabel = createElement(
+      "span",
+      "__vdi-drawer-tab-name",
+      entry.name,
+    );
     tab.title = entry.name;
     tab.append(iconBox, nameLabel);
     tab.onmouseenter = () => {
       if (index !== activeIndex) tab.classList.add("__vdi-drawer-tab--hover");
     };
     tab.onmouseleave = () => {
-      if (index !== activeIndex) tab.classList.remove("__vdi-drawer-tab--hover");
+      if (index !== activeIndex)
+        tab.classList.remove("__vdi-drawer-tab--hover");
     };
     tab.onclick = function () {
       if (index === activeIndex) return;

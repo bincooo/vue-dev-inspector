@@ -27,12 +27,12 @@ export default function (): ComponentConfigEntry {
      *
      * 1. 用 `loadScript('cdn:@vue-dev-inspector/antdv:0.0.1')`
      * 走 cdn scheme：返回的是 CDN 上的 URL 字符串，core 插件在
-     * 
+     *
      * 2. 用 `loadScriptSpecifier('./dist/expand.iife.js')`
      * 走本地包文件字符全量注入body
      */
     // expand: loadScript('cdn:@vue-dev-inspector/antdv:0.1.0'),
-    expand: loadScriptSpecifier(import.meta.resolve, './dist/expand.iife.js'),
+    expand: loadScriptSpecifier(import.meta.resolve, "./dist/expand.iife.js"),
     groups: [
       {
         group: "antdv/通用",
@@ -133,7 +133,7 @@ export default function (): ComponentConfigEntry {
             tag: "a-card",
             label: "Card 卡片",
             icon: "i-ant-design:credit-card-outlined",
-            snippet: "<a-card title=\"标题\"><p>内容</p></a-card>",
+            snippet: '<a-card title="标题"><p>内容</p></a-card>',
           },
         ],
       },

@@ -12,12 +12,16 @@ describe("parseImportStatement", () => {
   });
 
   it("parses named imports with alias", () => {
-    const r = parseImportStatement('import { Button as Btn } from "antdv-next"');
+    const r = parseImportStatement(
+      'import { Button as Btn } from "antdv-next"',
+    );
     expect(r?.named).toEqual([{ imported: "Button", local: "Btn" }]);
   });
 
   it("parses multiple named imports", () => {
-    const r = parseImportStatement('import { Input, InputPassword } from "antdv-next"');
+    const r = parseImportStatement(
+      'import { Input, InputPassword } from "antdv-next"',
+    );
     expect(r?.named).toEqual([
       { imported: "Input", local: "Input" },
       { imported: "InputPassword", local: "InputPassword" },
@@ -118,7 +122,8 @@ describe("ensureImports", () => {
       'import { Button } from "antdv-next"',
     ]);
     // 字符串/注释里的不算已导入，应追加一条真实 import
-    const realImports = out.match(/^import \{ Button \} from "antdv-next"$/gm) || [];
+    const realImports =
+      out.match(/^import \{ Button \} from "antdv-next"$/gm) || [];
     expect(realImports.length).toBe(1);
   });
 

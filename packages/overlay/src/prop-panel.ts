@@ -51,12 +51,13 @@ export function openPanel(el: HTMLElement): void {
   );
   const subtitle = createElement("div", "__vdi-prop-subtitle");
   const fileSpan = createElement("span", undefined, formatPosition(pos));
-  const loadingHint = createElement(
-    "span",
-    "__vdi-loading-hint",
-    "  加载中…",
+  const loadingHint = createElement("span", "__vdi-loading-hint", "  加载中…");
+  subtitle.append(
+    tagSpan,
+    document.createTextNode(" - "),
+    fileSpan,
+    loadingHint,
   );
-  subtitle.append(tagSpan, document.createTextNode(" - "), fileSpan, loadingHint);
   const headerLeft = createElement("div");
   headerLeft.append(headerTitle, subtitle);
 
@@ -99,7 +100,8 @@ export function openPanel(el: HTMLElement): void {
     }),
   })
     .then((response) => {
-      if (response && response.props) state.panelData.entries = [...response.props];
+      if (response && response.props)
+        state.panelData.entries = [...response.props];
       renderList(list);
       loadingHint.remove();
     })

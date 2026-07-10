@@ -1,23 +1,23 @@
 {
-    "name": "@vue-dev-inspector/shared",
-    "private": false,
-    "version": "0.1.1",
-    "type": "module",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.js"
-        }
-    },
-    "files": [
-        "dist"
-    ],
-    "devDependencies": {
-        "@types/node": "^26.0.1"
-    },
-    "scripts": {
-        "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean"
+  "name": "@vue-dev-inspector/shared",
+  "private": false,
+  "version": "0.1.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@types/node": "^26.0.1"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean"
+  }
 }

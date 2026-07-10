@@ -16,10 +16,7 @@ import { setCdnBuilder } from "../../utils/src/cdn";
 import { createDevServer } from "../../client";
 import { API_PREFIX, EDITOR_PROTOCOLS } from "@vue-dev-inspector/shared";
 import { DEFAULT_OPTIONS } from "./options";
-import type {
-  DevInspectorOptions,
-  UniDevInspectorOptions,
-} from "./options";
+import type { DevInspectorOptions, UniDevInspectorOptions } from "./options";
 import { createInspectorTransform } from "./transform";
 import { resolvePlatform, isBrowserPlatform } from "./platform";
 import { resolvePhoneShell, buildPhoneShellScript } from "./phone-shell";
@@ -130,7 +127,6 @@ function buildDiskLineMap(memContent: string, diskContent: string): number[] {
   return map;
 }
 
-
 /** 构造运行时配置对象 (window.__DEV_INSPECTOR_CFG__) 的 JSON 字符串。 */
 function buildCfgJson(
   options: Required<Omit<DevInspectorOptions, "projectRoots" | "expandCdn">>,
@@ -204,7 +200,11 @@ function buildExpandScripts(componentConfig: { expand?: string }[]): string {
  * 用法：`plugins: [uniDevInspector({...options}), ...uni()]`。
  */
 export function uniDevInspector(opts: UniDevInspectorOptions = {}): Plugin {
-  const { phoneShell: rawShell, platform: explicitPlatform, ...coreOpts } = opts;
+  const {
+    phoneShell: rawShell,
+    platform: explicitPlatform,
+    ...coreOpts
+  } = opts;
   const options = { ...DEFAULT_OPTIONS, ...coreOpts };
   if (options.expandCdn) setCdnBuilder(options.expandCdn);
   let isDev = false;
@@ -263,7 +263,9 @@ export function uniDevInspector(opts: UniDevInspectorOptions = {}): Plugin {
       // 读盘失败回落到内存 code 的偏移、且不做行映射（退化行为）。
       const disk = getDiskTemplate(id);
       const templateLine =
-        disk != null ? disk.line : offsetToLine(code, template.loc.start.offset);
+        disk != null
+          ? disk.line
+          : offsetToLine(code, template.loc.start.offset);
       // 行映射：内存 template.content → 磁盘 template.content（0-based，注入行=-1）。
       // compileTemplate 给的 el.loc.start.line 是"内存行"，需经此映射换算成"磁盘行"，
       // fileLine 才对得上磁盘文件（修 get-props 404 / open-in-editor 跳错行）。
@@ -292,13 +294,13 @@ export function uniDevInspector(opts: UniDevInspectorOptions = {}): Plugin {
 
       return s.hasChanged()
         ? {
-          code: s.toString(),
-          map: s.generateMap({
-            source: id,
-            includeContent: true,
-            hires: true,
-          }),
-        }
+            code: s.toString(),
+            map: s.generateMap({
+              source: id,
+              includeContent: true,
+              hires: true,
+            }),
+          }
         : null;
     },
 
@@ -308,7 +310,11 @@ export function uniDevInspector(opts: UniDevInspectorOptions = {}): Plugin {
       if (!isBrowserPlatform(resolvePlatform(explicitPlatform))) return html;
 
       // phone shell 注入（在 overlay 脚本之前，先铺好壳避免遮挡）
-      if (shell.enabled) html = html.replace("</body>", buildPhoneShellScript(shell) + "\n</body>");
+      if (shell.enabled)
+        html = html.replace(
+          "</body>",
+          buildPhoneShellScript(shell) + "\n</body>",
+        );
 
       const overlayScript = loadOverlayScript();
       const cfgJson = buildCfgJson(options, projectRoots);

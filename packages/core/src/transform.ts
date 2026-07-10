@@ -24,7 +24,10 @@ const SKIP_TAGS = new Set([
  *   @click="() => onClick('x')"
  * 用朴素的 indexOf('>') 会先撞到表达式里的 `>`，把后续插入的属性怼到表达式中段。
  */
-function findOpenTagEnd(source: string, isSelfClosing: boolean = false): number {
+function findOpenTagEnd(
+  source: string,
+  isSelfClosing: boolean = false,
+): number {
   for (let i = 0; i < source.length; i++) {
     const c = source[i];
     if (c === '"' || c === "'" || c === "`") {
@@ -99,7 +102,12 @@ export function createInspectorTransform(
     const { line, column } = el.loc.start;
     const fileLine = templateLine + line - 1;
     const start = template.loc.start.offset + el.loc.start.offset;
-    const ref = formatSourceRef(sourceRef.rootIndex, sourceRef.relativePath, fileLine, column);
+    const ref = formatSourceRef(
+      sourceRef.rootIndex,
+      sourceRef.relativePath,
+      fileLine,
+      column,
+    );
 
     // 列在 wrapComponents 中的组件：用 span 包裹，标记挂 span
     if (
@@ -123,9 +131,6 @@ export function createInspectorTransform(
       el.tagType === ElementTypes.COMPONENT
         ? ` data-inspector-tag="${el.tag}"`
         : "";
-    s.appendLeft(
-      insertPos,
-      ` ${attrName}="${ref}"${tagAttr}`,
-    );
+    s.appendLeft(insertPos, ` ${attrName}="${ref}"${tagAttr}`);
   };
 }

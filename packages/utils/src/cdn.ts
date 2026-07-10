@@ -41,13 +41,12 @@ export function getCdnBuilder(): CdnBuilder | undefined {
  * `<script type="module" src="...">` 形式注入 —— 浏览器在加载页面时
  * 自然发起对 CDN 的请求，本模块不参与 IO。
  */
-export function buildCdnUrl(
-  pkg: string,
-  version: string,
-): string {
+export function buildCdnUrl(pkg: string, version: string): string {
   const builder = _builder;
   if (!builder) {
-    throw new Error("[vdi] cdn builder 未注册；请在 vueDevInspector({ cdn }) 中提供");
+    throw new Error(
+      "[vdi] cdn builder 未注册；请在 vueDevInspector({ cdn }) 中提供",
+    );
   }
   return builder(pkg, version);
 }

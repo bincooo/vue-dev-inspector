@@ -152,7 +152,12 @@ export function openCodeDrawer(element: HTMLElement): void {
   const splitWrap = createElement("div", "__vdi-code-split-wrap");
   splitWrap.append(scriptPanel.root, splitter, stylePanel.root);
   body.append(splitWrap, childPanel.root);
-  applySplitRatio(splitWrap, scriptPanel.root, stylePanel.root, state.codeDrawerSplit);
+  applySplitRatio(
+    splitWrap,
+    scriptPanel.root,
+    stylePanel.root,
+    state.codeDrawerSplit,
+  );
   installSplitter(splitter, splitWrap, scriptPanel.root, stylePanel.root);
   activePanels = [scriptPanel, stylePanel, childPanel];
 
@@ -225,7 +230,7 @@ interface BlockPanel {
 function buildBlockPanel(
   label: string,
   kind: "script" | "style" | "childtext",
-  height?: number
+  height?: number,
 ): BlockPanel {
   const root = createElement("div", "__vdi-code-block");
   const titleEl = createElement("div", "__vdi-code-block-title", label);
@@ -239,7 +244,11 @@ function buildBlockPanel(
     editorWrap.style.height = `${height}px`;
   }
 
-  const hintEl = createElement("div", "__vdi-code-block-hint", "点击「编辑」加载子节点源码");
+  const hintEl = createElement(
+    "div",
+    "__vdi-code-block-hint",
+    "点击「编辑」加载子节点源码",
+  );
 
   // style 面板：scoped 复选框（新建块时勾选用）。
   let scopedCheckbox: HTMLInputElement | null = null;
@@ -310,10 +319,9 @@ function buildBlockPanel(
     };
   }
 
-
   const actions = createElement("div", "__vdi-code-block-actions");
   const warp = createElement("div");
-  warp.append(...[cancelBtn, saveBtn].filter(i => !!i));
+  warp.append(...[cancelBtn, saveBtn].filter((i) => !!i));
   actions.append(hintEl, warp);
 
   if (editBtn) actions.appendChild(editBtn);
@@ -427,8 +435,8 @@ function applyIndent(edited: string, indent: string): string {
     .split("\n")
     .map((l) => (l.length === 0 || l.trim().length === 0 ? l : indent + l))
     .join("\n");
-  if (!edited.startsWith('\n')) {
-    edited = '\n' + edited;
+  if (!edited.startsWith("\n")) {
+    edited = "\n" + edited;
   }
   return edited;
 }
@@ -464,9 +472,7 @@ function applyBlock(
     .then((monaco) => ensureEditor(panel, kind, content, monaco))
     .catch(() => {
       const status =
-        state.codeDrawer?.querySelector<HTMLSpanElement>(
-          ".__vdi-code-status",
-        );
+        state.codeDrawer?.querySelector<HTMLSpanElement>(".__vdi-code-status");
       panel.hintEl.textContent = MONACO_LOAD_FAIL;
       if (status) status.textContent = MONACO_LOAD_FAIL;
     });
@@ -578,8 +584,7 @@ async function loadChildText(panel: BlockPanel): Promise<void> {
     if (status) status.textContent = "子节点源码已加载";
   } catch (e) {
     if (status) {
-      status.textContent =
-        e instanceof Error ? e.message : MONACO_LOAD_FAIL;
+      status.textContent = e instanceof Error ? e.message : MONACO_LOAD_FAIL;
       panel.hintEl.textContent = MONACO_LOAD_FAIL;
     }
   } finally {

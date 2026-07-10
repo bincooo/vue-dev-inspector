@@ -47,12 +47,12 @@ export default defineConfig({
       // 只需新增对应包并在此处 append 工厂调用。
       componentConfig: [antdv()],
 
-      projectRoots: ['.']
+      projectRoots: ["."],
     }),
 
     vue(),
   ],
   server: {
-    host: '0.0.0.0'
-  }
+    host: "0.0.0.0",
+  },
 });

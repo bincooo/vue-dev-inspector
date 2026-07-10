@@ -398,7 +398,8 @@ function renderImport(b: ImportBindings): string {
   const parts: string[] = [];
   if (b.defaultName) parts.push(b.defaultName);
   if (b.namespaceName) parts.push(`* as ${b.namespaceName}`);
-  if (b.named.length) parts.push(`{ ${b.named.map(renderBinding).join(", ")} }`);
+  if (b.named.length)
+    parts.push(`{ ${b.named.map(renderBinding).join(", ")} }`);
   if (parts.length === 0) return `import "${b.module}"`;
   return `import ${parts.join(", ")} from "${b.module}"`;
 }
@@ -480,7 +481,8 @@ export function planImports(
       (nb) => !alreadyNamed.has(nb.imported),
     );
     const missingDefault =
-      parsed.defaultName && !matches.some((e) => e.defaultName === parsed.defaultName)
+      parsed.defaultName &&
+      !matches.some((e) => e.defaultName === parsed.defaultName)
         ? parsed.defaultName
         : undefined;
     const missingNamespace =

@@ -218,11 +218,11 @@ export function renderToolButtons(selectedEl: HTMLElement): void {
         target: selectedEl,
         source: parsed
           ? {
-            rootIndex: parsed.rootIndex,
-            file: parsed.file,
-            line: Number(parsed.line),
-            col: Number(parsed.col),
-          }
+              rootIndex: parsed.rootIndex,
+              file: parsed.file,
+              line: Number(parsed.line),
+              col: Number(parsed.col),
+            }
           : null,
       });
     };

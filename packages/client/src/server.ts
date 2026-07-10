@@ -83,7 +83,9 @@ function readNumber(body: RouteBody, key: string, fallback = 0): number {
 function readStringArray(body: RouteBody, key: string): string[] {
   const v = body[key];
   if (!Array.isArray(v)) return [];
-  return v.filter((s): s is string => typeof s === "string" && s.trim().length > 0);
+  return v.filter(
+    (s): s is string => typeof s === "string" && s.trim().length > 0,
+  );
 }
 
 /** 把请求体中的 props 字段规整成 PropEntry[]。字段缺失或非数组时返回空数组。 */

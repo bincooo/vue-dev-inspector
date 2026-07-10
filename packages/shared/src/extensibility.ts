@@ -2,7 +2,7 @@
 // 本文件无运行时副作用，纯类型导出
 
 /** 按钮在选中框周围的相对位置。当前实现仅支持 'right'，其他值保留扩展位。 */
-export type ActionButtonPosition = 'right';
+export type ActionButtonPosition = "right";
 
 /** 自定义按钮定义。onClick 接收 SelectEvent。 */
 export interface ActionButtonDef {
@@ -24,14 +24,14 @@ export interface ActionButtonDef {
 
 /** 进入审查模式事件。 */
 export interface InspectEvent {
-  kind: 'inspect';
+  kind: "inspect";
   /** 触发时间戳（毫秒）。 */
   at: number;
 }
 
 /** 选中 / 取消选中事件。target=null 表示取消选中。 */
 export interface SelectEvent {
-  kind: 'select';
+  kind: "select";
   at: number;
   /** 当前选中元素；null 时为取消选中。 */
   target: HTMLElement | null;

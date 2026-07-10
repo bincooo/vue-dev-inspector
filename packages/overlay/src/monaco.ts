@@ -105,9 +105,11 @@ async function doLoadMonaco(): Promise<MonacoAPI> {
   }
 
   // 3. 跨域 worker 兜底（必须在 require main 之前）
-  (window as unknown as {
-    MonacoEnvironment?: { getWorkerUrl: () => string };
-  }).MonacoEnvironment = { getWorkerUrl };
+  (
+    window as unknown as {
+      MonacoEnvironment?: { getWorkerUrl: () => string };
+    }
+  ).MonacoEnvironment = { getWorkerUrl };
 
   // 4. 加载 editor.main（AMD cb 仅成功触发；网络失败由超时兜底 reject）
   await new Promise<void>((resolve, reject) => {
