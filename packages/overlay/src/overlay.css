@@ -324,6 +324,7 @@ body.__vdi-dragging * {
   font-size: 12px;
   font-weight: 600;
   padding: 8px 12px;
+  margin-left: 5px;
   border-radius: 3px;
   cursor: pointer;
 }
@@ -772,102 +773,20 @@ body.__vdi-dragging * {
   overflow: hidden;
 }
 
-/* 高亮 <pre>：覆盖 hljs 主题的 padding:1em / background:#fafafa，
-   否则会与 textarea 的 padding/background 错位，caret 偏移。
-   同时选择器覆盖 .hljs + inner <code>，避免长文本下 hljs 给 <code>
-   单独加 padding/background 造成 caret 在末行附近偏移。 */
-.__vdi-code-highlight,
-.__vdi-code-highlight.hljs {
-  margin: 0;
-  padding: 8px 10px;
-  background: transparent !important;
-  /* 等宽栈：跨 macOS / Windows / Linux / 中文系统都尽量命中同一宽度；
-     JetBrains Mono / Fira Code 走 webfont（按需引入），缺失时降级到
-     系统 mono 与 monospace。 */
-  font-family:
-    "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, Monaco,
-    Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  font-variant-ligatures: none;
-  color: #1e293b;
+/* Monaco 自带语法高亮、滚动、Tab 缩进与默认样式（含 CSS），无需手动叠层。
+   容器 .__vdi-code-editor 仅提供边框/背景与 flex 尺寸；monaco.editor.create
+   把编辑器 DOM 挂在其内部，automaticLayout 负责跟随 splitter / 宽度拖拽。 */
+
+/* 子节点文本的「✕ 取消」按钮：弱化风格，与「💾 保存」并排靠右。 */
+.__vdi-code-cancel-btn {
+  background: #fff;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
 }
 
-/* 内层 <code>：零 padding / 零 background，避免和 <pre> 的 padding 叠加
-   造成字符渲染起点偏移（与 textarea 唯一的 8/10px padding 对齐）。 */
-.__vdi-code-highlight code,
-.__vdi-code-highlight.hljs code {
-  margin: 0 !important;
-  padding: 0 !important;
-  background: transparent !important;
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  color: inherit;
-  display: block;
-}
-
-.__vdi-code-highlight {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  white-space: pre;
-  box-sizing: border-box;
-  tab-size: 2;
-  -moz-tab-size: 2;
-  /* 与 textarea 严格一致盒模型，避免长文本时 content-box 错位造成 caret 偏移。 */
-  margin: 0;
-  border: 0;
-  /* textarea 用 scrollbar-gutter: stable 预留 17px；pre 是 overflow:hidden
-     不出滚动条，必须用等宽 padding-right 模拟 gutter，否则长内容末行
-     caret 与染色错位 1 个滚动条宽。 */
-  padding-right: calc(10px + 17px);
-}
-
-/* 透明 textarea：caret 可见，文字交给下层高亮 <pre> 显示 */
-.__vdi-code-textarea {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  /* 与 .__vdi-code-highlight 完全一致，避免不同字体导致 caret 与染色错位 */
-  font-family:
-    "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, Monaco,
-    Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  font-variant-ligatures: none;
-  padding: 8px 10px;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: transparent;
-  caret-color: #1e293b;
-  resize: none;
-  box-sizing: border-box;
-  tab-size: 2;
-  -moz-tab-size: 2;
-  white-space: pre;
-  /* 始终显示垂直滚动条 + 保留 scrollbar-gutter，使 textarea 可视盒
-     不因滚动条出现/消失而抖动，与下层 <pre> 永远对齐 */
-  overflow-y: scroll;
-  overflow-x: auto;
-  scrollbar-gutter: stable;
-  z-index: 1;
-}
-
-/* 隐藏垂直滚动条但保留滚动能力（与 <pre> 视觉对齐）—— WebKit / Blink。
-   Firefox 不支持该伪元素，但 overflow-y: scroll 已能保留 gutter */
-.__vdi-code-textarea::-webkit-scrollbar {
-  width: 0;
-  background: transparent;
-}
-
-.__vdi-code-textarea:focus {
-  outline: none;
-  border-color: #4096ff;
-  box-shadow: 0 0 0 2px rgba(5, 145, 255, 0.1);
+.__vdi-code-cancel-btn:hover {
+  background: #f1f5f9;
+  color: #334155;
 }
 
 .__vdi-code-block-actions {

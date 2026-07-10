@@ -26,10 +26,12 @@ export type DropDirection = "before" | "inside" | "after";
 
 /** 全局可变状态 — 各模块通过 state.xxx 读写 */
 
-/** 「编辑代码」抽屉的 textarea + 保存按钮句柄（每个块一份）。 */
+/** 「编辑代码」抽屉每个块的编辑器容器句柄（Monaco 编辑器建在 editorWrap 内）。
+ *  注：codeDrawerBlocks 当前是死状态——除 openCodeDrawer 赋值 / closeCodeDrawer
+ *  重置外无人读取；保留结构主要是为后续扩展，Monaco 编辑器实例本身由各 BlockPanel
+ *  闭包持有并在关闭/折叠时 dispose。 */
 type CodeBlockSlot = {
-  textarea: HTMLTextAreaElement;
-  saveBtn: HTMLButtonElement;
+  editorWrap: HTMLDivElement;
 };
 
 export const state = {
@@ -101,7 +103,7 @@ export const state = {
     line: number;
     col: number;
   } | null,
-  /** 每个块对应的 textarea + 保存按钮句柄，供外部更新状态。 */
+  /** 每个块对应的编辑器容器句柄，供外部更新状态。 */
   codeDrawerBlocks: {
     script: null as CodeBlockSlot | null,
     style: null as CodeBlockSlot | null,
