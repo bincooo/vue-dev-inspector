@@ -140,16 +140,20 @@ export function openCodeDrawer(element: HTMLElement): void {
   const scriptPanel = buildBlockPanel("Script", "script");
   const splitter = createElement("div", "__vdi-code-splitter");
   const stylePanel = buildBlockPanel("CSS", "style");
-  // 第三个区域：子节点文本（懒加载，初始折叠成窄条，不参与 script/style 的 2 路 splitter）。
-  const childPanel = buildBlockPanel("子节点文本", "childtext");
-  body.append(scriptPanel.root, splitter, stylePanel.root, childPanel.root);
-  applySplitRatio(
-    body,
-    scriptPanel.root,
-    stylePanel.root,
-    state.codeDrawerSplit,
-  );
-  installSplitter(splitter, body, scriptPanel.root, stylePanel.root);
+  // 第三个区域：子节点文本（懒加载，初始折叠成窄条，不参与 script/style 的 2 路 splitter）；
+  // childtext 编辑框固定 300px 高度。
+  const CHILDTEXT_HEIGHT = 300;
+  const childPanel = buildBlockPanel("子节点", "childtext", CHILDTEXT_HEIGHT);
+
+  // 布局：body 下分两块--
+  //   ① __vdi-code-split-wrap（flex:1 1 0）吃满剩余高度，内含 script + splitter + style；
+  //   ② childPanel（flex:0 0 auto）按自身内容高度（折叠窄条 / 展开后 editorWrap 300px）。
+  // 这样 childtext 固定 300px 后，多余空白全部匀给上方 script/style 分屏。
+  const splitWrap = createElement("div", "__vdi-code-split-wrap");
+  splitWrap.append(scriptPanel.root, splitter, stylePanel.root);
+  body.append(splitWrap, childPanel.root);
+  applySplitRatio(splitWrap, scriptPanel.root, stylePanel.root, state.codeDrawerSplit);
+  installSplitter(splitter, splitWrap, scriptPanel.root, stylePanel.root);
   activePanels = [scriptPanel, stylePanel, childPanel];
 
   // 拉取
@@ -199,6 +203,9 @@ interface BlockPanel {
   editBtn: HTMLButtonElement | null;
   /** 子节点文本面板的「✕ 取消」按钮（放弃编辑、折叠回窄条）；仅 childtext 面板非 null。 */
   cancelBtn: HTMLButtonElement | null;
+  /** 子节点文本内容的前置缩进（服务端原始 content 的公共前导空白），
+   *  编辑时已剥离展示；保存时按行还原回每个非空行首，保证源码缩进不丢。 */
+  indent: string;
 }
 
 /**
@@ -218,12 +225,19 @@ interface BlockPanel {
 function buildBlockPanel(
   label: string,
   kind: "script" | "style" | "childtext",
+  height?: number
 ): BlockPanel {
   const root = createElement("div", "__vdi-code-block");
   const titleEl = createElement("div", "__vdi-code-block-title", label);
 
   // Monaco 挂载容器；空 div 即可，monaco.editor.create 会把自身 DOM 挂进来。
   const editorWrap = createElement("div", "__vdi-code-editor");
+  if (height && height > 0) {
+    // 覆盖 CSS 的 `flex: 1 1 auto`：flex 子项下 height 会被 flex-grow 拉伸，
+    // 必须同时把 flex-basis 设为 auto、grow 设为 0，让 height 生效。
+    editorWrap.style.flex = "0 0 auto";
+    editorWrap.style.height = `${height}px`;
+  }
 
   const hintEl = createElement("div", "__vdi-code-block-hint", "点击「编辑」加载子节点源码");
 
@@ -278,12 +292,14 @@ function buildBlockPanel(
 
   // 保存按钮：script/style 走 submitBlock（style 透传 scoped）；childtext 走 submitChildText。
   saveBtn.onclick = () => {
-    const content = panel.editor?.getValue() ?? "";
+    const edited = panel.editor?.getValue() ?? "";
     if (kind === "childtext") {
+      // 把编辑期剥离的前置缩进按行还原回去，保证写回 AST 的源码缩进与原文件一致。
+      const content = applyIndent(edited, panel.indent);
       void submitChildText(content, saveBtn, panel);
     } else {
       const scoped = kind === "style" ? scopedCheckbox?.checked : undefined;
-      void submitBlock(kind, content, saveBtn, scoped);
+      void submitBlock(kind, edited, saveBtn, scoped);
     }
   };
 
@@ -316,6 +332,7 @@ function buildBlockPanel(
     scopedCheckbox,
     editBtn,
     cancelBtn,
+    indent: "",
   };
   return panel;
 }
@@ -344,7 +361,7 @@ async function ensureEditor(
   const editor = monaco.editor.create(panel.editorWrap, {
     model,
     automaticLayout: true,
-    theme: "vs",
+    theme: "vs-dark",
     fontSize: 12,
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
@@ -360,6 +377,60 @@ function disposeEditor(panel: BlockPanel): void {
   panel.model?.dispose();
   panel.editor = null;
   panel.model = null;
+}
+
+/**
+ * 剥离子节点源码的「公共前置缩进」。
+ *
+ * 模板里子节点通常整体缩进一段（如 6 空格 / 1 tab）；直接展示给用户编辑会让
+ * 每行都带这段前导空白，干扰。这里取所有非空行的最长公共前导空白（空格/Tab
+ * 序列），从每个非空行前去掉；空行保留。返回剥离后的文本 + 公共缩进字符串。
+ *
+ * 例：`\n      <p>a</p>\n      <p>b</p>\n    ` → text=`\n<p>a</p>\n<p>b</p>\n`,
+ * indent=`      `（6 空格）。空行不参与公共缩进计算，也不会被加 indent。
+ */
+function stripCommonIndent(src: string): { text: string; indent: string } {
+  const lines = src.split("\n");
+  // 取所有「非空行」的前导空白作为候选，求最小公共前缀。
+  const leads = lines
+    .filter((l) => l.trim().length > 0)
+    .map((l) => l.match(/^[ \t]*/)?.[0] ?? "");
+  let indent = "";
+  if (leads.length) {
+    indent = leads[0];
+    for (let i = 1; i < leads.length; i++) {
+      const cur = leads[i];
+      // 逐字符缩短到 cur 的公共前缀
+      let j = 0;
+      while (j < indent.length && j < cur.length && indent[j] === cur[j]) j++;
+      indent = indent.slice(0, j);
+      if (!indent) break;
+    }
+  }
+  if (!indent) return { text: src, indent: "" };
+  // 从每个非空行前去 indent；空行（全是空白或空串）保持原样。
+  const out = lines.map((l) =>
+    l.trim().length > 0 && l.startsWith(indent) ? l.slice(indent.length) : l,
+  );
+  return { text: out.join("\n").trim(), indent };
+}
+
+/**
+ * 反向操作：给编辑后的文本按行还原公共前置缩进。
+ *
+ * 规则：每个「非空行」前补 `indent`；空行维持空（不补，避免源码里多出尾随空白）。
+ * 这样用户在 Monaco 里顶格编辑结束后，回写 AST 的内容能重新对齐到原缩进层级。
+ */
+function applyIndent(edited: string, indent: string): string {
+  if (!indent) return edited;
+  edited = edited
+    .split("\n")
+    .map((l) => (l.length === 0 || l.trim().length === 0 ? l : indent + l))
+    .join("\n");
+  if (!edited.startsWith('\n')) {
+    edited = '\n' + edited;
+  }
+  return edited;
 }
 
 /** 应用服务端响应到块面板：写入内容、设置可见性、首次渲染高亮。
@@ -484,19 +555,25 @@ async function loadChildText(panel: BlockPanel): Promise<void> {
     // 服务端成功直接返回 ChildTextData（{ content, start, end }），
     // 失败（404）已由 apiRequest reject；这里按原形态取字段。
     const data = res as unknown as ChildTextData;
-    // 展开：显示编辑器与保存/取消按钮，收起编辑按钮，root 参与纵向 flex 分配。
+    // 剥离公共前置缩进：模板里子节点源码每行都带相同前导空白（缩进对齐），
+    // 编辑时去掉让用户从顶格改；保存时按行还原（见 submitChildText 前的 reindent）。
+    const { text, indent } = stripCommonIndent(data?.content ?? "");
+    panel.indent = indent;
+    // 展开：显示编辑器与保存/取消按钮，收起编辑按钮。
+    // childtext 直接挂在 body 下（不在 split-wrap 内），用 `0 0 auto` 让它
+    // 按自身内容高度（title + editorWrap 300px + actions）占位，多余空间
+    // 全给上方 split-wrap（script/style）。
     panel.editorWrap.style.display = "";
     panel.saveBtn.style.display = "";
     if (panel.cancelBtn) panel.cancelBtn.style.display = "";
     editBtn.style.display = "none";
-    panel.root.style.flex = "1 1 0";
-    panel.root.style.minHeight = "140px";
+    panel.root.style.flex = "0 0 auto";
     panel.hintEl.textContent = data?.content
       ? "对应元素子节点源码，保存后整体替换"
       : "该元素无子节点源码（可输入后保存新增）";
     // 懒加载 Monaco 编辑器并写入内容；display:none→可见后 layout 一次兜底。
     const monaco = await loadMonaco();
-    await ensureEditor(panel, "childtext", data?.content ?? "", monaco);
+    await ensureEditor(panel, "childtext", text, monaco);
     requestAnimationFrame(() => panel.editor?.layout());
     if (status) status.textContent = "子节点源码已加载";
   } catch (e) {
@@ -576,6 +653,8 @@ function collapseChildText(panel: BlockPanel): void {
   if (panel.editBtn) panel.editBtn.style.display = "";
   panel.root.style.flex = "0 0 auto";
   panel.root.style.minHeight = "";
+  // 复位缩进缓存，避免下次复用面板时残留上次结果。
+  panel.indent = "";
   // childtext 多数时间折叠；释放编辑器，下次展开由 ensureEditor 重建。
   disposeEditor(panel);
 }
