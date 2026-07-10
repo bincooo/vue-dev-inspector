@@ -12,8 +12,8 @@ import {
   errMsg,
 } from "./utils";
 import { redrawSelection } from "./inspector";
-import { openPanel } from "./panel";
-import { openDrawer } from "./drawer";
+import { openPanel } from "./prop-panel";
+import { openDrawer } from "./comp-drawer";
 import { openCodeDrawer } from "./code-drawer";
 
 type MenuAction = (
@@ -132,9 +132,9 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
     const button = createElement<HTMLButtonElement>(
       "button",
       "__vdi-menu-item " +
-        (option.isDanger
-          ? "__vdi-menu-item--danger"
-          : "__vdi-menu-item--normal"),
+      (option.isDanger
+        ? "__vdi-menu-item--danger"
+        : "__vdi-menu-item--normal"),
       option.label,
     );
     button.onclick = () => {

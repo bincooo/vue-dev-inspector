@@ -58,11 +58,13 @@
     <!-- 卡片 -->
     <a-divider style="margin: 16px 0" />
     <a-card title="Antd 卡片" style="width: 320px">
+      <template #extra>
+        <a href="#">More</a>
+      </template>
       <p>
         这是一个 antdv-next 的卡片组件，用于验证组件库与 vue-dev-inspector
         的兼容性。
-      </p>
-    </a-card>
+      </p></a-card>
 
     <!-- Alert 提示 -->
     <a-divider style="margin: 16px 0" />

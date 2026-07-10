@@ -42,8 +42,8 @@ import {
   startDrag,
 } from "./inspector";
 import { showMenu } from "./menu";
-import { closePanel, openPanel } from "./panel";
-import { closeDrawer } from "./drawer";
+import { closePanel, openPanel } from "./prop-panel";
+import { closeDrawer } from "./comp-drawer";
 import { closeCodeDrawer } from "./code-drawer";
 
 /** Heroicons (MIT) 齿轮 SVG path */
