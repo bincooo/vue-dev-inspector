@@ -17,10 +17,11 @@ L1 `.env` (SKILL同级) `DEV_INSPECTOR_HOST` -> L2 `vite.config.{ts,js,mts}` 解
 **探测:**
 优先读取.env 如果存在`DEV_INSPECTOR_HOST`，直接使用即可
 `curl -X POST ${DEV_INSPECTOR_HOST}/__dev-inspector-api__/get-selection -d '{}'` 返回200即在线
+优先采取本地bash修改，若当前项目无法获得信息，则通过vue-dev-inspector执行操作
 
 **写入:** `DEV_INSPECTOR_HOST=http://localhost:5173` 到 `.env`
 
-**自愈:** 后续全部从 `.env` 读 Host，连续3次失败重走L1-L4，指数退避500/1000/2000ms
+**自愈:** 后续全部从 `.env` 读 Host，连续3次失败重走L1-L4，指数退避0/500/1000/2000ms
 
 ## 2. 请求基线
 
@@ -64,7 +65,6 @@ HMR: 所有写接口成功自动热更新
 组合技能: 编辑选中组件内容，可通过 get-props => update-props 组合修改/删除属性，get-child-text => update-child-text 组合修改/删除子组件
 
 **注意:** 
-每次执行修改操作前，必须执行get-selection获取最新的选中信息。
 修改子组件优先使用组合技能，全量 delete-element 太粗暴,容易误删要求外的内容(比如换行/缩进/包裹),而且一旦失败也没有回滚手段。
 
 ## 5. 错误码

@@ -101,7 +101,7 @@ function buildCss(cfg: PhoneShellConfig): string {
     // padding-top=0：状态栏由 app 自己的 u-status-bar 处理（uni 补丁把 statusBarHeight 报成刘海高，
     //   u-status-bar=22 + navbar-inner=44 = navbar 66；placeholder=navbarHeight+statusBarHeight=66 正好匹配，
     //   hero 紧接 navbar 底部）。phone-shell 再加 padding 反而让 padding+placeholder > navbar、placeholder 又被挤出。
-    `uni-page-head + uni-page-wrapper{padding-top:65px;height:calc(100% - env(safe-area-inset-top)) !important}`,
+    `uni-page-head + uni-page-wrapper{padding-top:65px;height:calc(100% - env(safe-area-inset-top)) !important;overflow-y:auto}`,
     `[data-vdi-phone-screen]{position:relative;width:100%;height:100%;z-index:50;padding:0;box-sizing:border-box;background:#fff;border-radius:${px(PHONE_RADIUS)};overflow-y:auto;overflow-x:hidden}`,
     `[data-vdi-phone-screen] uni-page-head,[data-vdi-phone-screen] .uni-page-head{position:absolute!important;top:0!important;left:0!important;right:0!important;width:100%!important;z-index:50;padding-top:20px;height: 65px}`,
     // 注：uview-pro 的 u-navbar 标题偏移 / placeholder 挤出等问题不再用 .u-* CSS 兜底
