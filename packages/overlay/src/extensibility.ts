@@ -11,7 +11,12 @@ import type {
 } from "@vue-dev-inspector/shared";
 import { installHost as sharedInstallHost } from "@vue-dev-inspector/shared";
 import { state } from "./state";
-import { parsePosition } from "./utils";
+import {
+  parsePosition,
+  formatPosition,
+  getElementTagName,
+  apiRequest,
+} from "./utils";
 
 /** 注册一组自定义工具按钮；同 id 覆盖。返回反注册函数。 */
 export function registerBtn(btns: ActionButtonDef[]): Unregister {
@@ -71,6 +76,10 @@ export function emitSelect(target: HTMLElement | null): void {
         }
       : null,
   };
+  // 同步向服务端上报当前选中，供 agent 经 /get-selection 读取。
+  // fire-and-forget：上报失败不影响 UI 选中流程，仅在控制台留痕。
+  // 取消选中（target=null）时上报空 file 让服务端清空状态。
+  void reportSelection(target);
   for (const cb of state.selectCallbacks) {
     try {
       cb(event);
@@ -78,6 +87,31 @@ export function emitSelect(target: HTMLElement | null): void {
       console.error("[vdi] onSelect callback threw:", err);
     }
   }
+}
+
+/**
+ * 向 `/report-selection` 上报当前选中组件。
+ *
+ * - 选中元素：body = `{ file: "rN:p:l:c", tag }`。
+ * - 取消选中 / 元素无坐标属性：body = `{}`（让服务端清空）。
+ * - 失败仅 console 警告，不抛出 —— 选中上报是辅助链路，不应阻断交互。
+ */
+function reportSelection(target: HTMLElement | null): void {
+  const raw = target ? target.getAttribute(state.attrName) : null;
+  const parsed = raw ? parsePosition(raw) : null;
+  const body =
+    parsed != null
+      ? {
+          file: formatPosition(parsed),
+          tag: target ? getElementTagName(target) : "",
+        }
+      : {};
+  apiRequest("/report-selection", {
+    method: "POST",
+    body: JSON.stringify(body),
+  }).catch((err) => {
+    console.warn("[vdi] report-selection 失败：", err);
+  });
 }
 
 declare global {

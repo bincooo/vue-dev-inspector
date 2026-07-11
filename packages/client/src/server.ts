@@ -502,6 +502,72 @@ function handleListComponents(
   json(res, 200, { components });
 }
 
+// ─── 选中状态（overlay 上报，agent 读取） ───────────────
+
+/**
+ * 当前选中组件的上报快照。
+ *
+ * overlay 在选中 / 取消选中元素时通过 `/report-selection` 写入；
+ * agent 通过 `/get-selection` 读取，用于得知开发者当前聚焦的元素，
+ * 进而直接拿 `source` 调用 `/get-props` 等编辑接口，无需自己解析 DOM。
+ *
+ * 仅驻留内存 -- dev server 重启即清空。多标签页同时打开时，最后一次上报覆盖前者。
+ */
+interface SelectionReport {
+  /** `rN:file:line:col` 原始坐标串，可直接作为其他路由的 `file` 字段。 */
+  source: string;
+  /** 元素标签名（含组件标签，如 `a-button` / `div`）。 */
+  tag: string;
+  /** 服务端接收上报的时间戳（ms），用于判断选中是否已过期。 */
+  at: number;
+}
+
+let currentSelection: SelectionReport | null = null;
+
+/**
+ * overlay 选中元素时上报。
+ *
+ * - `file` 非空且格式合法 -> 记录 `{ source, tag, at }`。
+ * - `file` 为空 / 缺省 -> 视为取消选中，清空状态（不报 400，方便 deselect 流程）。
+ * - `file` 非空但格式非法 -> `400`，与其它路由一致。
+ *
+ * 不做 `safePath` 校验：上报仅暂存坐标，真正读写文件由后续编辑接口各自校验。
+ */
+function handleReportSelection(
+  _projectRoots: string[],
+  body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  const raw = readString(body, "file");
+  if (!raw) {
+    currentSelection = null;
+    json(res, 200, { success: true });
+    return;
+  }
+  const parsed = parseSource(raw);
+  if (!parsed) {
+    json(res, 400, {
+      error: "Invalid source format; expected r<N>:<path>:<line>:<col>",
+    });
+    return;
+  }
+  currentSelection = {
+    source: raw,
+    tag: readString(body, "tag"),
+    at: Date.now(),
+  };
+  json(res, 200, { success: true });
+}
+
+/** 读取当前选中组件；无选中时 `selection` 为 `null`。 */
+function handleGetSelection(
+  _projectRoots: string[],
+  _body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  json(res, 200, { selection: currentSelection });
+}
+
 // ─── Editor Open ─────────────────────────────────────────
 
 /** 在 EDITOR_CLI 里走 shell 命令；不在则回退到 URL protocol。 */
@@ -567,6 +633,8 @@ const ROUTES: Record<string, Record<string, RouteHandler>> = {
   "/get-child-text": { POST: handleGetChildText },
   "/update-child-text": { POST: handleUpdateChildText },
   "/resolve-path": { POST: handleResolvePath },
+  "/report-selection": { POST: handleReportSelection },
+  "/get-selection": { POST: handleGetSelection },
 };
 
 /**
