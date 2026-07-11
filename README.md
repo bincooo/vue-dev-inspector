@@ -8,6 +8,13 @@
 pnpm add -D @vue-dev-inspector/core
 ```
 
+### SKILL 使用
+
+复制到opencode、claudecode等agent cli工具即可
+```
+帮我安装SKILL到当前项目： https://raw.githubusercontent.com/bincooo/vue-dev-inspector/refs/heads/main/SKILL.md
+```
+
 ### 接入示例
 
 ```ts
