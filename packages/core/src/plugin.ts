@@ -170,7 +170,8 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
     },
 
     configureServer(server) {
-      if (isDev && options.enabled) createDevServer(server, projectRoots);
+      if (isDev && options.enabled)
+        createDevServer(server, projectRoots, options.componentConfig);
     },
 
     transform(code, id) {

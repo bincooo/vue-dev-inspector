@@ -19,7 +19,12 @@ import {
   type PropEntry,
   type SfcBlockKind,
 } from "./editor";
-import { API_PREFIX, EDITOR_PROTOCOLS } from "@vue-dev-inspector/shared";
+import {
+  API_PREFIX,
+  EDITOR_PROTOCOLS,
+  type ComponentConfig,
+  type ComponentConfigEntry,
+} from "@vue-dev-inspector/shared";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -32,11 +37,27 @@ type MiddlewareResponse = Pick<
   "setHeader" | "writeHead" | "end"
 >;
 
+/**
+ * 路由处理器可访问的服务端生命周期上下文（dev 启动时确定，请求间不变）。
+ *
+ * 与 `projectRoots` 不同，这些字段不参与路径解析，只随路由按需消费，
+ * 因此单列一个对象避免给每个 handler 都加位置参数。
+ */
+interface RouteExtra {
+  /**
+   * `vite.config.ts` 中 `componentConfig` 物料目录（`expand` 已剥离），
+   * 与 `window.__DEV_INSPECTOR_CFG__.componentEntries` 同形。
+   * 由 `/get-component-config` 透传给 agent / 外部工具读取可插入组件清单。
+   */
+  componentEntries: ComponentConfigEntry[];
+}
+
 /** 单个路由处理函数。 */
 type RouteHandler = (
   projectRoots: string[],
   body: RouteBody,
   res: MiddlewareResponse,
+  extra: RouteExtra,
 ) => void;
 
 /** 仅暴露路由需要的事件订阅能力的最小请求类型。 */
@@ -100,6 +121,20 @@ function readPropEntries(value: unknown): PropEntry[] {
         typeof (entry as PropEntry).value === "string",
     )
     .map((entry) => ({ key: entry.key, value: entry.value }));
+}
+
+/**
+ * 剥离 `expand` 字段，把 `componentConfig` 选项转成 API/浏览器消费侧的
+ * `componentEntries` 形态。
+ *
+ * `expand` 是物料库自带的浏览器侧拓展脚本体（可能含 `</script>` 且体积大），
+ * 不属于「组件描述」也不宜经 JSON 接口外泄；与 core `buildCfgJson` 的剥离逻辑保持一致。
+ * 入参缺省（未配置 componentConfig）时返回空数组。
+ */
+function toComponentEntries(
+  config: ComponentConfig | undefined,
+): ComponentConfigEntry[] {
+  return (config ?? []).map(({ expand: _expand, ...rest }) => rest);
 }
 
 /**
@@ -502,6 +537,24 @@ function handleListComponents(
   json(res, 200, { components });
 }
 
+/**
+ * 读取 `vite.config.ts` 中 `componentConfig: [antdv(), ...]` 配置的物料目录。
+ *
+ * - 响应 `{ componentEntries: ComponentConfigEntry[] }`，与
+ *   `window.__DEV_INSPECTOR_CFG__.componentEntries` 同形（`expand` 已剥离）。
+ * - 供 agent / 外部工具在不经过浏览器的情况下得知「可插入哪些组件、
+ *   各自的 tag / label / snippet / imports」，进而直接拼 `/insert-component` 请求。
+ * - 纯读取，无 `file` / 坐标参数，不做 `safePath` 校验。
+ */
+function handleGetComponentConfig(
+  _projectRoots: string[],
+  _body: RouteBody,
+  res: MiddlewareResponse,
+  extra: RouteExtra,
+): void {
+  json(res, 200, { componentEntries: extra.componentEntries });
+}
+
 // ─── 选中状态（overlay 上报，agent 读取） ───────────────
 
 /**
@@ -625,6 +678,7 @@ const ROUTES: Record<string, Record<string, RouteHandler>> = {
   "/delete-element": { POST: handleDeleteElement },
   "/open-in-editor": { POST: handleOpenInEditor },
   "/list-components": { POST: handleListComponents },
+  "/get-component-config": { POST: handleGetComponentConfig },
   "/insert-component": { POST: handleInsertComponent },
   "/duplicate-element": { POST: handleDuplicateElement },
   "/move-element": { POST: handleMoveElement },
@@ -641,11 +695,13 @@ const ROUTES: Record<string, Record<string, RouteHandler>> = {
  * 把 dev server middleware 主干挂到 `server.middlewares`。
  *
  * `routes` 决定注册哪些处理器；未命中路由统一 `next()` 交给后续中间件。
+ * `extra` 为服务端生命周期上下文（如物料目录），按需透传给命中处理器。
  */
 function attachMiddleware(
   server: ViteDevServer,
   projectRoots: string[],
   routes: Record<string, Record<string, RouteHandler>>,
+  extra: RouteExtra,
 ): void {
   if (projectRoots.length === 0) {
     throw new Error("[vdi] createDevServer received empty projectRoots.");
@@ -670,7 +726,7 @@ function attachMiddleware(
 
     try {
       const body = await parseBody(req);
-      handler(projectRoots, body as RouteBody, res);
+      handler(projectRoots, body as RouteBody, res, extra);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";
       console.error(
@@ -688,15 +744,24 @@ function attachMiddleware(
  *
  * `projectRoots` 为多根目录列表（monorepo 下跨子工程编辑的支持）；
  * 至少包含一个根路径。单根场景下使用 `[config.root]` 传入即可。
+ *
+ * `componentConfig` 为 `vite.config.ts` 中 `componentConfig: [antdv(), ...]`
+ * 配置的物料目录；经 `toComponentEntries` 剥离 `expand` 后透传给
+ * `/get-component-config`，供 agent / 外部工具读取可插入组件清单。
+ * 未配置时传空数组即可。
  */
 export function createDevServer(
   server: ViteDevServer,
   projectRoots: string[],
+  componentConfig?: ComponentConfig,
 ): void {
   console.log(
     `[vdi] 中间件已挂载，projectRoots=${JSON.stringify(projectRoots)}`,
   );
-  attachMiddleware(server, projectRoots, ROUTES);
+  const extra: RouteExtra = {
+    componentEntries: toComponentEntries(componentConfig),
+  };
+  attachMiddleware(server, projectRoots, ROUTES, extra);
 }
 
 /**

@@ -236,7 +236,7 @@ export function uniDevInspector(opts: UniDevInspectorOptions = {}): Plugin {
         );
         return;
       }
-      createDevServer(server, projectRoots);
+      createDevServer(server, projectRoots, options.componentConfig);
     },
 
     transform(code, id) {
