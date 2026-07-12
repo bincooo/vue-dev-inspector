@@ -21,6 +21,17 @@ export default [
 
     // TS 推荐规则（不做 type-aware，先保证轻量可用）
     ...tseslint.configs.recommended,
+    {
+        languageOptions: {
+            globals: {
+                uni: 'readonly',
+                plus: 'readonly',
+                wx: 'readonly',
+                getCurrentPages: 'readonly',
+                getApp: 'readonly'
+            }
+        }
+    },
 
     // Vue3 推荐规则（包含对 .vue 的解析）
     ...vue.configs['flat/recommended'],

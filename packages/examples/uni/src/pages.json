@@ -8,11 +8,16 @@
   "pages": [
     {
       "path": "pages/index/index",
-      "style": { "navigationBarTitleText": "Home" }
+      "style": {
+        "navigationBarTitleText": "预算申请",
+        "navigationBarBackgroundColor": "#667eea",
+        "navigationBarTextStyle": "white"
+      }
     }
   ],
   "globalStyle": {
-    "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "uni-dev-inspector demo"
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "预算申请",
+    "navigationBarBackgroundColor": "#667eea"
   }
 }

@@ -3,3 +3,4 @@
  * 运行时由 vite/uni 经 esbuild + @vitejs/plugin-vue 处理，类型不参与打包。
  */
 declare module "uview-pro";
+declare const uni: typeof import('@dcloudio/types');
