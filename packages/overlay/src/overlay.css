@@ -322,6 +322,7 @@ body.__vdi-dragging * {
   background: #3b82f6;
   color: #fff;
   font-size: 12px;
+  line-height: 16px;
   font-weight: 600;
   padding: 8px 12px;
   margin-left: 5px;
@@ -336,10 +337,8 @@ body.__vdi-dragging * {
   margin-bottom: 8px;
 }
 
-.__vdi-prop-input:focus {
-  border-color: #4096ff;
-  box-shadow: 0 0 0 2px rgba(5, 145, 255, 0.1);
-  outline: 0;
+.uni .__vdi-prop-input {
+  height: 18px;
 }
 
 .__vdi-prop-input {
@@ -351,6 +350,12 @@ body.__vdi-dragging * {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 3px;
+}
+
+.__vdi-prop-input:focus {
+  border-color: #4096ff;
+  box-shadow: 0 0 0 2px rgba(5, 145, 255, 0.1);
+  outline: 0;
 }
 
 .__vdi-prop-key {
@@ -407,6 +412,7 @@ body.__vdi-dragging * {
   background: #10b981;
   color: #fff;
   font-size: 12px;
+  line-height: 16px;
   font-weight: 600;
   padding: 9px 12px;
   border-radius: 3px;
@@ -494,7 +500,7 @@ body.__vdi-dragging * {
   color: inherit;
 }
 
-.__vdi-drawer-tab-icon > svg {
+.__vdi-drawer-tab-icon>svg {
   width: 18px;
   height: 18px;
   display: block;
@@ -623,7 +629,7 @@ body.__vdi-dragging * {
   border: 1px solid #d2d2d2;
 }
 
-.__vdi-drawer-item-icon > svg {
+.__vdi-drawer-item-icon>svg {
   width: 18px;
   height: 18px;
   display: block;

@@ -229,13 +229,13 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
 
       return s.hasChanged()
         ? {
-            code: s.toString(),
-            map: s.generateMap({
-              source: id,
-              includeContent: true,
-              hires: true,
-            }),
-          }
+          code: s.toString(),
+          map: s.generateMap({
+            source: id,
+            includeContent: true,
+            hires: true,
+          }),
+        }
         : null;
     },
 
@@ -248,7 +248,8 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
         `<script>window.__DEV_INSPECTOR_CFG__=${cfgJson};</script>\n` +
         `<script type="module">\n${overlayScript}\n</script>\n` +
         expandInjection;
-      return html.replace("</body>", injection + "\n</body>");
+      return html.replace("<body>", "<body class='pc'>")
+        .replace("</body>", injection + "\n</body>");
     },
   };
 }
