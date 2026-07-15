@@ -104,6 +104,15 @@ importers:
 
   packages/core:
     dependencies:
+      '@vue-dev-inspector/client':
+        specifier: workspace:*
+        version: link:../client
+      '@vue-dev-inspector/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@vue-dev-inspector/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@vue/compiler-core':
         specifier: ^3.5.38
         version: 3.5.38
@@ -113,10 +122,6 @@ importers:
       '@vue/shared':
         specifier: ^3.5.38
         version: 3.5.38
-    devDependencies:
-      '@vue-dev-inspector/shared':
-        specifier: workspace:*
-        version: link:../shared
 
   packages/examples/pc:
     devDependencies:
@@ -232,6 +237,15 @@ importers:
 
   packages/uni:
     dependencies:
+      '@vue-dev-inspector/client':
+        specifier: workspace:*
+        version: link:../client
+      '@vue-dev-inspector/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@vue-dev-inspector/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@vue/compiler-core':
         specifier: ^3.5.38
         version: 3.5.38
@@ -248,9 +262,6 @@ importers:
       '@types/node':
         specifier: ^22.19.17
         version: 22.19.17
-      '@vue-dev-inspector/shared':
-        specifier: workspace:*
-        version: link:../shared
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.15)(typescript@5.9.3)(yaml@2.9.0)

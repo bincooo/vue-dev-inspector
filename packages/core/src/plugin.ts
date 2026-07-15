@@ -4,16 +4,16 @@ import fs from "node:fs";
 import { parse, compileTemplate } from "@vue/compiler-sfc";
 import MagicString from "magic-string";
 import { API_PREFIX, EDITOR_PROTOCOLS } from "@vue-dev-inspector/shared";
-import type { DevInspectorOptions } from "./options";
-import { DEFAULT_OPTIONS } from "./options";
-import { createInspectorTransform } from "./transform";
-import { createDevServer } from "../../client";
+import { createDevServer } from "@vue-dev-inspector/client";
 import {
   resolveProjectRootIndex,
   toPosixRelative,
   loadScript,
-} from "../../utils/src/paths";
-import { setCdnBuilder } from "../../utils/src/cdn";
+} from "@vue-dev-inspector/utils";
+import { setCdnBuilder } from "@vue-dev-inspector/utils";
+import type { DevInspectorOptions } from "./options";
+import { DEFAULT_OPTIONS } from "./options";
+import { createInspectorTransform } from "./transform";
 
 /**
  * 编译后的 overlay 脚本（由 @vue-dev-inspector/overlay 子工程构建产生）。

@@ -1,5 +1,5 @@
 import type { ComponentConfig } from "@vue-dev-inspector/shared";
-import type { CdnBuilder } from "../../utils/src/cdn";
+import type { CdnBuilder } from "@vue-dev-inspector/utils";
 
 /**
  * DevInspector 配置选项（从 `@vue-dev-inspector/core` 内联，移除 core 依赖）。

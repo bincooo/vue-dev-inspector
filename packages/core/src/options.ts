@@ -1,6 +1,6 @@
 /** 共享类型来自 shared 包（API_PREFIX / EDITOR_PROTOCOLS / 组件目录类型） */
 import type { ComponentConfig } from "@vue-dev-inspector/shared";
-import type { CdnBuilder } from "../../utils/src/cdn";
+import type { CdnBuilder } from "@vue-dev-inspector/utils";
 
 /** DevInspector 配置选项 */
 export interface DevInspectorOptions {

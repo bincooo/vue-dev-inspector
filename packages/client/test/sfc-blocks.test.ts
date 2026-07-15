@@ -70,10 +70,12 @@ describe("updateSfcBlock", () => {
     expect(out).not.toContain("color: red");
   });
 
-  it("returns source unchanged when kind does not exist", () => {
+  it("creates and appends block when kind does not exist (v2)", () => {
+    // v2 语义：块缺失时不再返回原源码触发 404，而是新建并追加到 SFC 末尾
+    // （见 editor.ts updateSfcBlock -> createSfcBlock）。非 scoped -> <style>。
     const sfc = `<template><div /></template>\n`;
     const out = updateSfcBlock(sfc, "Foo.vue", "style", "body {}");
-    expect(out).toBe(sfc);
+    expect(out).toBe(`<template><div /></template>\n<style>\nbody {}\n</style>\n`);
   });
 
   it("round-trip: get then update then get returns the new content", () => {

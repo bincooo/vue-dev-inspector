@@ -7,13 +7,13 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import type { Plugin } from "vite";
 import MagicString from "magic-string";
+import { createDevServer } from "@vue-dev-inspector/client";
 import {
   resolveProjectRootIndex,
   toPosixRelative,
   loadScript,
-} from "../../utils/src/paths";
-import { setCdnBuilder } from "../../utils/src/cdn";
-import { createDevServer } from "../../client";
+  setCdnBuilder,
+} from "@vue-dev-inspector/utils";
 import { API_PREFIX, EDITOR_PROTOCOLS } from "@vue-dev-inspector/shared";
 import { DEFAULT_OPTIONS } from "./options";
 import type { DevInspectorOptions, UniDevInspectorOptions } from "./options";
