@@ -26,9 +26,31 @@ export interface DevInspectorOptions {
    * 列表中的组件会把审查标记挂在包装 span 上，而不是组件标签本身 ——
    * 用于修复 `inheritAttrs:false` / 多根 / Teleport 等导致 fallthrough attrs
    * 丢失的第三方组件（如 a-date-picker）。列表外的组件照旧把属性注入到组件标签上。
+   *
+   * 条目支持 `*` 通配（如 `a-*`、`*-modal`、`a-*dal`），`*` 匹配任意长度字符序列；
+   * 无 `*` 的条目按精确串匹配。
    * @default []
    */
   wrapComponents?: string[];
+  /**
+   * 经 Teleport/Portal 动态挂到 `document.body` 的组件名列表（如 `a-modal`）。
+   *
+   * 这类组件的真实 DOM 由组件库 Teleport 到 body，编译期注入的 `data-source-file`
+   * 会在挂载过程中丢失（fallthrough attrs 不随 Teleport 走）。但组件标签上的
+   * `class` 属性会被组件库透传到挂载后的根元素（如 `.ant-modal`），因此对这些
+   * 组件改把位置信息编码进 `class`（而非注入 `data-source-file`），overlay 在
+   * 运行时解码 class 后重新写回 `data-source-file` + `data-inspector-tag`。
+   *
+   * 与 `wrapComponents` 互斥（同一组件不应同时出现在两个列表中）：
+   * `wrapComponents` 适用于 DOM 留在原位但 fallthrough attrs 丢失的组件（span
+   * 包裹留在原位）；`portalComponents` 适用于 DOM 被 Teleport 到 body 的组件
+   * （span 留在原位毫无意义，必须借助 class 通道）。
+   *
+   * 条目支持 `*` 通配（如 `*-modal`、`a-*`、`a-*dal`），`*` 匹配任意长度字符序列；
+   * 无 `*` 的条目按精确串匹配。
+   * @default []
+   */
+  portalComponents?: string[];
   /** 编辑器类型 @default 'vscode' */
   editor?: "vscode" | "webstorm" | "atom" | "sublime";
   /** 快捷键 @default { altKey: true, shiftKey: true, code: 'KeyI' } */
@@ -89,6 +111,7 @@ export const DEFAULT_OPTIONS: Required<
   exclude: [/node_modules/, /\.d\.ts$/],
   attrName: "data-source-file",
   wrapComponents: [],
+  portalComponents: [],
   editor: "vscode",
   shortcut: { altKey: true, shiftKey: true, code: "KeyI" },
   toggleBtn: true,

@@ -107,6 +107,7 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
               { rootIndex, relativePath },
               options.attrName,
               options.wrapComponents,
+              options.portalComponents,
               templateLine,
               // core/PC 无前置模板内部注入（无 @uni-ku/root），不做磁盘行映射
               null,

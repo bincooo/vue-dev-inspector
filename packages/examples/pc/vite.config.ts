@@ -36,6 +36,11 @@ export default defineConfig({
       // 丢失审查标记，改用 display:contents 的 span 包裹，标记挂 span
       wrapComponents: ["a-date-picker", "a-input-password"],
 
+      // 经 Teleport/Portal 动态挂到 body 的组件：data-source-file 会在挂载过程
+      // 中丢失，改把位置信息编码进 class（class 能透传到挂载后的根元素），
+      // overlay 运行时解码 class 后重新写回 data-source-file
+      portalComponents: ["*modal"],
+
       // 编辑器类型
       editor: "vscode",
 

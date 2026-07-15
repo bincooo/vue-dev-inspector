@@ -17,11 +17,21 @@
       <a-button type="text" @click="onClick('text')">Text</a-button>
       <a-button type="link" disabled @click="onClick('link')">Link</a-button>
       <a-button danger @click="onClick('danger')">Danger</a-button>
+      <a-button @click="showModal">Open Modal</a-button>
       <a-button @click="showDrawer">Open Drawer</a-button>
     </a-space>
 
+    <a-modal v-model:open="openM" @cancel="openM = false">
+      <template #title>
+        <p>Loading Modal</p>
+      </template>
+      <p>Some contents...</p>
+      <p>Some contents...</p>
+      <p>Some contents...</p>
+    </a-modal>
+
     <a-drawer
-      v-model:open="open"
+      v-model:open="openD"
       title="Basic Drawer"
       :closable="{ 'aria-label': 'Close Button' }"
     >
@@ -120,9 +130,13 @@ function onClick(name) {
   lastClick.value = name;
 }
 
-const open = shallowRef(false);
+const openD = shallowRef(false);
 function showDrawer() {
-  open.value = true;
+  openD.value = true;
+}
+const openM = shallowRef(false);
+function showModal() {
+  openM.value = true;
 }
 </script>
 

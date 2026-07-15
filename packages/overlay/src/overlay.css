@@ -884,7 +884,8 @@ body.__vdi-dragging * {
   align-items: center;
   gap: 8px;
   pointer-events: none;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .__vdi-toast {
@@ -900,7 +901,9 @@ body.__vdi-dragging * {
   cursor: pointer;
   opacity: 0;
   transform: translateY(-8px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .__vdi-toast-title {

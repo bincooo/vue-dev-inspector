@@ -136,6 +136,7 @@ export function uniDevInspector(opts: UniDevInspectorOptions = {}): Plugin {
               { rootIndex, relativePath },
               options.attrName,
               options.wrapComponents,
+              options.portalComponents,
               templateLine,
               diskLineMap,
             ),

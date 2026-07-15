@@ -3,7 +3,11 @@
  */
 import { state } from "./state";
 import type { PropEntry } from "./types";
-import { SOURCE_REF_RE } from "@vue-dev-inspector/shared";
+import {
+  SOURCE_REF_RE,
+  decodeSourceClass,
+  SOURCE_CLASS_PREFIX,
+} from "@vue-dev-inspector/shared";
 import { showToast } from "./toast";
 
 /**
@@ -81,22 +85,23 @@ export function apiRequest<T = unknown>(
     headers: { "Content-Type": "application/json" },
     ...init,
     signal: controller.signal,
-  }).then((response) => {
-    // 非 2xx 一律 reject —— 只读场景下服务端对写路由回 405 JSON，
-    // 让调用方的 .catch 弹 toast。body 解析失败（如 HTML 404）退回 {} 后
-    // 用 HTTP 状态码兜底，避免 .json() 抛 SyntaxError 把链路吞掉。
-    if (!response.ok) {
-      return response
-        .json()
-        .catch(() => ({}))
-        .then((body) => {
-          const err = new Error(
-            (body as { error?: string })?.error || `HTTP ${response.status}`,
-          );
-          throw err;
-        });
-    }
-    return response.json() as Promise<ApiResponse<T>>;
+  })
+    .then((response) => {
+      // 非 2xx 一律 reject —— 只读场景下服务端对写路由回 405 JSON，
+      // 让调用方的 .catch 弹 toast。body 解析失败（如 HTML 404）退回 {} 后
+      // 用 HTTP 状态码兜底，避免 .json() 抛 SyntaxError 把链路吞掉。
+      if (!response.ok) {
+        return response
+          .json()
+          .catch(() => ({}))
+          .then((body) => {
+            const err = new Error(
+              (body as { error?: string })?.error || `HTTP ${response.status}`,
+            );
+            throw err;
+          });
+      }
+      return response.json() as Promise<ApiResponse<T>>;
     })
     .catch((err: unknown) => {
       // normalize 网络层错误成可读中文，让调用方 .catch 弹 toast 时用户能看懂。
@@ -131,17 +136,48 @@ export function createElement<T extends HTMLElement = HTMLDivElement>(
   return element;
 }
 
-/** 从事件目标向上查找带审查属性的可审查元素。 */
+/**
+ * 从元素的 class 中读取首个 `__vdi-src-` 前缀 token；无则返回 null。
+ *
+ * 用于动态挂载组件（a-modal 等）：编译期把源码位置编码进 class（class 能随
+ * Teleport 透传到 body），运行时由此取出 token 交由 `decodeSourceClass` 解码。
+ * 用 `getAttribute("class")` + split 而非 `classList`，避免含特殊字符的 token
+ * 在 `classList` 上抛错（本前缀 token 仅含 `[A-Za-z0-9_-]`，实为安全，但保持稳健）。
+ */
+function readSourceClassToken(el: HTMLElement): string | null {
+  const cls = el.getAttribute("class");
+  if (!cls) return null;
+  for (const tok of cls.split(/\s+/)) {
+    if (tok.startsWith(SOURCE_CLASS_PREFIX)) return tok;
+  }
+  return null;
+}
+
+/**
+ * 从事件目标向上查找带审查属性的可审查元素。
+ *
+ * 动态挂载组件（a-modal 等）的 `data-source-file` 会在 Teleport 挂载过程中丢失，
+ * 改编码在 class 里。这里向上查找时若遇到带 `__vdi-src-` class token 的元素，
+ * 解码后把 `data-source-file` + `data-inspector-tag` 重新写回该元素（幂等 --
+ * 写回后后续命中 `getAttribute(attrName)` 快路径，不重复解码），再返回它。
+ */
 export function findInspectableElement(
   target: EventTarget | null,
 ): HTMLElement | null {
   let node = target as HTMLElement | null;
   while (node && node !== document.documentElement) {
-    if (
-      node.nodeType === Node.ELEMENT_NODE &&
-      node.getAttribute(state.attrName)
-    )
-      return node;
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.getAttribute(state.attrName)) return node;
+      const token = readSourceClassToken(node);
+      if (token) {
+        const decoded = decodeSourceClass(token);
+        if (decoded) {
+          node.setAttribute(state.attrName, decoded.ref);
+          node.setAttribute(state.tagAttr, decoded.tag);
+          return node;
+        }
+      }
+    }
     node = node.parentElement;
   }
   return null;
