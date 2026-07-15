@@ -54,7 +54,10 @@ export function offsetToLine(code: string, offset: number): number {
  * 磁盘文件就会跳错行）。读盘失败（虚拟模块、权限等）返回 -1，调用方回落到
  * 内存 code 的偏移。
  */
-export function getDiskTemplateLine(parse: SfcParser, diskPath: string): number {
+export function getDiskTemplateLine(
+  parse: SfcParser,
+  diskPath: string,
+): number {
   try {
     const diskCode = fs.readFileSync(diskPath, "utf8");
     const { descriptor, errors } = parse(diskCode, { filename: diskPath });

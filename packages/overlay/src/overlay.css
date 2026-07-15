@@ -500,7 +500,7 @@ body.__vdi-dragging * {
   color: inherit;
 }
 
-.__vdi-drawer-tab-icon>svg {
+.__vdi-drawer-tab-icon > svg {
   width: 18px;
   height: 18px;
   display: block;
@@ -629,7 +629,7 @@ body.__vdi-dragging * {
   border: 1px solid #d2d2d2;
 }
 
-.__vdi-drawer-item-icon>svg {
+.__vdi-drawer-item-icon > svg {
   width: 18px;
   height: 18px;
   display: block;

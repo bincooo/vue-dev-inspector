@@ -42,7 +42,10 @@ function locateTag(sfc: string, tag: string): { line: number; col: number } {
   const ast = baseParse(tpl.content, { comments: false });
   const el = findByTag(ast, tag)!;
   const templateLine = offsetToLine(sfc, tpl.loc.start.offset);
-  return { line: templateLine + el.loc.start.line - 1, col: el.loc.start.column };
+  return {
+    line: templateLine + el.loc.start.line - 1,
+    col: el.loc.start.column,
+  };
 }
 
 describe("getChildText / updateChildText - 跨行闭合标签", () => {
@@ -79,7 +82,13 @@ describe("getChildText / updateChildText - 跨行闭合标签", () => {
 
   it("updateChildText 能正确替换跨行闭合标签元素的子节点", () => {
     const { line, col } = locateTag(sfc, "a-card");
-    const out = updateChildText(sfc, "Foo.vue", line, col, "<span>新内容</span>");
+    const out = updateChildText(
+      sfc,
+      "Foo.vue",
+      line,
+      col,
+      "<span>新内容</span>",
+    );
     expect(out).not.toBeNull();
     // 旧子节点被替换掉
     expect(out).not.toContain("<template #extra>");

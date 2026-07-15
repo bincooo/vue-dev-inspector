@@ -80,8 +80,8 @@
       <a-space :style="{ width: '100%', justifyContent: 'flex-end' }">
         <a-button>取消</a-button>
         <a-button type="primary">确认</a-button>
-      </a-space></a-card
-    >
+      </a-space>
+    </a-card>
 
     <!-- Alert 提示 -->
     <a-divider style="margin: 16px 0" />

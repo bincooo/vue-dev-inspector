@@ -175,3 +175,4 @@ uview ──► { shared }
 - tsconfig 统一 extends `tsconfig.base.json`；新增包照此办理。
 - 提交前 husky 会通过 lint-staged 自动跑 `eslint --fix`。
 - 服务启动操作交由用户协作完成，不允许AI自己执行。
+- 在任务执行的最后执行一次`pnpm run prettier`格式化（代码风格）修改的代码。

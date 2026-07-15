@@ -55,7 +55,10 @@ describe("buildCdnUrl", () => {
 
   it("returns exactly builder(pkg, ver) — no relPath joining (current contract)", () => {
     // cdn scheme 现在不再接受 relPath：URL 形状由 builder 全权决定。
-    setCdnBuilder((pkg, ver) => `https://cdn.jsdelivr.net/npm/${pkg}@${ver}/dist/expand.iife.js`);
+    setCdnBuilder(
+      (pkg, ver) =>
+        `https://cdn.jsdelivr.net/npm/${pkg}@${ver}/dist/expand.iife.js`,
+    );
 
     expect(buildCdnUrl("jquery", "3.7.0")).toBe(
       "https://cdn.jsdelivr.net/npm/jquery@3.7.0/dist/expand.iife.js",
@@ -64,7 +67,9 @@ describe("buildCdnUrl", () => {
 
   it("builder may return a bare base url (full responsibility on builder)", () => {
     setCdnBuilder(() => "https://cdn.example.com/lib/x.js");
-    expect(buildCdnUrl("lib", "1.0.0")).toBe("https://cdn.example.com/lib/x.js");
+    expect(buildCdnUrl("lib", "1.0.0")).toBe(
+      "https://cdn.example.com/lib/x.js",
+    );
   });
 
   it("returns a plain string synchronously", () => {

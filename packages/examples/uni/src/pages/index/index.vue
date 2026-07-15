@@ -3,31 +3,78 @@
     <view class="form-container">
       <view class="form-content">
         <u-form ref="form" :model="formData" :rules="rules">
-          <u-form-item label="申请人" label-position="top" prop="applicant" required>
-            <u-input v-model="formData.applicant" placeholder="请输入申请人姓名" />
+          <u-form-item
+            label="申请人"
+            label-position="top"
+            prop="applicant"
+            required
+          >
+            <u-input
+              v-model="formData.applicant"
+              placeholder="请输入申请人姓名"
+            />
           </u-form-item>
-          <u-form-item label="部门" label-position="top" prop="department" required>
-            <u-input v-model="formData.department" placeholder="请输入所属部门" />
+          <u-form-item
+            label="部门"
+            label-position="top"
+            prop="department"
+            required
+          >
+            <u-input
+              v-model="formData.department"
+              placeholder="请输入所属部门"
+            />
           </u-form-item>
-          <u-form-item label="申请日期" label-position="top" prop="applyDate" required>
+          <u-form-item
+            label="申请日期"
+            label-position="top"
+            prop="applyDate"
+            required
+          >
             <view class="picker-input" @click="showDatePicker = true">
-              <text :class="{'placeholder': !formData.applyDate}">{{ formData.applyDate || '请选择申请日期' }}</text>
+              <text :class="{ placeholder: !formData.applyDate }">{{
+                formData.applyDate || "请选择申请日期"
+              }}</text>
               <u-icon name="arrow-right" color="#999" />
             </view>
-            <u-picker v-model="showDatePicker" mode="time" :params="dateParams" @confirm="onDateConfirm" />
+            <u-picker
+              v-model="showDatePicker"
+              mode="time"
+              :params="dateParams"
+              @confirm="onDateConfirm"
+            />
           </u-form-item>
-          <u-form-item label="预算类别" label-position="top" prop="category" required>
+          <u-form-item
+            label="预算类别"
+            label-position="top"
+            prop="category"
+            required
+          >
             <view class="picker-input" @click="showCategoryPicker = true">
-              <text :class="{'placeholder': !formData.category}">{{ formData.category || '请选择预算类别' }}</text>
+              <text :class="{ placeholder: !formData.category }">{{
+                formData.category || "请选择预算类别"
+              }}</text>
               <u-icon name="arrow-right" color="#999" />
             </view>
-            <u-select v-model="showCategoryPicker" :list="categoryList" @confirm="onCategoryConfirm" />
+            <u-select
+              v-model="showCategoryPicker"
+              :list="categoryList"
+              @confirm="onCategoryConfirm"
+            />
           </u-form-item>
           <u-form-item label="预算金额" label-position="top" prop="amount">
-            <u-input v-model="formData.amount" type="number" placeholder="请输入预算金额" />
+            <u-input
+              v-model="formData.amount"
+              type="number"
+              placeholder="请输入预算金额"
+            />
           </u-form-item>
           <u-form-item label="预算用途" label-position="top" prop="purpose">
-            <u-textarea v-model="formData.purpose" placeholder="请详细说明预算用途" :border="false" />
+            <u-textarea
+              v-model="formData.purpose"
+              placeholder="请详细说明预算用途"
+              :border="false"
+            />
           </u-form-item>
         </u-form>
       </view>
@@ -50,50 +97,58 @@ export default {
         day: true,
         hour: false,
         minute: false,
-        second: false
+        second: false,
       },
       categoryList: [
-        { value: '1', label: '办公用品' },
-        { value: '2', label: '设备采购' },
-        { value: '3', label: '差旅费用' },
-        { value: '4', label: '培训费用' },
-        { value: '5', label: '其他' }
+        { value: "1", label: "办公用品" },
+        { value: "2", label: "设备采购" },
+        { value: "3", label: "差旅费用" },
+        { value: "4", label: "培训费用" },
+        { value: "5", label: "其他" },
       ],
       rules: {
-        applicant: [{ required: true, message: '请输入申请人姓名', trigger: 'blur' }],
-        department: [{ required: true, message: '请输入所属部门', trigger: 'blur' }],
-        applyDate: [{ required: true, message: '请选择申请日期', trigger: 'change' }],
-        category: [{ required: true, message: '请选择预算类别', trigger: 'change' }]
+        applicant: [
+          { required: true, message: "请输入申请人姓名", trigger: "blur" },
+        ],
+        department: [
+          { required: true, message: "请输入所属部门", trigger: "blur" },
+        ],
+        applyDate: [
+          { required: true, message: "请选择申请日期", trigger: "change" },
+        ],
+        category: [
+          { required: true, message: "请选择预算类别", trigger: "change" },
+        ],
       },
       formData: {
-        applicant: '',
-        department: '',
-        applyDate: '',
-        category: '',
-        amount: '',
-        purpose: ''
-      }
-    }
+        applicant: "",
+        department: "",
+        applyDate: "",
+        category: "",
+        amount: "",
+        purpose: "",
+      },
+    };
   },
   methods: {
     onDateConfirm(e) {
-      this.formData.applyDate = `${e.year}-${e.month}-${e.day}`
+      this.formData.applyDate = `${e.year}-${e.month}-${e.day}`;
     },
     onCategoryConfirm(e) {
-      this.formData.category = e[0].label
+      this.formData.category = e[0].label;
     },
     handleSubmit() {
-      this.$refs.form.validate().then(res => {
+      this.$refs.form.validate().then((res) => {
         if (res) {
           uni.showToast({
-            title: '提交成功',
-            icon: 'success'
-          })
+            title: "提交成功",
+            icon: "success",
+          });
         }
-      })
-    }
-  }
-}
+      });
+    },
+  },
+};
 </script>
 
 <style scoped>

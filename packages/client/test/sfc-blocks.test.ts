@@ -75,7 +75,9 @@ describe("updateSfcBlock", () => {
     // （见 editor.ts updateSfcBlock -> createSfcBlock）。非 scoped -> <style>。
     const sfc = `<template><div /></template>\n`;
     const out = updateSfcBlock(sfc, "Foo.vue", "style", "body {}");
-    expect(out).toBe(`<template><div /></template>\n<style>\nbody {}\n</style>\n`);
+    expect(out).toBe(
+      `<template><div /></template>\n<style>\nbody {}\n</style>\n`,
+    );
   });
 
   it("round-trip: get then update then get returns the new content", () => {
