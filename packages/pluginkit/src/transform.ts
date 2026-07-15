@@ -76,6 +76,12 @@ function formatSourceRef(
  *                          template 块内偏前的位置（典型差 N 行，N = script 行数）。
  *                          template 内容通常从行首开始（`<template>\n` 之后），
  *                          所以列号不需要调整。
+ * @param diskLineMap       内存 template.content → 磁盘 template.content 的逐行映射
+ *                          （0-based，注入行=-1）。前置插件(如 @uni-ku/root 包
+ *                          <global-ku-root>)在模板内部注入行后，compileTemplate
+ *                          给的 el.loc.start.line 是"内存行"而非"磁盘行"；editor 读
+ *                          磁盘文件，必须换算成磁盘行。null 表示无映射（读盘失败或未
+ *                          注入），退化为直接用内存行（core/PC 场景恒传 null）。
  */
 export function createInspectorTransform(
   s: MagicString,
@@ -84,12 +90,6 @@ export function createInspectorTransform(
   attrName: string,
   wrapComponents: string[],
   templateLine: number,
-  /**
-   * 内存 template.content → 磁盘 template.content 的逐行映射（0-based，注入行=-1）。
-   * 前置插件(如 @uni-ku/root 包 <global-ku-root>)在模板内部注入行后，compileTemplate
-   * 给的 el.loc.start.line 是"内存行"而非"磁盘行"；editor 读磁盘文件，必须换算成磁盘行。
-   * null 表示无映射（读盘失败或未注入），退化为直接用内存行。
-   */
   diskLineMap: number[] | null,
 ): NodeTransform {
   const wrapSet = wrapComponents.length ? new Set(wrapComponents) : null;
