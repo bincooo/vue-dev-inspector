@@ -22,6 +22,7 @@ import {
 import {
   API_PREFIX,
   EDITOR_PROTOCOLS,
+  SOURCE_REF_RE,
   type ComponentConfig,
   type ComponentConfigEntry,
 } from "@vue-dev-inspector/shared";
@@ -770,8 +771,8 @@ export function createDevServer(
  * - N 为非负整数（0-based，对应 projectRoots 序号）。
  * - 任何不匹配（含旧无前缀格式、缺段、行/列非整数）一律返回 null。
  * - 拒绝绝对路径（file 不能以 `/` 或盘符开头，避免客户端越权写入）。
+ * - 正则来自 `@vue-dev-inspector/shared` 的 `SOURCE_REF_RE`，与 overlay 解析同源。
  */
-const SOURCE_RE = /^r(\d+):([^:]+):(\d+):(\d+)$/;
 export interface SourceRef {
   rootIndex: number;
   file: string;
@@ -781,7 +782,7 @@ export interface SourceRef {
 
 export function parseSource(value: string): SourceRef | null {
   if (!value) return null;
-  const m = SOURCE_RE.exec(value);
+  const m = SOURCE_REF_RE.exec(value);
   if (!m) return null;
   const rootIndex = Number(m[1]);
   const file = m[2];

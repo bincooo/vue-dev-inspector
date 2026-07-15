@@ -3,12 +3,12 @@
  */
 import { state } from "./state";
 import type { PropEntry } from "./types";
-
-const POS_RE = /^r(\d+):(.+):(\d+):(\d+)$/;
+import { SOURCE_REF_RE } from "@vue-dev-inspector/shared";
 
 /**
  * 解析形如 `rN:path/file.vue:line:col` 的位置串。
  * 不匹配（含旧无前缀格式）返回 null。
+ * 正则来自 `@vue-dev-inspector/shared` 的 `SOURCE_REF_RE`，与 server 解析同源。
  */
 export function parsePosition(value: string): {
   rootIndex: number;
@@ -16,7 +16,7 @@ export function parsePosition(value: string): {
   line: string;
   col: string;
 } | null {
-  const m = value.match(POS_RE);
+  const m = value.match(SOURCE_REF_RE);
   if (!m) return null;
   return { rootIndex: Number(m[1]), file: m[2], line: m[3], col: m[4] };
 }

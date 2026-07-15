@@ -14,7 +14,7 @@
  * 这里的代码原本散落在 packages/demo/src/inspector-demo.ts，
  * 现迁移到物料库本体作为"开箱即用"演示。
  */
-import { onInspect, onSelect } from "@vue-dev-inspector/shared";
+import { onInspect, onSelect } from "@vue-dev-inspector/shared/browser";
 
 // addToolBtn(
 //   {

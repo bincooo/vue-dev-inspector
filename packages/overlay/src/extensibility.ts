@@ -9,7 +9,7 @@ import type {
   SelectEvent,
   Unregister,
 } from "@vue-dev-inspector/shared";
-import { installHost as sharedInstallHost } from "@vue-dev-inspector/shared";
+import { installHost as sharedInstallHost } from "@vue-dev-inspector/shared/browser";
 import { state } from "./state";
 import {
   parsePosition,
