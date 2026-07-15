@@ -13,6 +13,7 @@
     "build:uni": "pnpm -C packages/utils build && pnpm -C packages/shared build && pnpm -C packages/overlay build && pnpm -C packages/client build && pnpm -C packages/uni build",
     "build:antd": "pnpm -C packages/antdv build",
     "build:uview": "pnpm -C packages/uview build",
+    "typecheck": "pnpm -r --parallel --filter \"./packages/*\" exec tsc -p tsconfig.json --noEmit",
     "lint": "eslint \"packages/**/*.{ts,tsx,vue}\"",
     "lint:fix": "eslint \"packages/**/*.{ts,tsx,vue}\" --fix",
     "prettier": "prettier --write \"packages/**/*.{ts,tsx,vue,css,scss,md,json}\"",
