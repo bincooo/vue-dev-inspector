@@ -906,6 +906,27 @@ function createSfcBlock(
 // 用于「编辑代码」抽屉的「子节点文本」列：服务端提供 /get-child-text 与 /update-child-text。
 
 /**
+ * 用 AST 元素的 `loc.source` 定位闭合标签 `<` 的 SFC 偏移。
+ *
+ * 闭合标签位于 `el.loc.source` 末尾，形如 `</tag>` 或 `</tag\n    >`
+ * （`>` 前允许空白/换行）。正则匹配末尾的 `</tag\s*>`，取 `</` 相对偏移
+ * + elementStart 得 SFC 偏移。
+ *
+ * 取代旧的算术法 `elementEnd - (tag.length + 3)`：后者假设闭合标签恰为
+ * `</tag>` 无空白，遇到 `</a-card\n    >` 这种跨行写法会算短，把 `</a-c`
+ * 这种半截闭标签混进子节点内容。
+ *
+ * 返回 -1 表示未匹配（配对元素理论上不会发生；调用方按空区间/不编辑处理）。
+ */
+function findCloseTagStart(elementStart: number, el: ElementNode): number {
+  const src = el.loc.source;
+  // 转义 tag 里的正则元字符（组件名一般无，稳妥起见）。
+  const tagRe = el.tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = src.match(new RegExp(`</${tagRe}\\s*>\\s*$`));
+  return m ? elementStart + (m.index ?? 0) : -1;
+}
+
+/**
  * 取 (line, col) 元素开标签 `>` 与闭标签 `</tag>` 之间的全部子节点源码。
  *
  * - 配对元素：`content = sfcSource.slice(openTagEnd+1, closeTagStart)`，
@@ -934,12 +955,13 @@ export function getChildText(
     return { content: "", start: innerStart, end: innerStart };
   }
 
-  // 元素完整源码区间末尾即 `</tag>` 之后；`</tag>` 长度 = `</` + tag + `>` = tag.length + 3。
-  const elementEnd = t.offset + el.loc.start.offset + el.loc.source.length;
-  const closeTagLen = el.tag.length + 3;
-  const closeTagStart = elementEnd - closeTagLen;
+  // 闭合标签 `<` 的 SFC 偏移：用 AST loc.source 末尾匹配 `</tag\s*>`，
+  // 允许 `>` 前有空白/换行（如 `</a-card\n    >`），避免算术法算短
+  // 把半截闭标签 `</a-c` 混进子节点内容。
+  const elementStart = t.offset + el.loc.start.offset;
+  const closeTagStart = findCloseTagStart(elementStart, el);
   if (closeTagStart < innerStart) {
-    // 防御：闭标签起点早于开标签之后（理论上不应发生），按空区间处理。
+    // 防御：闭标签定位失败或早于开标签之后（理论上不应发生），按空区间处理。
     return { content: "", start: innerStart, end: innerStart };
   }
   return {
@@ -984,9 +1006,12 @@ export function updateChildText(
     return s.toString();
   }
 
-  const elementEnd = t.offset + el.loc.start.offset + el.loc.source.length;
-  const closeTagLen = el.tag.length + 3;
-  const closeTagStart = elementEnd - closeTagLen;
+  const elementStart = t.offset + el.loc.start.offset;
+  const closeTagStart = findCloseTagStart(elementStart, el);
+  if (closeTagStart < 0) {
+    // 闭标签定位失败（配对元素理论上不会发生）：不安全编辑，原样返回。
+    return s.toString();
+  }
   if (innerStart === closeTagStart) {
     // 零长度区间：用 prependRight 插入，避免 overwrite 抛错。
     s.prependRight(innerStart, newContent);
