@@ -187,6 +187,50 @@ function resolveTagRange(
   return openTagEnd === -1 ? null : { tagNameEnd, openTagEnd };
 }
 
+/**
+ * 删除元素在源码中的区间（含 leading-on-line 处理）。
+ *
+ * 源是行首 token（前到上一个换行符之间只有空白）时，连同行首缩进 + 尾部换行
+ * 一起删，让下一行顶上来否则双缩进；与前言共行时只删 `[start, end)` 自身，
+ * 避免吞掉同行前置内容（父开标签 / 兄弟元素）。
+ *
+ * deleteElement 与 moveElement 的删除段共用本函数，语义一致。
+ */
+function removeElementRange(
+  s: MagicString,
+  source: string,
+  start: number,
+  end: number,
+): void {
+  if (isLeadingOnLine(source, start)) {
+    const lineStart = source.lastIndexOf("\n", start) + 1;
+    const trimEnd = source[end] === "\n" ? end + 1 : end;
+    s.remove(lineStart, trimEnd);
+  } else {
+    s.remove(start, end);
+  }
+}
+
+/**
+ * 把自闭合目标标签 `<tag .../>` 改写为配对形式 `<tag ...>` + body + `</tag>`。
+ *
+ * 三步：`overwrite(openTagEnd, openTagEnd+2, ">")` 把 `/>` 收成 `>`；再
+ * `appendLeft(openTagEnd+2, body)` 注入正文；body 由调用方拼好（已含闭合
+ * 标签或换行缩进）。返回插入位置 `openTagEnd+2` 供调用方按需继续 appendLeft。
+ *
+ * insertComponent / moveElement / updateChildText 的自闭合路径共用，
+ * 消除三处重复的 overwrite+appendLeft 模式。
+ */
+function expandSelfClosing(
+  s: MagicString,
+  openTagEnd: number,
+  body: string,
+): number {
+  s.overwrite(openTagEnd, openTagEnd + 2, ">");
+  s.appendLeft(openTagEnd + 2, body);
+  return openTagEnd + 2;
+}
+
 /** 读取位于 (line, col) 的元素的当前属性（基于 AST 读取磁盘源码） */
 export function getElementProps(
   sfcSource: string,
@@ -269,13 +313,7 @@ export function deleteElement(
   const start = t.offset + el.loc.start.offset;
   const end = start + el.loc.source.length;
   const s = new MagicString(sfcSource);
-  if (isLeadingOnLine(sfcSource, start)) {
-    const lineStart = sfcSource.lastIndexOf("\n", start) + 1;
-    const trimEnd = sfcSource[end] === "\n" ? end + 1 : end;
-    s.remove(lineStart, trimEnd);
-  } else {
-    s.remove(start, end);
-  }
+  removeElementRange(s, sfcSource, start, end);
   return s.toString();
 }
 
@@ -479,8 +517,7 @@ export function insertComponent(
 
   if (el.isSelfClosing) {
     // 自闭合目标：`.../>` → `...>`（开标签转为未闭合），其后补 snippet + 目标注入闭合标签
-    s.overwrite(openTagEnd, openTagEnd + 2, ">");
-    s.appendLeft(openTagEnd + 2, `\n    ${snippet}\n  </${el.tag}>`);
+    expandSelfClosing(s, openTagEnd, `\n    ${snippet}\n  </${el.tag}>`);
   } else {
     // 配对标签：在 > 后插入 snippet
     s.appendLeft(openTagEnd + 1, `\n    ${snippet}`);
@@ -637,15 +674,8 @@ export function moveElement(
 
   // 1. 删源：源是行首 token 时连缩进与尾部换行一并删（让下一行顶上来，
   //    否则下行的缩进会和残留合并造成双重缩进）；与前言共行时只删自身范围，
-  //    避免吞同行前置内容（语义同 deleteElement）。
-  if (isLeadingOnLine(sfcSource, sourceStart)) {
-    s.remove(
-      sfcSource.lastIndexOf("\n", sourceStart) + 1,
-      sfcSource[sourceEnd] === "\n" ? sourceEnd + 1 : sourceEnd,
-    );
-  } else {
-    s.remove(sourceStart, sourceEnd);
-  }
+  //    避免吞同行前置内容（语义同 deleteElement，共用 removeElementRange）。
+  removeElementRange(s, sfcSource, sourceStart, sourceEnd);
 
   // 2. 在目标位置插入（用原始偏移，appendLeft/appendRight 不被前面的 remove 影响）
   if (direction === "before" || direction === "after") {
@@ -668,9 +698,9 @@ export function moveElement(
   if (!range) return null;
   const { openTagEnd } = range;
   if (target.isSelfClosing) {
-    s.overwrite(openTagEnd, openTagEnd + 2, ">");
-    s.appendLeft(
-      openTagEnd + 2,
+    expandSelfClosing(
+      s,
+      openTagEnd,
       "\n" + rewritten + "\n" + targetIndent + "</" + target.tag + ">",
     );
   } else {
@@ -1001,8 +1031,7 @@ export function updateChildText(
   if (el.isSelfClosing) {
     if (!newContent) return s.toString();
     // `<tag .../>` → `<tag ...>` + newContent + `</tag>`
-    s.overwrite(range.openTagEnd, range.openTagEnd + 2, ">");
-    s.appendLeft(range.openTagEnd + 2, newContent + "</" + el.tag + ">");
+    expandSelfClosing(s, range.openTagEnd, newContent + "</" + el.tag + ">");
     return s.toString();
   }
 
