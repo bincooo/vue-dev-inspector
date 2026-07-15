@@ -74,14 +74,13 @@ importers:
         version: 2.3.0(rollup@4.62.2)(vite@7.3.6(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.30.2)(sass@1.101.0)(terser@5.48.0)(yaml@2.9.0))
 
   packages/antdv:
-    dependencies:
+    devDependencies:
       '@vue-dev-inspector/shared':
         specifier: workspace:*
         version: link:../shared
       '@vue-dev-inspector/utils':
         specifier: workspace:*
         version: link:../utils
-    devDependencies:
       vite:
         specifier: ^7.3.2
         version: 7.3.6(@types/node@26.0.1)(jiti@2.7.0)(lightningcss@1.30.2)(sass@1.101.0)(terser@5.48.0)(yaml@2.9.0)
@@ -104,6 +103,16 @@ importers:
 
   packages/core:
     dependencies:
+      '@vue/compiler-core':
+        specifier: ^3.5.38
+        version: 3.5.38
+      '@vue/compiler-sfc':
+        specifier: ^3.5.38
+        version: 3.5.38
+      '@vue/shared':
+        specifier: ^3.5.38
+        version: 3.5.38
+    devDependencies:
       '@vue-dev-inspector/client':
         specifier: workspace:*
         version: link:../client
@@ -116,15 +125,6 @@ importers:
       '@vue-dev-inspector/utils':
         specifier: workspace:*
         version: link:../utils
-      '@vue/compiler-core':
-        specifier: ^3.5.38
-        version: 3.5.38
-      '@vue/compiler-sfc':
-        specifier: ^3.5.38
-        version: 3.5.38
-      '@vue/shared':
-        specifier: ^3.5.38
-        version: 3.5.38
 
   packages/examples/pc:
     devDependencies:
@@ -268,18 +268,6 @@ importers:
 
   packages/uni:
     dependencies:
-      '@vue-dev-inspector/client':
-        specifier: workspace:*
-        version: link:../client
-      '@vue-dev-inspector/pluginkit':
-        specifier: workspace:*
-        version: link:../pluginkit
-      '@vue-dev-inspector/shared':
-        specifier: workspace:*
-        version: link:../shared
-      '@vue-dev-inspector/utils':
-        specifier: workspace:*
-        version: link:../utils
       '@vue/compiler-core':
         specifier: ^3.5.38
         version: 3.5.38
@@ -296,6 +284,18 @@ importers:
       '@types/node':
         specifier: ^22.19.17
         version: 22.19.17
+      '@vue-dev-inspector/client':
+        specifier: workspace:*
+        version: link:../client
+      '@vue-dev-inspector/pluginkit':
+        specifier: workspace:*
+        version: link:../pluginkit
+      '@vue-dev-inspector/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@vue-dev-inspector/utils':
+        specifier: workspace:*
+        version: link:../utils
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.15)(typescript@5.9.3)(yaml@2.9.0)
@@ -313,11 +313,10 @@ importers:
         version: 2.1.9(@types/node@26.0.1)(jsdom@24.1.3)(lightningcss@1.30.2)(sass@1.101.0)(terser@5.48.0)
 
   packages/uview:
-    dependencies:
+    devDependencies:
       '@vue-dev-inspector/shared':
         specifier: workspace:*
         version: link:../shared
-    devDependencies:
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.15)(typescript@5.9.3)(yaml@2.9.0)

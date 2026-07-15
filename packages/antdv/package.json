@@ -20,11 +20,10 @@
     "build:plugin": "tsup src/index.ts --format esm --platform node --dts --sourcemap --clean",
     "build:expand": "vite build"
   },
-  "dependencies": {
-    "@vue-dev-inspector/shared": "workspace:*",
-    "@vue-dev-inspector/utils": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {
+    "@vue-dev-inspector/shared": "workspace:*",
+    "@vue-dev-inspector/utils": "workspace:*",
     "vite": "^7.3.2"
   }
 }
