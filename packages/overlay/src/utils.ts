@@ -4,6 +4,7 @@
 import { state } from "./state";
 import type { PropEntry } from "./types";
 import { SOURCE_REF_RE } from "@vue-dev-inspector/shared";
+import { showToast } from "./toast";
 
 /**
  * 解析形如 `rN:path/file.vue:line:col` 的位置串。
@@ -67,13 +68,19 @@ export interface ApiResponse<T = unknown> {
   absolutePath?: string;
 }
 
+/** API 请求超时阈值（ms）。超过即 abort，避免服务端 hang 住时请求永不返回、用户无感知。 */
+const API_TIMEOUT_MS = 15000;
+
 export function apiRequest<T = unknown>(
   path: string,
   init?: RequestInit,
 ): Promise<ApiResponse<T>> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
   return fetch(state.apiPrefix + path, {
     headers: { "Content-Type": "application/json" },
     ...init,
+    signal: controller.signal,
   }).then((response) => {
     // 非 2xx 一律 reject —— 只读场景下服务端对写路由回 405 JSON，
     // 让调用方的 .catch 弹 toast。body 解析失败（如 HTML 404）退回 {} 后
@@ -90,7 +97,21 @@ export function apiRequest<T = unknown>(
         });
     }
     return response.json() as Promise<ApiResponse<T>>;
-  });
+    })
+    .catch((err: unknown) => {
+      // normalize 网络层错误成可读中文，让调用方 .catch 弹 toast 时用户能看懂。
+      // HTTP 错误（上面 .then 里 throw 的 Error，message 是 body.error 或 "HTTP xxx"）
+      // 原样透传，不被这里吞掉。
+      const name = (err as { name?: string })?.name;
+      if (name === "AbortError") {
+        throw new Error("请求超时：服务端无响应");
+      }
+      if (err instanceof TypeError) {
+        throw new Error("网络错误：无法连接服务端");
+      }
+      throw err;
+    })
+    .finally(() => window.clearTimeout(timer));
 }
 
 /** 读取元素的展示标签（优先取注入的 tag 属性，否则取小写标签名）。 */
@@ -194,9 +215,21 @@ export function logSuccess(msg: string): void {
   );
 }
 
-/** 「红色」品牌前缀 + 报错信息（首参作标签，第二参接描述）。 */
+/** 「红色」品牌前缀 + 报错信息（首参作标签，第二参接描述）。仅控制台，不弹 toast -- 用于诊断性日志（如 Outdated source format）。 */
 export function logError(label: string, detail: string): void {
   console.warn(BRAND + " " + label + "：", detail);
+}
+
+/**
+ * 服务端 API 异常专用：console.warn + 弹出可见 toast。
+ *
+ * 与 `logError` 的区别：本函数面向「用户发起的写操作失败」（复制/删除/移动/
+ * 更新属性/打开编辑器等），需要用户立即感知；`logError` 面向诊断性日志，不弹 toast。
+ * 读操作（get-props/get-child-text 等）失败时面板/抽屉内已有 inline 状态，不在此列。
+ */
+export function apiError(label: string, detail: string): void {
+  console.warn(BRAND + " " + label + "：", detail);
+  showToast(label, detail, "error");
 }
 
 /** 从任意 catch 值提取可读错误信息。 */

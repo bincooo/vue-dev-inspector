@@ -8,7 +8,7 @@ import {
   getElementTagName,
   createElement,
   formatPosition,
-  logError,
+  apiError,
   errMsg,
 } from "./utils";
 import { redrawSelection } from "./inspector";
@@ -54,7 +54,7 @@ export function deleteElementViaApi(element: HTMLElement): Promise<unknown> {
       }
     })
     .catch((e: unknown) => {
-      logError("删除失败", errMsg(e));
+      apiError("删除失败", errMsg(e));
     });
 }
 
@@ -90,6 +90,8 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
           col: +pos.col,
           editor: state.editor,
         }),
+      }).catch((e: unknown) => {
+        apiError("打开编辑器失败", errMsg(e));
       });
     },
     props: () => openPanel(element),

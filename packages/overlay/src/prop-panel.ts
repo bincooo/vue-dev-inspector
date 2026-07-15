@@ -9,7 +9,7 @@ import {
   createElement,
   formatPosition,
   logSuccess,
-  logError,
+  apiError,
   errMsg,
 } from "./utils";
 import type { PropEntry } from "./types";
@@ -219,6 +219,6 @@ function submit(): void {
       }
     })
     .catch((e: unknown) => {
-      logError("属性更新失败", errMsg(e));
+      apiError("属性更新失败", errMsg(e));
     });
 }

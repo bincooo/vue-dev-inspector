@@ -21,7 +21,7 @@ import {
   getLayoutBox,
   positionOverlay,
   logInfo,
-  logError,
+  apiError,
   errMsg,
 } from "./utils";
 import { openDrawer } from "./comp-drawer";
@@ -127,7 +127,7 @@ export function duplicateElement(element: HTMLElement): void {
       if (response && response.success) logInfo("元素已复制");
     })
     .catch((e: unknown) => {
-      logError("复制失败", errMsg(e));
+      apiError("复制失败", errMsg(e));
     });
 }
 

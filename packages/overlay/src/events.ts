@@ -27,7 +27,7 @@ import {
   formatPosition,
   logInfo,
   logSuccess,
-  logError,
+  apiError,
 } from "./utils";
 import {
   createUI,
@@ -367,9 +367,9 @@ export function init(): void {
         .then((response) => {
           if (response && response.success) logInfo("元素已移动");
           else
-            logError("move 失败", (response && response.error) || "未知错误");
+            apiError("move 失败", (response && response.error) || "未知错误");
         })
-        .catch(() => logError("move 失败", "网络错误"));
+        .catch(() => apiError("move 失败", "网络错误"));
     },
     true,
   );

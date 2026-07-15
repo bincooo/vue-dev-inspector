@@ -16,6 +16,8 @@ import {
   formatPosition,
   getElementTagName,
   apiRequest,
+  apiError,
+  errMsg,
 } from "./utils";
 
 /** 注册一组自定义工具按钮；同 id 覆盖。返回反注册函数。 */
@@ -90,6 +92,13 @@ export function emitSelect(target: HTMLElement | null): void {
 }
 
 /**
+ * report-selection 失败节流：每次选中都会上报，服务端不可用时连续选中会刷屏，
+ * 故同一种失败每 5s 至多弹一次 toast；成功一次后重置（服务端恢复后下次失败再弹）。
+ */
+const REPORT_FAIL_THROTTLE_MS = 5000;
+let reportFailLastToast = 0;
+
+/**
  * 向 `/report-selection` 上报当前选中组件。
  *
  * - 选中元素：body = `{ file: "rN:p:l:c", tag }`。
@@ -109,9 +118,19 @@ function reportSelection(target: HTMLElement | null): void {
   apiRequest("/report-selection", {
     method: "POST",
     body: JSON.stringify(body),
-  }).catch((err) => {
-    console.warn("[vdi] report-selection 失败：", err);
-  });
+  })
+    .then(() => {
+      // 成功：重置节流，服务端恢复后下次失败可再弹
+      reportFailLastToast = 0;
+    })
+    .catch((err) => {
+      console.warn("[vdi] report-selection 失败：", err);
+      const now = Date.now();
+      if (now - reportFailLastToast >= REPORT_FAIL_THROTTLE_MS) {
+        reportFailLastToast = now;
+        apiError("上报选中失败", errMsg(err));
+      }
+    });
 }
 
 declare global {

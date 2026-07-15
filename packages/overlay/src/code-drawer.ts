@@ -24,6 +24,8 @@ import {
   createElement,
   formatPosition,
   parsePosition,
+  apiError,
+  errMsg,
 } from "./utils";
 import type { CodeBlockData, GetBlocksResponse, ChildTextData } from "./types";
 import type { MonacoAPI, MonacoEditor, MonacoModel } from "./monaco";
@@ -170,8 +172,9 @@ export function openCodeDrawer(element: HTMLElement): void {
   })
     .then((response) => {
       if (!response || (response as { error?: string }).error) {
-        status.textContent =
-          (response as { error?: string }).error || "加载失败";
+        const msg = (response as { error?: string }).error || "加载失败";
+        status.textContent = msg;
+        apiError("加载代码块失败", msg);
         return;
       }
       applyBlock(scriptPanel, response.script, "script");
@@ -185,8 +188,10 @@ export function openCodeDrawer(element: HTMLElement): void {
       // 缺块时 applyBlock 已在面板内提示「保存将新建」，状态栏统一引导文案。
       status.textContent = "编辑后点击对应保存按钮回写源码（HMR 自动刷新）";
     })
-    .catch(() => {
-      status.textContent = "网络错误";
+    .catch((e: unknown) => {
+      const msg = errMsg(e);
+      status.textContent = msg;
+      apiError("加载代码块失败", msg);
     });
 }
 
@@ -583,10 +588,12 @@ async function loadChildText(panel: BlockPanel): Promise<void> {
     requestAnimationFrame(() => panel.editor?.layout());
     if (status) status.textContent = "子节点源码已加载";
   } catch (e) {
+    const msg = e instanceof Error ? e.message : MONACO_LOAD_FAIL;
     if (status) {
-      status.textContent = e instanceof Error ? e.message : MONACO_LOAD_FAIL;
+      status.textContent = msg;
       panel.hintEl.textContent = MONACO_LOAD_FAIL;
     }
+    apiError("加载子节点失败", msg);
   } finally {
     editBtn.disabled = false;
     editBtn.textContent = original;
