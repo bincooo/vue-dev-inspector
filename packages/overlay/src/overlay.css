@@ -26,7 +26,7 @@
 /* 悬停框 / 选中框 / 标签 */
 .__vdi-hover-overlay {
   position: fixed;
-  pointer-events: none;
+  pointer-events: auto;
   z-index: 9996;
   border: 1px dashed #475569;
   background: rgba(71, 85, 105, 0.06);
@@ -36,7 +36,7 @@
 
 .__vdi-select-overlay {
   position: fixed;
-  pointer-events: none;
+  pointer-events: auto;
   z-index: 9995;
   border: 1px solid #3a78fc;
   background: rgba(59, 130, 246, 0.1);
