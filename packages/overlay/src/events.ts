@@ -93,6 +93,61 @@ function swallow(e: Event): void {
   e.stopImmediatePropagation();
 }
 
+/** 判断 e.target 是否为 overlay 自身（pointer-events:auto 时） */
+function isOverlayTarget(target: EventTarget | null): boolean {
+  return target === state.hoverOverlay || target === state.selectOverlay;
+}
+
+/** 用 elementsFromPoint 穿透 overlay 找下方真实可审查元素 */
+function findElementUnderOverlay(x: number, y: number): HTMLElement | null {
+  for (const el of document.elementsFromPoint(x, y)) {
+    const node = el as HTMLElement;
+    if (
+      node.id === "__vdi-overlay-style__" ||
+      node === document.documentElement ||
+      node === document.body
+    )
+      continue;
+    if (
+      typeof node.className === "string" &&
+      node.className.startsWith("__vdi-")
+    )
+      continue;
+    if (node.getAttribute(state.attrName)) return node;
+    const inspected = findInspectableElement(node);
+    if (inspected) return inspected;
+  }
+  return null;
+}
+
+/** 从鼠标事件解析命中元素：overlay -> 穿透；否则 -> 直接查找 */
+function resolveHitElement(e: MouseEvent): HTMLElement | null {
+  return isOverlayTarget(e.target)
+    ? findElementUnderOverlay(e.clientX, e.clientY)
+    : findInspectableElement(e.target);
+}
+
+/** wheel 透传：找到下方可滚动容器手动滚动，再刷新 overlay 定位 */
+function forwardWheel(e: WheelEvent): void {
+  const under = findElementUnderOverlay(e.clientX, e.clientY);
+  if (!under) return;
+  let scroller: HTMLElement | null = under;
+  while (scroller && scroller !== document.documentElement) {
+    const style = getComputedStyle(scroller);
+    if (
+      (style.overflowY === "auto" || style.overflowY === "scroll") &&
+      scroller.scrollHeight > scroller.clientHeight
+    ) {
+      scroller.scrollTop += e.deltaY;
+      e.preventDefault();
+      return;
+    }
+    scroller = scroller.parentElement;
+  }
+  window.scrollBy(0, e.deltaY);
+  e.preventDefault();
+}
+
 /** 快捷键判定 */
 function isShortcut(e: KeyboardEvent): boolean {
   const shortcut = clientConfig.shortcut;
@@ -174,7 +229,7 @@ export function init(): void {
 
       /* drag mode：跟随光标、更新 drop target / 方向 */
       if (state.dragging) {
-        const target = findInspectableElement(e.target);
+        const target = resolveHitElement(e);
         /* 目标无效 或 目标就是拖拽源本身：清指示器 */
         if (!target || target === state.dragSource) {
           if (state.dropTarget !== null) {
@@ -194,7 +249,7 @@ export function init(): void {
         return;
       }
 
-      const el = findInspectableElement(e.target);
+      const el = resolveHitElement(e);
       /* 鼠标在操作按钮上时不触发悬停切换，避免闪烁 */
       if (isOverActionButton(e.target)) return;
       if (el !== state.hoveredElement) {
@@ -210,7 +265,7 @@ export function init(): void {
     "mousedown",
     function (e) {
       if (!state.inspecting) return;
-      const target = findInspectableElement(e.target);
+      const target = resolveHitElement(e);
       if (!target) return;
       /* Ctrl+鼠标按下命中选中元素：进入 drag mode，源 = 选中元素 */
       if (
@@ -306,7 +361,7 @@ export function init(): void {
     "contextmenu",
     function (e) {
       if (!state.inspecting) return;
-      const el = findInspectableElement(e.target);
+      const el = resolveHitElement(e);
       if (!el) return;
       e.preventDefault();
       state.hoveredElement = el;
@@ -329,7 +384,7 @@ export function init(): void {
         return;
       }
       if (!state.inspecting) return;
-      const el = findInspectableElement(e.target);
+      const el = resolveHitElement(e);
       if (!el) return;
       /* 命中可审查元素：先把所有透传停掉，再走业务分支，
        避免早返回路径漏拦导致宿主原生控件（checkbox 等）状态被切换 */
@@ -405,6 +460,15 @@ export function init(): void {
 
   /* 启动 */
   createUI();
+
+  /* overlay pointer-events:auto 会拦截 wheel 导致页面无法滚动。
+     绑 wheel 透传：找到下方可滚动容器手动滚动 + 刷新 overlay 定位。 */
+  for (const overlay of [state.hoverOverlay!, state.selectOverlay!]) {
+    overlay.addEventListener("wheel", (e) => {
+      forwardWheel(e);
+      refreshOverlays();
+    });
+  }
 
   /* 右下角齿轮按钮（配置可控） */
   if (clientConfig.toggleBtn) {
