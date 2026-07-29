@@ -332,7 +332,7 @@ body.__vdi-dragging * {
 
 .__vdi-prop-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin-bottom: 8px;
 }
@@ -359,8 +359,10 @@ body.__vdi-dragging * {
 }
 
 .__vdi-prop-key {
+  flex: 0 0 160px;
   color: #1d4ed8;
   font-weight: 600;
+  margin-top: 4px;
 }
 
 .__vdi-prop-value {
@@ -368,9 +370,168 @@ body.__vdi-dragging * {
   color: #334155;
 }
 
+/* 有 options 的属性值用 <select> 下拉 -- 复用 input 边框/字体，补原生箭头 */
+.__vdi-prop-select {
+  cursor: pointer;
+  appearance: auto;
+}
+
+/* 输入模式切换按钮 -- 紧凑方形，浅灰底 */
+.__vdi-prop-mode-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  margin-top: 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 3px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-family: monospace;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.__vdi-prop-mode-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+/* CodeSetter：Monaco 编辑器容器 + 加载占位 */
+.__vdi-prop-code-wrap {
+  flex: 1.5;
+  min-width: 0;
+  min-height: 60px;
+  height: 60px;
+  border: 1px solid #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.__vdi-prop-code-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* 下拉多选模式：trigger 按钮 + 弹层 */
+.__vdi-prop-select-wrap {
+  position: relative;
+  flex: 1.5;
+}
+
+.__vdi-prop-select-trigger {
+  width: 100%;
+  padding: 7px 22px 7px 10px;
+  font-size: 12px;
+  font-family: monospace;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 3px;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+}
+
+.__vdi-prop-select-trigger:disabled {
+  cursor: not-allowed;
+  color: #cbd5e1;
+}
+
+.__vdi-prop-select-trigger:focus {
+  border-color: #4096ff;
+  box-shadow: 0 0 0 2px rgba(5, 145, 255, 0.1);
+  outline: 0;
+}
+
+.__vdi-prop-select-popover {
+  position: fixed;
+  z-index: 10002;
+  max-height: 240px;
+  overflow-y: auto;
+  min-width: 140px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.__vdi-prop-select-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: monospace;
+  color: #334155;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.__vdi-prop-select-opt:hover {
+  background: #f1f5f9;
+}
+
+.__vdi-prop-select-opt input {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* BoolSetter 开关按钮 */
+.__vdi-prop-bool-wrap {
+  flex: 1.5;
+  display: flex;
+  align-items: center;
+}
+
+.__vdi-prop-bool-btn {
+  padding: 7px 16px;
+  font-size: 12px;
+  font-family: monospace;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  border-radius: 3px;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+
+.__vdi-prop-bool-btn--on {
+  background: #10b981;
+  color: #fff;
+  border-color: #10b981;
+}
+
+.__vdi-prop-bool-btn:hover {
+  border-color: #4096ff;
+}
+
 .__vdi-prop-eq {
   color: #cbd5e1;
   font-size: 12px;
+  margin-top: 6px;
+  flex-shrink: 0;
 }
 
 .__vdi-prop-remove {
@@ -381,11 +542,13 @@ body.__vdi-dragging * {
   padding: 4px 8px;
   border-radius: 3px;
   font-size: 12px;
+  margin-top: 4px;
+  flex-shrink: 0;
 }
 
 .__vdi-prop-add-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin-top: 14px;
   padding-top: 14px;
@@ -870,6 +1033,158 @@ body.__vdi-dragging * {
 
 .__vdi-code-edit-btn:hover {
   background: #e2e8f0;
+}
+
+/* ─── 属性选择抽屉 ─── */
+/* 遮罩：z-index 10000，高于 prop panel mask（9999），覆盖在 prop panel 之上 */
+.__vdi-attr-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(1px);
+}
+
+/* 抽屉容器：z-index 10001，右侧滑入，固定宽度 360px */
+.__vdi-attr-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 360px;
+  max-width: 90vw;
+  z-index: 10001;
+  background: #fff;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, sans-serif;
+  transform: translateX(100%);
+  transition: transform 0.2s ease-out;
+}
+
+.__vdi-attr-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.__vdi-attr-drawer-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.__vdi-attr-drawer-subtitle {
+  font-size: 12px;
+  color: #10b981;
+  font-family: monospace;
+  margin-top: 6px;
+}
+
+.__vdi-attr-drawer-search {
+  padding: 10px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.__vdi-attr-drawer-search-input {
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 3px;
+}
+
+.__vdi-attr-drawer-search-input:focus {
+  border-color: #4096ff;
+  box-shadow: 0 0 0 2px rgba(5, 145, 255, 0.1);
+  outline: 0;
+}
+
+.__vdi-attr-drawer-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.__vdi-attr-drawer-group {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  padding: 10px 18px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.__vdi-attr-drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.__vdi-attr-drawer-item:hover {
+  background: #f1f5f9;
+}
+
+.__vdi-attr-drawer-item-name {
+  font-size: 12px;
+  font-family: monospace;
+  font-weight: 600;
+  color: #1d4ed8;
+  white-space: nowrap;
+}
+
+.__vdi-attr-drawer-item-label {
+  font-size: 12px;
+  color: #64748b;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.__vdi-attr-drawer-item-value {
+  font-size: 11px;
+  font-family: monospace;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.__vdi-attr-drawer-empty {
+  text-align: center;
+  color: #cbd5e1;
+  font-size: 12px;
+  padding: 32px 0;
+}
+
+/* prop panel footer 的「📋 属性」按钮 -- 次要操作，浅灰底区分于「💾 保存」 */
+.__vdi-attr-btn {
+  border: none;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  padding: 8px 12px;
+  margin-left: auto;
+  margin-right: 5px;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.__vdi-attr-btn:hover {
+  background: #cbd5e1;
 }
 
 /* ─── Toast 通知（服务端 API 异常等）─── */

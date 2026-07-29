@@ -112,6 +112,8 @@ export const state = {
 
   /** 属性编辑面板 */
   propPanel: null as HTMLDivElement | null,
+  /** 属性选择抽屉（与 prop panel 并存的右侧滑出面板，z-index 高于 prop panel） */
+  attrDrawer: null as HTMLDivElement | null,
   panelData: {
     rootIndex: 0,
     file: "",

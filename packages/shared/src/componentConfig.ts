@@ -7,6 +7,39 @@
  * 最终由 overlay 的组件抽屉消费。
  */
 
+/**
+ * 单个组件属性的描述元数据。
+ *
+ * 在「编辑属性」面板的「属性」抽屉里展示，用户点选即可将属性
+ * 追加到 prop panel 的编辑列表，避免手动记忆和输入属性名。
+ */
+export interface ComponentAttr {
+  /** 属性名，如 "type"、"@click"、":value" */
+  name: string;
+  /** 人类可读标签，如 "类型"、"点击事件" */
+  label?: string;
+  /** 点击时填入的默认值，如 "primary" */
+  defaultValue?: string;
+  /** 可选值枚举，如 ["primary","default","dashed","link"] */
+  options?: string[];
+  /** 分组名，如 "属性"、"事件"、"插槽"；缺省归入「其它」 */
+  group?: string;
+  /**
+   * 该属性支持的输入器（setter）名称列表。
+   *
+   * 用户在「编辑属性」面板中可在这些 setter 之间自由切换。
+   * 内置 setter：
+   *   - "TextSetter"    纯文本输入
+   *   - "SelectSetter"  下拉多选（消费 options）
+   *   - "BoolSetter"    开关（true/false）
+   *   - "CodeSetter"    多行代码输入
+   *
+   * 缺省时按 options 自动回退：有 options -> ["SelectSetter"]，
+   * 否则 -> ["TextSetter"]。
+   */
+  setter?: string[];
+}
+
 /** 单个可插入的组件项 */
 export interface ComponentItem {
   /** 组件标签名，会作为 componentTag 传给 /insert-component */
@@ -26,6 +59,13 @@ export interface ComponentItem {
    * 缺省时回退到 tag 前 2 字符（保持向后兼容）。
    */
   icon?: string;
+  /**
+   * 可选属性描述清单 -- 在「编辑属性」面板的「属性」抽屉里展示。
+   *
+   * 用户点选某条属性即可将其追加到 prop panel 的编辑列表，
+   * 避免手动记忆和输入属性名。未声明时该组件无属性提示。
+   */
+  attrs?: ComponentAttr[];
   /**
    * 可选导入声明 -- 插入该组件时由服务端按需写入 `<script>`。
    *

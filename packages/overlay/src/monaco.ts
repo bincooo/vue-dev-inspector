@@ -35,6 +35,11 @@ interface AmdRequire {
   (deps: string[], cb: () => void): void;
 }
 
+/** Monaco 可释放对象。 */
+export interface IDisposable {
+  dispose(): void;
+}
+
 /** Monaco 编辑器实例（仅声明用到的子集）。 */
 export interface MonacoEditor {
   getValue(): string;
@@ -48,6 +53,8 @@ export interface MonacoModel {
   dispose(): void;
   /** 设置模型级选项；tabSize 在 Monaco 中属模型选项而非编辑器选项。 */
   updateOptions(opts: { tabSize: number }): void;
+  /** 内容变化监听，返回可释放句柄。 */
+  onDidChangeContent(cb: () => void): IDisposable;
 }
 
 /** monaco.editor.create 的构造选项（仅声明用到的子集）。 */
@@ -59,6 +66,7 @@ export interface MonacoEditorOptions {
   minimap: { enabled: boolean };
   scrollBeyondLastLine: boolean;
   fontFamily: string;
+  lineNumbers?: string;
 }
 
 /** Monaco 命名空间（仅声明用到的子集）。 */
