@@ -10,7 +10,7 @@ import AntdTest from "./components/AntdTest.vue";
 
 <template>
   <div id="app" class="app-container">
-    <Header fixed theme="light" />
+    <Header fixed theme="light" style="position: sticky; top: 0px"/>
     <main class="content">
       <Hero height="200px" />
       <CardList columns="3" gap="12px">
@@ -20,6 +20,6 @@ import AntdTest from "./components/AntdTest.vue";
       </CardList>
       <AntdTest />
     </main>
-    <Footer copyright="2024" />
+    <Footer copyright="2024" style="position: sticky; bottom: 0px"/>
   </div>
 </template>

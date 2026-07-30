@@ -29,6 +29,11 @@ import { deleteElementViaApi } from "./menu";
 import { emitInspect } from "./extensibility";
 import { renderIcon } from "./icon";
 
+
+export function isUni(): boolean {
+  return !!(window as { uni?: unknown }).uni;
+}
+
 /** 创建所有 UI 浮层并挂到 DOM */
 export function createUI(): void {
   state.hoverOverlay = createElement<HTMLDivElement>(
@@ -218,11 +223,11 @@ export function renderToolButtons(selectedEl: HTMLElement): void {
         target: selectedEl,
         source: parsed
           ? {
-              rootIndex: parsed.rootIndex,
-              file: parsed.file,
-              line: Number(parsed.line),
-              col: Number(parsed.col),
-            }
+            rootIndex: parsed.rootIndex,
+            file: parsed.file,
+            line: Number(parsed.line),
+            col: Number(parsed.col),
+          }
           : null,
       });
     };
@@ -252,8 +257,8 @@ export function hover(element: HTMLElement): void {
   state.tagTip!.textContent = getElementTagName(element);
   state.tagTip!.style.display = "block";
   const rect = getLayoutBox(element)!.getBoundingClientRect();
-  state.tagTip!.style.left = Math.max(0, rect.left) + "px";
-  state.tagTip!.style.top = Math.max(0, rect.top - 24) + "px";
+  state.tagTip!.style.left = Math.max(0, rect.left - 1) + "px";
+  state.tagTip!.style.top = Math.max(0, rect.top - (isUni() ? 26 : 24)) + "px";
 }
 
 /** 收起悬停态 */
