@@ -112,7 +112,10 @@ function buildAttrDrawer(): void {
   // 取当前组件的 attrs 清单
   const attrs = findAttrList();
 
-  function render(filter: string) {
+  // 当前搜索关键词（闭包变量，供点击添加后重渲染复用）
+  let currentFilter = "";
+
+  function render() {
     list.innerHTML = "";
     if (!attrs || !attrs.length) {
       list.appendChild(
@@ -139,9 +142,9 @@ function buildAttrDrawer(): void {
         .get(g)!
         .filter(
           (attr) =>
-            !filter ||
-            attr.name.toLowerCase().includes(filter) ||
-            (attr.label && attr.label.toLowerCase().includes(filter)),
+            !currentFilter ||
+            attr.name.toLowerCase().includes(currentFilter) ||
+            (attr.label && attr.label.toLowerCase().includes(currentFilter)),
         );
       if (!matched.length) return;
       any = true;
@@ -160,18 +163,28 @@ function buildAttrDrawer(): void {
           : null;
         const valueEl = attr.defaultValue
           ? createElement(
-              "span",
-              "__vdi-attr-drawer-item-value",
-              attr.defaultValue,
-            )
+            "span",
+            "__vdi-attr-drawer-item-value",
+            attr.defaultValue,
+          )
           : null;
 
-        row.append(nameEl);
-        if (labelEl) row.append(labelEl);
+        // name + label 包裹进 title 容器（上下布局）
+        const titleEl = createElement("div", "__vdi-attr-drawer-item-title");
+        titleEl.append(nameEl);
+        if (labelEl) titleEl.append(labelEl);
+
+        row.append(titleEl);
         if (valueEl) row.append(valueEl);
 
+        // 已添加的属性显示 ✓ 标记
+        const added = state.panelData.entries.some((e) => e.key === attr.name);
+        row.append(
+          createElement("span", "__vdi-attr-drawer-item-check", added ? "✓" : ""),
+        );
+
         row.onclick = () => {
-          // 已存在则不重复添加
+          // 已存在则不重复添加（实时检查）
           const exists = state.panelData.entries.some(
             (e) => e.key === attr.name,
           );
@@ -181,6 +194,7 @@ function buildAttrDrawer(): void {
             value: attr.defaultValue ?? "",
           });
           rerenderPropList();
+          render();
         };
         list.appendChild(row);
       });
@@ -193,8 +207,9 @@ function buildAttrDrawer(): void {
     }
   }
 
-  render("");
+  render();
   searchInput.oninput = () => {
-    render(searchInput.value.trim().toLowerCase());
+    currentFilter = searchInput.value.trim().toLowerCase();
+    render();
   };
 }

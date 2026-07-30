@@ -32,14 +32,14 @@
 
 - [x] 6.1 在 `packages/antdv/src/index.ts` 中为 `a-button` 补充 `attrs`（type/size/loading/disabled/@click/@focus 等）
 - [x] 6.2 为 `a-input`、`a-select`、`a-tag` 等主要组件补充 `attrs` 示例数据
-- [ ] 6.3 运行 `pnpm -C packages/antdv build` 重建 antdv 包
+- [x] 6.3 运行 `pnpm -C packages/antdv build` 重建 antdv 包
 
 ## 7. 构建与验证
 
 - [x] 7.1 按序重建 `shared -> pluginkit -> overlay -> client -> core`
 - [x] 7.2 重建 antdv 包
-- [ ] 7.3 启动 PC demo（`pnpm dev:pc`）验证：右键 antdv 组件 -> 编辑属性 -> 点击「属性」按钮 -> 抽屉展示属性清单 -> 点选属性追加到列表 -> 保存
-- [ ] 7.4 验证原生 HTML 元素（如 `<div>`）打开抽屉展示空提示
-- [ ] 7.5 验证关闭 prop panel 时抽屉连带关闭
+- [x] 7.3 启动 PC demo（`pnpm dev:pc`）验证：右键 antdv 组件 -> 编辑属性 -> 点击「属性」按钮 -> 抽屉展示属性清单 -> 点选属性追加到列表 -> 保存
+- [x] 7.4 验证原生 HTML 元素（如 `<div>`）打开抽屉展示空提示
+- [x] 7.5 验证关闭 prop panel 时抽屉连带关闭
 - [x] 7.6 运行 `pnpm typecheck` 确保类型安全
 - [x] 7.7 运行 `pnpm run prettier` 格式化修改的代码

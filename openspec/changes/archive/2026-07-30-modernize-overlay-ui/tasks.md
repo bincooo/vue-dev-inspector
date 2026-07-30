@@ -58,6 +58,6 @@
 
 - [x] 11.1 重建 overlay 包（`pnpm -C packages/overlay build`）
 - [x] 11.2 重建 core 包（`pnpm -C packages/core build`，cp overlay.iife.js）
-- [ ] 11.3 启动 PC demo 验证视觉：齿轮按钮 hover / 右键菜单 / 编辑属性面板 / 组件抽屉 / 属性抽屉 / 代码抽屉 / Toast
+- [x] 11.3 启动 PC demo 验证视觉：齿轮按钮 hover / 右键菜单 / 编辑属性面板 / 组件抽屉 / 属性抽屉 / 代码抽屉 / Toast
 - [x] 11.4 运行 `pnpm typecheck` 确保无类型错误
 - [x] 11.5 运行 `pnpm run prettier` 格式化

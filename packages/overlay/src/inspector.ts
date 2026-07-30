@@ -29,7 +29,6 @@ import { deleteElementViaApi } from "./menu";
 import { emitInspect } from "./extensibility";
 import { renderIcon } from "./icon";
 
-
 export function isUni(): boolean {
   return !!(window as { uni?: unknown }).uni;
 }
@@ -223,11 +222,11 @@ export function renderToolButtons(selectedEl: HTMLElement): void {
         target: selectedEl,
         source: parsed
           ? {
-            rootIndex: parsed.rootIndex,
-            file: parsed.file,
-            line: Number(parsed.line),
-            col: Number(parsed.col),
-          }
+              rootIndex: parsed.rootIndex,
+              file: parsed.file,
+              line: Number(parsed.line),
+              col: Number(parsed.col),
+            }
           : null,
       });
     };
