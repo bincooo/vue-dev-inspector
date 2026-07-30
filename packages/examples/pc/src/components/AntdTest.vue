@@ -15,7 +15,7 @@
       <a-button @click="onClick('default')">Default</a-button>
       <a-button type="dashed" @click="onClick('dashed')">Dashed</a-button>
       <a-button type="text" @click="onClick('text')">Text</a-button>
-      <a-button disabled type="link" @click="onClick('link')">Link</a-button>
+      <a-button type="link" disabled @click="onClick('link')">Link</a-button>
       <a-button danger @click="onClick('danger')">Danger</a-button>
       <a-button @click="showModal">Open Modal</a-button>
       <a-button @click="showDrawer">Open Drawer</a-button>
@@ -63,6 +63,7 @@
         placeholder="请选择选项"
       />
       <a-date-picker style="width: 100%" />
+      <a-carousel autoplay></a-carousel>
     </a-space>
 
     <!-- 开关 / 单选 / 多选 -->
@@ -92,6 +93,65 @@
         <a-button type="primary">确认</a-button>
       </a-space>
     </a-card>
+
+    <a-carousel autoplay style="margin-top: 5px">
+      <div>
+        <h3
+          style="
+            color: #fff;
+            text-align: center;
+            background: #364d79;
+            height: 160px;
+            margin: 0;
+            line-height: 160px;
+          "
+        >
+          1
+        </h3>
+      </div>
+      <div>
+        <h3
+          style="
+            color: #fff;
+            text-align: center;
+            background: #364d79;
+            height: 160px;
+            margin: 0;
+            line-height: 160px;
+          "
+        >
+          2
+        </h3>
+      </div>
+      <div>
+        <h3
+          style="
+            color: #fff;
+            text-align: center;
+            background: #364d79;
+            height: 160px;
+            margin: 0;
+            line-height: 160px;
+          "
+        >
+          3
+        </h3>
+      </div>
+      <div>
+        <h3
+          style="
+            color: #fff;
+            text-align: center;
+            background: #364d79;
+            height: 160px;
+            margin: 0;
+            line-height: 160px;
+          "
+        >
+          4
+        </h3>
+      </div>
+    </a-carousel>
 
     <!-- Alert 提示 -->
     <a-divider style="margin: 16px 0" />

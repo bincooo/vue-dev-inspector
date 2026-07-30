@@ -24,7 +24,7 @@ import {
   apiError,
   errMsg,
 } from "./utils";
-import { openDrawer } from "./comp-drawer";
+import { openDrawer } from "./panel/comp-drawer";
 import { deleteElementViaApi } from "./menu";
 import { emitInspect } from "./extensibility";
 import { renderIcon } from "./icon";

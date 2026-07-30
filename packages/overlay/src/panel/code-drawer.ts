@@ -18,7 +18,7 @@
  *     保存成功折叠时 dispose（多数时间折叠，不常驻第三个编辑器）。
  *   - Monaco 自带滚动同步 / 语法高亮 / Tab 缩进，无需手动叠层。
  */
-import { state } from "./state";
+import { state } from "../state";
 import {
   apiRequest,
   createElement,
@@ -26,10 +26,10 @@ import {
   parsePosition,
   apiError,
   errMsg,
-} from "./utils";
-import type { CodeBlockData, GetBlocksResponse, ChildTextData } from "./types";
-import type { MonacoAPI, MonacoEditor, MonacoModel } from "./monaco";
-import { loadMonaco, monacoLanguageFor } from "./monaco";
+} from "../utils";
+import type { CodeBlockData, GetBlocksResponse, ChildTextData } from "../types";
+import type { MonacoAPI, MonacoEditor, MonacoModel } from "../monaco";
+import { loadMonaco, monacoLanguageFor } from "../monaco";
 
 /** 抽屉滑出/滑入动画时长（与组件抽屉一致）。 */
 const SLIDE_MS = 200;

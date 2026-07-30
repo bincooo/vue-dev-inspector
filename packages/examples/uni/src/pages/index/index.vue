@@ -153,11 +153,8 @@ export default {
 
 <style scoped>
 .page {
-  background: #f5f5f5;
-  padding-bottom: 180rpx;
-}
-.form-container {
   background: #fff;
+  padding-bottom: 180rpx;
 }
 .form-header {
   padding: 40rpx 32rpx;

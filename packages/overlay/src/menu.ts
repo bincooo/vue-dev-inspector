@@ -12,9 +12,9 @@ import {
   errMsg,
 } from "./utils";
 import { redrawSelection } from "./inspector";
-import { openPanel } from "./prop-panel";
-import { openDrawer } from "./comp-drawer";
-import { openCodeDrawer } from "./code-drawer";
+import { openPanel } from "./panel";
+import { openDrawer } from "./panel/comp-drawer";
+import { openCodeDrawer } from "./panel/code-drawer";
 
 type MenuAction = (
   element: HTMLElement,

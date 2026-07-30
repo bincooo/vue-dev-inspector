@@ -7,9 +7,9 @@
  * 抽屉 z-index（10001）高于 prop panel mask（9999），覆盖在 prop panel
  * 之上；遮罩 z-index 10000。打开期间 prop panel 仍可见但被遮罩挡住不可交互。
  */
-import { state } from "./state";
-import { createElement } from "./utils";
-import { rerenderPropList } from "./prop-panel";
+import { state } from "../state";
+import { createElement } from "../utils";
+import { rerenderPropList } from "./index";
 import type { ComponentAttr } from "@vue-dev-inspector/shared";
 
 /** 抽屉遮罩（点击非面板区域关闭） */
@@ -163,10 +163,10 @@ function buildAttrDrawer(): void {
           : null;
         const valueEl = attr.defaultValue
           ? createElement(
-            "span",
-            "__vdi-attr-drawer-item-value",
-            attr.defaultValue,
-          )
+              "span",
+              "__vdi-attr-drawer-item-value",
+              attr.defaultValue,
+            )
           : null;
 
         // name + label 包裹进 title 容器（上下布局）
@@ -180,7 +180,11 @@ function buildAttrDrawer(): void {
         // 已添加的属性显示 ✓ 标记
         const added = state.panelData.entries.some((e) => e.key === attr.name);
         row.append(
-          createElement("span", "__vdi-attr-drawer-item-check", added ? "✓" : ""),
+          createElement(
+            "span",
+            "__vdi-attr-drawer-item-check",
+            added ? "✓" : "",
+          ),
         );
 
         row.onclick = () => {

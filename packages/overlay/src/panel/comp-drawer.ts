@@ -7,14 +7,14 @@
  *   'before'          插入选中元素同级上方
  *   'after'           插入选中元素同级下方
  */
-import { state, type DropDirection } from "./state";
+import { state, type DropDirection } from "../state";
 import {
   parsePosition,
   apiRequest,
   createElement,
   formatPosition,
-} from "./utils";
-import { renderIcon } from "./icon";
+} from "../utils";
+import { renderIcon } from "../icon";
 import type {
   ComponentConfigEntry,
   ComponentGroup,

@@ -337,8 +337,12 @@ body.__vdi-dragging * {
   margin-bottom: 8px;
 }
 
-.uni .__vdi-prop-input {
-  height: 18px;
+.uni .__vdi-prop-select {
+  height: 31px;
+}
+
+.uni .__vdi-prop-select {
+  padding: 8px 10px;
 }
 
 .__vdi-prop-input {
@@ -394,6 +398,10 @@ body.__vdi-dragging * {
   transition:
     background 0.12s,
     color 0.12s;
+}
+
+.uni .__vdi-prop-mode-btn {
+  margin-top: 2px;
 }
 
 .__vdi-prop-mode-btn:hover {
@@ -494,36 +502,40 @@ body.__vdi-dragging * {
 }
 
 /* BoolSetter 开关按钮 */
-.__vdi-prop-bool-wrap {
+.__vdi-prop-switch {
   flex: 1.5;
   display: flex;
   align-items: center;
-}
-
-.__vdi-prop-bool-btn {
-  padding: 7px 16px;
-  font-size: 12px;
-  font-family: monospace;
-  font-weight: 600;
-  border: 1px solid #e2e8f0;
-  border-radius: 3px;
-  background: #f8fafc;
-  color: #64748b;
   cursor: pointer;
-  transition:
-    background 0.12s,
-    color 0.12s,
-    border-color 0.12s;
+  height: 34px;
 }
 
-.__vdi-prop-bool-btn--on {
+.__vdi-prop-switch-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: #e2e8f0;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.__vdi-prop-switch-track--on {
   background: #10b981;
-  color: #fff;
-  border-color: #10b981;
 }
 
-.__vdi-prop-bool-btn:hover {
-  border-color: #4096ff;
+.__vdi-prop-switch-knob {
+  position: absolute;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transform: translateX(2px);
+  transition: transform 0.2s;
+}
+
+.__vdi-prop-switch-track--on .__vdi-prop-switch-knob {
+  transform: translateX(18px);
 }
 
 .__vdi-prop-eq {
@@ -576,7 +588,7 @@ body.__vdi-dragging * {
   font-size: 12px;
   line-height: 16px;
   font-weight: 600;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border-radius: 3px;
   cursor: pointer;
   white-space: nowrap;
@@ -662,7 +674,7 @@ body.__vdi-dragging * {
   color: inherit;
 }
 
-.__vdi-drawer-tab-icon>svg {
+.__vdi-drawer-tab-icon > svg {
   width: 18px;
   height: 18px;
   display: block;
@@ -791,7 +803,7 @@ body.__vdi-dragging * {
   border: 1px solid #d2d2d2;
 }
 
-.__vdi-drawer-item-icon>svg {
+.__vdi-drawer-item-icon > svg {
   width: 18px;
   height: 18px;
   display: block;

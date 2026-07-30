@@ -47,7 +47,7 @@ export interface ClientCfg {
 
 export interface PropEntry {
   key: string;
-  value: string;
+  value?: string;
 }
 
 /**
