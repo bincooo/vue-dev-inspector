@@ -62,7 +62,7 @@
         :options="options"
         placeholder="请选择选项"
       />
-      <a-date-picker style="width: 100%" />
+      <a-date-picker style="width: 100%" placeholder="请输入日期" />
       <a-carousel autoplay></a-carousel>
     </a-space>
 

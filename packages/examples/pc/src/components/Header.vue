@@ -14,5 +14,10 @@ defineProps({
   theme: { type: String, default: "light" },
 });
 
-const navItems = ["首页", "关于", "文档", "博客"];
+const navItems = [
+  {label: "首页", href: "https://github.com/bincooo/vue-dev-inspector"}, 
+  {label: "文档", href: "https://bincooo.github.io/vue-dev-inspector"}, 
+  {label: "关于", href: "#"}, 
+  {label: "博客", href: "#"}, 
+];
 </script>
