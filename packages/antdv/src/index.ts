@@ -22,7 +22,7 @@ import { loadScriptSpecifier } from "@vue-dev-inspector/utils";
 const boolAttr = (
   name: string,
   label: string,
-  defaultValue = "false",
+  defaultValue?: string
 ): ComponentAttr => ({
   name,
   label,
@@ -46,14 +46,15 @@ const sizeAttr = (
 const disabledAttr = (): ComponentAttr => boolAttr("disabled", "禁用");
 
 /** 允许清除属性（布尔） */
-const allowClearAttr = (defaultValue = "false"): ComponentAttr =>
+const allowClearAttr = (defaultValue?: string): ComponentAttr =>
   boolAttr("allow-clear", "允许清除", defaultValue);
 
 /** 事件属性 */
-const eventAttr = (name: string, label: string): ComponentAttr => ({
+const eventAttr = (name: string, label: string, defaultValue: string = '(event) => { }'): ComponentAttr => ({
   name,
   label,
   group: "事件",
+  defaultValue,
 });
 
 /** 普通属性（可透传 defaultValue/options 等） */
@@ -255,7 +256,13 @@ export default function (): ComponentConfigEntry {
               textAttr("orientation", "文字方向", {
                 options: ["left", "center", "right"],
               }),
+              textAttr("size", "间距大小，仅对水平布局有效", {
+                options: ["small", "middle", "large"],
+              }),
               boolAttr("plain", "普通文字"),
+              textAttr("title-placement", "分割线标题的位置", {
+                options: ["start", "center", "end"],
+              }),
             ],
           },
           {
@@ -639,7 +646,7 @@ export default function (): ComponentConfigEntry {
             attrs: [
               sizeAttr(),
               disabledAttr(),
-              allowClearAttr("true"),
+              allowClearAttr(),
               textAttr("format", "格式"),
               modelAttr("v-model:value"),
               eventAttr("@change", "变化事件"),

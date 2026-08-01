@@ -25,12 +25,12 @@ export const boolSetter: SetterDef = {
       track.classList.toggle("__vdi-prop-switch-track--on", on);
     };
     sync();
-    wrap.onclick = (e) => {
+    track.onclick = (e) => {
       e.stopPropagation();
       entry.value =
         entry.value === "true" ||
-        entry.value === undefined ||
-        entry.value === ""
+          entry.value === undefined ||
+          entry.value === ""
           ? "false"
           : "";
       sync();
