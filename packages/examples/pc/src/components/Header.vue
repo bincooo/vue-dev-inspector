@@ -15,9 +15,9 @@ defineProps({
 });
 
 const navItems = [
-  {label: "首页", href: "https://github.com/bincooo/vue-dev-inspector"}, 
-  {label: "文档", href: "https://bincooo.github.io/vue-dev-inspector"}, 
-  {label: "关于", href: "#"}, 
-  {label: "博客", href: "#"}, 
+  { label: "首页", href: "https://github.com/bincooo/vue-dev-inspector" },
+  { label: "文档", href: "https://bincooo.github.io/vue-dev-inspector" },
+  { label: "关于", href: "#" },
+  { label: "博客", href: "#" },
 ];
 </script>

@@ -18,18 +18,31 @@ function openPopout(monaco: MonacoAPI, model: MonacoModel): void {
   if (popoutOpen) return;
   popoutOpen = true;
 
+  const mask = createElement("div", "__vdi-code-popout-mask");
+  mask.onmousedown = (e) => {
+    e.stopPropagation();
+    if (e.target === mask) close();
+  };
+
+  /**
+   * Capture 阶段 focusin 拦截，阻断 antdv useLockFocus 的焦点回拉。
+   * 与 events.ts 中 prop panel 的 focusin 拦截同模式（参见 42b1143）。
+   */
+  const focusGuard = (e: FocusEvent) => {
+    if (mask.contains(e.target as Node)) {
+      e.stopImmediatePropagation();
+    }
+  };
+  window.addEventListener("focusin", focusGuard, true);
+
   // eslint-disable-next-line prefer-const -- 前向声明，close 闭包需在 editor 赋值前引用
   let editor: MonacoEditor;
 
   const close = () => {
     editor.dispose();
+    window.removeEventListener("focusin", focusGuard, true);
     mask.remove();
     popoutOpen = false;
-  };
-
-  const mask = createElement("div", "__vdi-code-popout-mask");
-  mask.onmousedown = (e) => {
-    if (e.target === mask) close();
   };
 
   const popout = createElement("div", "__vdi-code-popout");
@@ -58,6 +71,7 @@ function openPopout(monaco: MonacoAPI, model: MonacoModel): void {
     fontFamily: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
     lineNumbers: "on",
   });
+  requestAnimationFrame(() => editor.focus());
 }
 
 export const codeSetter: SetterDef = {

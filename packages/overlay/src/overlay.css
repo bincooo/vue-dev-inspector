@@ -459,7 +459,7 @@ body.__vdi-dragging * {
 .__vdi-code-popout-mask {
   position: fixed;
   inset: 0;
-  z-index: 10001;
+  z-index: 99999;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -471,7 +471,7 @@ body.__vdi-dragging * {
   width: 70vw;
   height: 70vh;
   background: #1e1e1e;
-  border-radius: 8px;
+  border-radius: 3px;
   overflow: hidden;
   display: flex;
   flex-direction: column;

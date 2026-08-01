@@ -109,6 +109,7 @@ pnpm monorepo（`pnpm-workspace.yaml` 声明 `packages/*` 与 `packages/examples
 - 所有 CSS class 以 `__vdi-` 为前缀，避免与宿主页面冲突。
 - 动态布局属性（`left/top/display`）通过 JS 内联设置；静态样式写在 `overlay.css` 中。
 - 样式注入用 `id="__vdi-overlay-style__"`，幂等。
+- **antdv focus-trap 隔离**：宿主页面的模态组件通过 `@v-c/util` 的 `useLockFocus` 在 `window` 上注册全局 `focusin` 回调，会将焦点强制拉回抽屉内部。overlay 的浮层（prop panel mask、CodeSetter 浮动窗口）作为 body 上的独立 div，处于抽屉 focus boundary 之外，点击 input/Monaco 后焦点会被立即抢走导致无法输入。修复方式：在 capture 阶段注册 `window.addEventListener("focusin", handler, true)`，当 `e.target` 在浮层内时调用 `e.stopImmediatePropagation()` 阻断冒泡到 antdv 的监听器。
 
 ### 运行时：服务端 AST 编辑（`packages/client`）
 

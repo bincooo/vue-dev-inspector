@@ -46,6 +46,7 @@ export interface MonacoEditor {
   setValue(value: string): void;
   dispose(): void;
   layout(): void;
+  focus(): void;
 }
 
 /** Monaco 文本模型（仅声明用到的子集）。 */
