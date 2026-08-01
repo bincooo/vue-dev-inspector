@@ -27,6 +27,28 @@ import {
   type ComponentConfigEntry,
 } from "@vue-dev-inspector/shared";
 
+// ─── Server middleware ───────────────────────────────────
+
+/** 路由表 */
+const ROUTES: Record<string, Record<string, RouteHandler>> = {
+  "/get-props": { POST: handleGetProps },
+  "/update-props": { POST: handleUpdateProps },
+  "/delete-element": { POST: handleDeleteElement },
+  "/open-in-editor": { POST: handleOpenInEditor },
+  "/list-components": { POST: handleListComponents },
+  "/get-component-config": { POST: handleGetComponentConfig },
+  "/insert-component": { POST: handleInsertComponent },
+  "/duplicate-element": { POST: handleDuplicateElement },
+  "/move-element": { POST: handleMoveElement },
+  "/get-block": { POST: handleGetBlock },
+  "/update-block": { POST: handleUpdateBlock },
+  "/get-child-text": { POST: handleGetChildText },
+  "/update-child-text": { POST: handleUpdateChildText },
+  "/resolve-path": { POST: handleResolvePath },
+  "/report-selection": { POST: handleReportSelection },
+  "/get-selection": { POST: handleGetSelection },
+};
+
 // ─── Types ────────────────────────────────────────────────
 
 /** HTTP 请求体解析后的形态（服务端内部使用的是 JSON 字符串）。 */
@@ -669,28 +691,6 @@ function handleOpenInEditor(
     else json(res, 200, { success: true });
   });
 }
-
-// ─── Server middleware ───────────────────────────────────
-
-/** 路由表 */
-const ROUTES: Record<string, Record<string, RouteHandler>> = {
-  "/get-props": { POST: handleGetProps },
-  "/update-props": { POST: handleUpdateProps },
-  "/delete-element": { POST: handleDeleteElement },
-  "/open-in-editor": { POST: handleOpenInEditor },
-  "/list-components": { POST: handleListComponents },
-  "/get-component-config": { POST: handleGetComponentConfig },
-  "/insert-component": { POST: handleInsertComponent },
-  "/duplicate-element": { POST: handleDuplicateElement },
-  "/move-element": { POST: handleMoveElement },
-  "/get-block": { POST: handleGetBlock },
-  "/update-block": { POST: handleUpdateBlock },
-  "/get-child-text": { POST: handleGetChildText },
-  "/update-child-text": { POST: handleUpdateChildText },
-  "/resolve-path": { POST: handleResolvePath },
-  "/report-selection": { POST: handleReportSelection },
-  "/get-selection": { POST: handleGetSelection },
-};
 
 /**
  * 把 dev server middleware 主干挂到 `server.middlewares`。

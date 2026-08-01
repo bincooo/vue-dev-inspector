@@ -2,9 +2,9 @@
 name: vue-dev-inspector
 description: Vue SFC 可视化编辑 Agent 技能，基于 Vite dev 中间件 /__dev-inspector-api__，支持选中/props/子节点/块编辑、组件增删改移、编辑器调起，写盘触发 HMR。
 license: MIT
-requires: 需用户启动 pnpm dev，Agent 禁止自启动；.env 持久化 DEV_INSPECTOR_HOST
-api_base: ${DEV_INSPECTOR_HOST}/__dev-inspector-api__
-tags: [vue, vite, inspector, hmr, sfc]
+requires: 需用户启动 pnpm dev，Agent 禁止自启动；.env 持久化 VDI_BASEURL
+api_base: ${VDI_BASEURL}
+tags: [vue, vite, inspector, sfc]
 ---
 
 # vue-dev-inspector 交互规范
@@ -12,25 +12,27 @@ tags: [vue, vite, inspector, hmr, sfc]
 ## 1. 初始化 (必做)
 
 **优先级 L1->L4 命中即停:**
-L1 `.env` (SKILL同级) `DEV_INSPECTOR_HOST` -> L2 `vite.config.{ts,js,mts}` 解析 `server.host/port` (0.0.0.0->localhost, 默认5173) -> L3 嗅探 5173-5183/3000 -> L4 `AskUserQuestion` 让用户提供地址
+L1 `.env` (SKILL同级) `VDI_BASEURL` -> L2 `vite.config.{ts,js,mts}` 解析 `server.host/port` (0.0.0.0->localhost, 默认5173) -> L3 嗅探 5173-5183/3000 -> L4 `AskUserQuestion` 让用户提供地址
 
 **探测:**
-优先读取.env 如果存在`DEV_INSPECTOR_HOST`，直接使用即可
-`curl -X POST ${DEV_INSPECTOR_HOST}/__dev-inspector-api__/get-selection -d '{}'` 返回200即在线
+优先读取.env 如果存在`VDI_BASEURL`，直接使用即可
+
+`curl -X POST ${VDI_BASEURL}/get-selection -d '{}'` 返回200即在线
+
 优先采取本地bash修改，若当前项目无法获得信息，则通过vue-dev-inspector执行操作
 
-**写入:** `DEV_INSPECTOR_HOST=http://localhost:5173` 到 `.env`
+**写入:** `VDI_BASEURL=http://localhost:5173/__dev-inspector-api__` 到 `.env`
 
 **自愈:** 后续全部从 `.env` 读 Host，连续3次失败重走L1-L4，指数退避0/500/1000/2000ms
 
 ## 2. 请求基线
 
-`POST ${DEV_INSPECTOR_HOST}/__dev-inspector-api__/<route>` JSON, CORS *, 仅POST (OPTIONS 204)
+`POST $VDI_BASEURL/<route>` JSON, CORS *, 仅POST (OPTIONS 204)
 读: 200+数据, 写: 200 {success:true}+HMR, 500 {error}
 
 模板:
 ```bash
-source ${SKILLS_PATH}/vue-dev-inspector/.env; curl -sS -X POST "${DEV_INSPECTOR_HOST}/__dev-inspector-api__/get-props" -H'Content-Type:application/json' -d '{"file":"r0:src/App.vue:10:2","line":10,"col":2}'
+source $SKILLS_PATH/vue-dev-inspector/.env; curl -sS -X POST "$VDI_BASEURL/get-props" -H'Content-Type:application/json' -d '{"file":"r0:src/App.vue:10:2","line":10,"col":2}'
 ```
 
 ## 3. 坐标
