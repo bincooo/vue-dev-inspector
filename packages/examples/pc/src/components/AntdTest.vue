@@ -30,7 +30,12 @@
       <p>Some contents...</p>
     </a-modal>
 
-    <a-drawer v-model:open="openD" title="Basic Drawer" :width="width" :resizable="{ onResize }">
+    <a-drawer
+      v-model:open="openD"
+      title="Basic Drawer"
+      :width="width"
+      :resizable="{ onResize }"
+    >
       <p>Some contents...</p>
       <p>Some contents...</p>
       <p>Some contents...</p>
@@ -38,11 +43,15 @@
     </a-drawer>
 
     <!-- 标签 / 分割线 -->
-    <a-divider style="margin: 16px 0" plain title-placement="start">事件同步</a-divider>
+    <a-divider style="margin: 16px 0" plain title-placement="start"
+      >事件同步</a-divider
+    >
     <a-typography-text type="secondary">
       最后点击事件：{{ lastClick || "（无）" }}
     </a-typography-text>
-    <a-divider style="margin: 16px 0" plain title-placement="start">标签组件</a-divider>
+    <a-divider style="margin: 16px 0" plain title-placement="start"
+      >标签组件</a-divider
+    >
     <a-space wrap>
       <a-tag v-if="visible" color="success">success</a-tag>
       <a-tag color="processing">processing</a-tag>
@@ -79,7 +88,9 @@
     </a-space>
 
     <!-- 卡片 -->
-    <a-divider style="margin: 16px 0" plain title-placement="start">卡片面板</a-divider>
+    <a-divider style="margin: 16px 0" plain title-placement="start"
+      >卡片面板</a-divider
+    >
     <a-card title="Antd 卡片" style="width: 320px">
       <template #extra>
         <a href="#">More</a>
@@ -154,14 +165,15 @@
     </a-carousel>
 
     <!-- Alert 提示 -->
-    <a-divider style="margin: 16px 0" plain title-placement="start">提示组件</a-divider>
+    <a-divider style="margin: 16px 0" plain title-placement="start"
+      >提示组件</a-divider
+    >
     <a-space direction="vertical" style="width: 100%">
       <a-alert message="Success 提示" type="success" show-icon />
       <a-alert message="Info 提示" type="info" show-icon />
       <a-alert message="Warning 提示" type="warning" show-icon />
       <a-alert message="Error 提示" type="error" show-icon />
     </a-space>
-
   </section>
 </template>
 

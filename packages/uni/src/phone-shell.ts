@@ -19,11 +19,11 @@ const BASE_W = 375;
 // 听筒
 const SPEAKER_W = 60,
   SPEAKER_H = 4,
-  SPEAKER_TOP = 7;
+  SPEAKER_TOP = 10;
 // 前置摄像头
 const CAM_SIZE = 10,
   CAM_LEFT = 44,
-  CAM_TOP = 4;
+  CAM_TOP = 8;
 // 侧边按钮
 const BTN_W = 3,
   BTN_EXT = 8; // 宽度 + 伸出量
@@ -37,14 +37,34 @@ const BTN_RIGHT_TOP = 170,
   BTN_RIGHT_H = 80;
 // 刘海
 const NOTCH_W = 140,
-  NOTCH_H = 22,
-  NOTCH_R = 18;
+  NOTCH_H = 30,
+  NOTCH_R = 26;
 // Home bar
 const BAR_BOTTOM = 8,
   BAR_W = 134,
   BAR_H = 5;
 // 手机边框圆角
 const PHONE_RADIUS = 30;
+// 状态栏图标
+const STATUS_BAR_H = NOTCH_H; // 状态栏高度 = notch 高度
+const STATUS_TIME_FS = 14; // 时间字号
+const STATUS_ICONS_LEFT = 6; // 图标组距 notch 右侧间距
+const STATUS_ICONS_RIGHT = 20; // 图标组距屏幕右侧间距
+const STATUS_ICONS_GAP = 6; // 图标之间间距
+// 信号格
+const SIGNAL_BAR_W = 3; // 每格宽度
+const SIGNAL_BAR_GAP = 2; // 格间间距
+const SIGNAL_BAR_H1 = 4,
+  SIGNAL_BAR_H2 = 7,
+  SIGNAL_BAR_H3 = 10,
+  SIGNAL_BAR_H4 = 12; // 4 格递增高度
+// wifi
+const WIFI_SIZE = 20; // SVG 宽度
+// 电量
+const BAT_W = 24,
+  BAT_H = 12; // 电池外壳尺寸
+const BAT_NUB_W = 2,
+  BAT_NUB_H = 5; // 电池头部凸起
 
 // ─── 类型 ─────────────────────────────────────────────────────
 
@@ -78,7 +98,7 @@ function buildCss(cfg: PhoneShellConfig): string {
 
   // 单行 CSS：模板字面量换行会在注入到 JS 字符串时破坏语法
   return [
-    `[data-vdi-phone-shell]{--vdi-w:${px(cfg.width)};--vdi-h:${px(cfg.height)};width:${px(cfg.width)};margin:0 auto;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:28px 0;box-sizing:border-box}`,
+    `[data-vdi-phone-shell]{--vdi-w:${cfg.width}px;--vdi-h:${cfg.height}px;width:${cfg.width}px;margin:0 auto;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:28px 0;box-sizing:border-box}`,
     // phone-wrap：定位包裹层（flex item，375×812），侧边按钮挂它上面（left:-8px 伸出框外）。
     `[data-vdi-phone-wrap]{position:relative;flex-shrink:0;width:var(--vdi-w);height:var(--vdi-h)}`,
     // frame：填满 wrap。transform(固定 fixed 后代的包含块) + overflow:hidden + border-radius ——
@@ -101,12 +121,28 @@ function buildCss(cfg: PhoneShellConfig): string {
     // padding-top=0：状态栏由 app 自己的 u-status-bar 处理（uni 补丁把 statusBarHeight 报成刘海高，
     //   u-status-bar=22 + navbar-inner=44 = navbar 66；placeholder=navbarHeight+statusBarHeight=66 正好匹配，
     //   hero 紧接 navbar 底部）。phone-shell 再加 padding 反而让 padding+placeholder > navbar、placeholder 又被挤出。
-    `uni-page-head + uni-page-wrapper{padding-top:65px;height:calc(100% - env(safe-area-inset-top)) !important;overflow-y:auto}`,
+    `uni-page-head + uni-page-wrapper{padding-top:64px;height:calc(100% - env(safe-area-inset-top)) !important;overflow-y:auto}`,
     `[data-vdi-phone-screen]{position:relative;width:100%;height:100%;z-index:50;padding:0;box-sizing:border-box;background:#fff;border-radius:${px(PHONE_RADIUS)};overflow-y:auto;overflow-x:hidden}`,
-    `[data-vdi-phone-screen] uni-page-head,[data-vdi-phone-screen] .uni-page-head{position:absolute!important;top:0!important;left:0!important;right:0!important;width:100%!important;z-index:50;padding-top:20px;height: 65px}`,
-    // 注：uview-pro 的 u-navbar 标题偏移 / placeholder 挤出等问题不再用 .u-* CSS 兜底
-    // (耦合太强)，改由 IIFE 里的 uni 系统信息补丁统一解决（报告 375×812 + statusBarHeight）。
+    `[data-vdi-phone-screen] uni-page-head,[data-vdi-phone-screen] .uni-page-head{position:absolute!important;top:0!important;left:0!important;right:0!important;width:100%!important;z-index:50;padding-top:20px;height: 64px}`,
     `[data-vdi-phone-bar]{position:absolute;bottom:${px(BAR_BOTTOM)};left:50%;transform:translateX(-50%);width:${px(BAR_W)};height:${px(BAR_H)};background:rgba(128,128,128,.5);border-radius:3px;z-index:100}`,
+    // 状态栏 -- 时间（notch 左侧，右对齐贴近 notch）
+    `[data-vdi-phone-status-time]{position:absolute;top:3px;left:15%;height:${px(STATUS_BAR_H)};line-height:${px(STATUS_BAR_H)};text-align:right;font-size:${px(STATUS_TIME_FS)};font-weight:600;color:gray;z-index:56;white-space:nowrap;font-family:-apple-system,BlinkMacSystemFont,sans-serif}`,
+    // 状态栏 -- 图标组（notch 右侧，flex 右对齐）
+    `[data-vdi-phone-status-icons]{position:absolute;top:3px;left:calc(50% + ${px(NOTCH_W / 2 + STATUS_ICONS_LEFT)});right:${px(STATUS_ICONS_RIGHT)};height:${px(STATUS_BAR_H)};display:flex;align-items:center;justify-content:flex-end;gap:${px(STATUS_ICONS_GAP)};z-index:56}`,
+    // 信号格 -- 4 格递增高度
+    `[data-vdi-phone-status-signal]{display:flex;align-items:flex-end;gap:${px(SIGNAL_BAR_GAP)}}`,
+    `[data-vdi-phone-status-signal] span{width:${px(SIGNAL_BAR_W)};background:grey;border-radius:1px}`,
+    `[data-vdi-phone-status-signal] span:nth-child(1){height:${px(SIGNAL_BAR_H1)}}`,
+    `[data-vdi-phone-status-signal] span:nth-child(2){height:${px(SIGNAL_BAR_H2)}}`,
+    `[data-vdi-phone-status-signal] span:nth-child(3){height:${px(SIGNAL_BAR_H3)}}`,
+    `[data-vdi-phone-status-signal] span:nth-child(4){height:${px(SIGNAL_BAR_H4)}}`,
+    // wifi 图标
+    `[data-vdi-phone-status-wifi]{display:flex;align-items:center}`,
+    `[data-vdi-phone-status-wifi] svg{width:${px(WIFI_SIZE)};height:${px(WIFI_SIZE * 0.75)};display:block}`,
+    // 电量图标 -- 外壳 + 内填充 + 头部凸起(::after)
+    `[data-vdi-phone-status-battery]{position:relative;width:${px(BAT_W)};height:${px(BAT_H)};border:1.5px solid grey;border-radius:3px;padding:1.5px;box-sizing:border-box;display:flex;align-items:center}`,
+    `[data-vdi-phone-status-battery]::after{content:"";position:absolute;right:-${px(BAT_NUB_W)};top:50%;transform:translateY(-50%);width:${px(BAT_NUB_W)};height:${px(BAT_NUB_H)};background:grey;border-radius:0 1.5px 1.5px 0}`,
+    `[data-vdi-phone-status-battery] span{display:block;width:75%;height:100%;background:grey;border-radius:1px}`,
   ].join("");
 }
 
@@ -127,21 +163,13 @@ export function buildPhoneShellScript(cfg: PhoneShellConfig): string {
   const body = `
     !function(){
       if(document.querySelector("[data-vdi-phone-shell]")) return;
-      // === uni 系统信息补丁（通用，不耦合任何 UI 库）===
-      // 根因：app 用 uni.getSystemInfoSync().windowWidth(桌面=浏览器视口宽)/statusBarHeight
-      // (桌面=0，读 env(safe-area-inset-top)) 做布局，phone-shell 却把可视区收成 375×812，
-      // 导致 u-navbar 标题算偏、placeholder 高度不对、等一堆问题。逐个 .u-* CSS 兜底耦合太强。
-      // 这里直接让 uni 报告手机框尺寸：window.uni 由 /src/pages-json-js 做 window.uni=uni
-      // 普通赋值，本 IIFE 早于 main.ts 执行，用 defineProperty setter 拦截、原地 patch
-      // getSystemInfoSync/getWindowInfo/upx2px 等，所有组件自动对齐手机框。
+
       if(!window.__vdi_uni_patched){
         window.__vdi_uni_patched=true;
         var UW=${cfg.width},UH=${cfg.height},USB=${Math.round((NOTCH_H * cfg.width) / BASE_W)};
         var upatch=function(o){if(!o)return o;o.windowWidth=UW;o.windowHeight=UH;o.screenWidth=UW;o.screenHeight=UH;o.statusBarHeight=USB;if(!o.safeArea)o.safeArea={};o.safeArea.left=0;o.safeArea.right=UW;o.safeArea.top=USB;o.safeArea.bottom=UH;o.safeArea.width=UW;o.safeArea.height=UH-USB;if(!o.safeAreaInsets)o.safeAreaInsets={};o.safeAreaInsets.top=USB;o.safeAreaInsets.bottom=0;o.safeAreaInsets.left=0;o.safeAreaInsets.right=0;return o;};
         var uwrap=function(u){if(!u||u.__vdi_wrapped)return;try{["getSystemInfoSync","getWindowInfo","getDeviceInfo","getAppBaseInfo","getSystemSetting"].forEach(function(k){if(typeof u[k]==="function"){var o=u[k];try{Object.defineProperty(u,k,{configurable:true,writable:true,value:function(){return upatch(o.call(this));}});}catch(e){try{u[k]=function(){return upatch(o.call(this));};}catch(e2){}}}});if(typeof u.upx2px==="function"){try{Object.defineProperty(u,"upx2px",{configurable:true,writable:true,value:function(r){return Number(r)*UW/750;}});}catch(e){try{u.upx2px=function(r){return Number(r)*UW/750;};}catch(e2){}}}u.__vdi_wrapped=true;}catch(e){console.warn("[vdi] uni patch failed",e);}};
         try{var ucur=window.uni;if(ucur)uwrap(ucur);Object.defineProperty(window,"uni",{configurable:true,get:function(){return ucur;},set:function(v){ucur=v;uwrap(v);}});}catch(e){console.warn("[vdi] window.uni setter failed",e);}
-        // uni-h5 的 useRem 直接读 document.documentElement.clientWidth 算根字号（fontSize=width/23.4375），
-        // 并在 window.resize 时重算 —— 完全绕过上面 patch 的 getSystemInfoSync/upx2px。
         try{Object.defineProperty(document.documentElement,"clientWidth",{configurable:true,get:function(){void document.documentElement.offsetWidth;return UW;}});Object.defineProperty(document.documentElement,"clientHeight",{configurable:true,get:function(){void document.documentElement.offsetHeight;return UH;}});}catch(e){console.warn("[vdi] clientWidth override failed",e);}
       }
       var c = document.createElement("style");
@@ -150,17 +178,14 @@ export function buildPhoneShellScript(cfg: PhoneShellConfig): string {
       var shell=document.createElement("div"); shell.setAttribute("data-vdi-phone-shell","");
       var wrap=document.createElement("div"); wrap.setAttribute("data-vdi-phone-wrap","");
       var frame=document.createElement("div"); frame.setAttribute("data-vdi-phone-frame","");
-      frame.innerHTML="<div data-vdi-phone-speaker></div><div data-vdi-phone-cam></div><div data-vdi-phone-notch></div><div data-vdi-phone-screen></div><div data-vdi-phone-bar></div>";
+      frame.innerHTML="<div data-vdi-phone-speaker></div><div data-vdi-phone-cam></div><div data-vdi-phone-notch></div><div data-vdi-phone-status-time>12:00</div><div data-vdi-phone-status-icons><div data-vdi-phone-status-signal><span></span><span></span><span></span><span></span></div><div data-vdi-phone-status-wifi><svg viewBox='0 0 16 12' xmlns='http://www.w3.org/2000/svg' fill='none' stroke='grey' stroke-width='1.5' stroke-linecap='round'><path d='M2 5C4 3 6 2 8 2s4 1 6 3'/><path d='M4 7.5C5 6.5 6.5 6 8 6s3 .5 4 1.5'/><circle cx='8' cy='10' r='1' fill='grey'/></svg></div><div data-vdi-phone-status-battery><span></span></div></div><div data-vdi-phone-screen></div><div data-vdi-phone-bar></div>";
       wrap.appendChild(frame);
-      // 侧边按钮挂 wrap（frame 的兄弟），不被 frame 的 overflow:hidden 裁掉，能伸出框外
+
       wrap.insertAdjacentHTML("beforeend","<div data-vdi-phone-btn data-vdi-phone-btn-l1></div><div data-vdi-phone-btn data-vdi-phone-btn-l2></div><div data-vdi-phone-btn data-vdi-phone-btn-l3></div><div data-vdi-phone-btn data-vdi-phone-btn-right></div>");
       shell.appendChild(wrap);
       var screen=frame.querySelector("[data-vdi-phone-screen]");
       var body=document.body;
-      // 只搬元素节点进 screen，跳过 <script>/<style>/<link>/<noscript>。
-      // 关键：搬动一个尚未执行的 parser-inserted module script（如 /src/main.ts）
-      // 会让它不再执行 —— main.ts 不跑则 Vue 不挂载、页面空白。脚本必须留在 body
-      // 原位由解析器正常触发；#app 搬进 screen 后，main.ts 仍能 getElementById 命中并挂载。
+
       for(var n=body.firstChild;n;n=next){var next=n.nextSibling;if(n===shell)break;if(n.nodeType===1&&/^(SCRIPT|STYLE|LINK|NOSCRIPT)$/.test(n.tagName))continue;screen.appendChild(n);}
       body.appendChild(shell);
       new MutationObserver(function(ms){for(var i=0;i<ms.length;i++){var ad=ms[i].addedNodes;for(var j=0;j<ad.length;j++){var n=ad[j];if(n.nodeType!==1)continue;if(n.tagName==="UNI-PAGE-HEAD"||(n.classList&&n.classList.contains("uni-page-head"))){if(!screen.contains(n))screen.insertBefore(n,screen.firstChild)}}}}).observe(body,{childList:true,subtree:true});

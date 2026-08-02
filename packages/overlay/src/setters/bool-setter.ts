@@ -29,8 +29,8 @@ export const boolSetter: SetterDef = {
       e.stopPropagation();
       entry.value =
         entry.value === "true" ||
-          entry.value === undefined ||
-          entry.value === ""
+        entry.value === undefined ||
+        entry.value === ""
           ? "false"
           : "";
       sync();

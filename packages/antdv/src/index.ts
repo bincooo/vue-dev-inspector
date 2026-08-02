@@ -22,7 +22,7 @@ import { loadScriptSpecifier } from "@vue-dev-inspector/utils";
 const boolAttr = (
   name: string,
   label: string,
-  defaultValue?: string
+  defaultValue?: string,
 ): ComponentAttr => ({
   name,
   label,
@@ -50,7 +50,11 @@ const allowClearAttr = (defaultValue?: string): ComponentAttr =>
   boolAttr("allow-clear", "允许清除", defaultValue);
 
 /** 事件属性 */
-const eventAttr = (name: string, label: string, defaultValue: string = '(event) => { }'): ComponentAttr => ({
+const eventAttr = (
+  name: string,
+  label: string,
+  defaultValue: string = "(event) => { }",
+): ComponentAttr => ({
   name,
   label,
   group: "事件",
