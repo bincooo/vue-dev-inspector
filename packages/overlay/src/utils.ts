@@ -272,3 +272,59 @@ export function apiError(label: string, detail: string): void {
 export function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
+
+/**
+ * 剥离多行文本的「公共前置缩进」。
+ *
+ * 取所有非空行的最长公共前导空白（空格/Tab 序列），从每个非空行前去掉；
+ * 空行保留。返回剥离后的文本 + 公共缩进字符串。
+ *
+ * 例：`\n      <p>a</p>\n      <p>b</p>\n    ` → text=`\n<p>a</p>\n<p>b</p>\n`,
+ * indent=`      `（6 空格）。空行不参与公共缩进计算，也不会被加 indent。
+ */
+export function stripCommonIndent(src: string): {
+  text: string;
+  indent: string;
+} {
+  const lines = src.split("\n");
+  // 取所有「非空行」的前导空白作为候选，求最小公共前缀。
+  const leads = lines
+    .filter((l) => l.trim().length > 0)
+    .map((l) => l.match(/^[ \t]*/)?.[0] ?? "");
+  let indent = "";
+  if (leads.length) {
+    indent = leads[0];
+    for (let i = 1; i < leads.length; i++) {
+      const cur = leads[i];
+      // 逐字符缩短到 cur 的公共前缀
+      let j = 0;
+      while (j < indent.length && j < cur.length && indent[j] === cur[j]) j++;
+      indent = indent.slice(0, j);
+      if (!indent) break;
+    }
+  }
+  if (!indent) return { text: src, indent: "" };
+  // 从每个非空行前去 indent；空行（全是空白或空串）保持原样。
+  const out = lines.map((l) =>
+    l.trim().length > 0 && l.startsWith(indent) ? l.slice(indent.length) : l,
+  );
+  return { text: out.join("\n").replace(/[ \t]+$/, ""), indent };
+}
+
+/**
+ * 反向操作：给编辑后的文本按行还原公共前置缩进。
+ *
+ * 规则：每个「非空行」前补 `indent`；空行维持空（不补，避免源码里多出尾随空白）。
+ * 这样用户在编辑器里顶格编辑结束后，回写的内容能重新对齐到原缩进层级。
+ */
+export function applyIndent(edited: string, indent: string): string {
+  if (!indent) return edited;
+  edited = edited
+    .split("\n")
+    .map((l) => (l.length === 0 || l.trim().length === 0 ? l : indent + l))
+    .join("\n");
+  if (!edited.startsWith("\n")) {
+    edited = "\n" + edited;
+  }
+  return edited;
+}

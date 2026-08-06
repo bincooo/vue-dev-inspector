@@ -5,7 +5,7 @@
  * 切换 setter / 关闭面板时通过 __vdiCleanup 释放编辑器资源。
  * 行内编辑器右上角齿轮按钮可弹出大尺寸浮动编辑窗口（共享 model）。
  */
-import { createElement } from "../utils";
+import { createElement, stripCommonIndent, applyIndent } from "../utils";
 import { loadMonaco } from "../monaco";
 import type { MonacoAPI, MonacoEditor, MonacoModel } from "../monaco";
 import type { SetterDef } from "./index";
@@ -86,13 +86,12 @@ export const codeSetter: SetterDef = {
     );
     container.appendChild(loading);
     const disposed = false;
+    // 预处理：剥离公共前置缩进，编辑时顶格展示；保存时还原。
+    const { text, indent } = stripCommonIndent(entry.value ?? "");
     loadMonaco()
       .then((monaco) => {
         if (disposed) return;
-        const model = monaco.editor.createModel(
-          entry.value ?? "",
-          "javascript",
-        );
+        const model = monaco.editor.createModel(text, "javascript");
         model.updateOptions({ tabSize: 2 });
         const editor = monaco.editor.create(container, {
           model,
@@ -105,7 +104,7 @@ export const codeSetter: SetterDef = {
           lineNumbers: "off",
         });
         model.onDidChangeContent(() => {
-          entry.value = editor.getValue();
+          entry.value = applyIndent(editor.getValue(), indent);
         });
         loading.remove();
 

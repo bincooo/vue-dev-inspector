@@ -23,9 +23,9 @@
       ></view
     >
     <u-form
+      ref="purchaseForm"
       :model="form"
       :rules="rules"
-      ref="purchaseForm"
       label-position="top"
       label-width="160"
       ><u-form-item label="申请人" prop="applicant" required
@@ -61,17 +61,18 @@
             @click="changeQty(-1)"
             >-</view
           ><input
+            v-model="form.quantity"
             class="qty-input"
             type="number"
-            v-model="form.quantity"
           /><view class="qty-btn" @click="changeQty(1)">+</view></view
         ></u-form-item
       ><u-form-item label="预计单价(元)" prop="unitPrice" required
         ><u-input
           v-model="form.unitPrice"
           type="number"
-          placeholder="请输入预计单价" /></u-form-item
-      ><u-form-item label="预计总金额(元)"
+          placeholder="请输入预计单价"
+      /></u-form-item>
+      <u-form-item label="预计总金额(元)"
         ><u-input v-model="totalAmount" disabled /></u-form-item
       ><u-form-item
         label="期望采购日期"
@@ -102,7 +103,7 @@
     <view class="action-bar"
       ><u-button type="default" :hair-line="false" @click="onSaveDraft"
         >暂存草稿</u-button
-      ><u-button type="primary" @click="onSubmit" :loading="submitting"
+      ><u-button type="primary" :loading="submitting" @click="onSubmit"
         >提交申请</u-button
       ></view
     >
@@ -201,6 +202,7 @@ export default {
       this.$refs.purchaseForm.validate((valid) => {
         if (!valid) return;
         this.submitting = true;
+        // eslint-disable-next-line no-undef
         setTimeout(() => {
           this.submitting = false;
           this.currentStep = 1;
@@ -223,6 +225,9 @@ export default {
   background: #fff;
   padding: 32rpx 24rpx;
   margin-bottom: 16rpx;
+  position: sticky;
+  top: 156rpx;
+  z-index: 100;
 }
 .step-item {
   display: flex;
