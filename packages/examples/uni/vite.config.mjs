@@ -34,5 +34,17 @@ export default defineConfig({
     }),
     resolvePlugin(uni),
   ],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // 屏蔽 sass 弃用警告
+        silenceDeprecations: [
+          'legacy-js-api',
+          'global-builtin',
+          'import',
+        ],
+      }
+    }
+  },
   server: { host: "0.0.0.0" },
 });

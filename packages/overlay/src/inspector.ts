@@ -222,11 +222,11 @@ export function renderToolButtons(selectedEl: HTMLElement): void {
         target: selectedEl,
         source: parsed
           ? {
-              rootIndex: parsed.rootIndex,
-              file: parsed.file,
-              line: Number(parsed.line),
-              col: Number(parsed.col),
-            }
+            rootIndex: parsed.rootIndex,
+            file: parsed.file,
+            line: Number(parsed.line),
+            col: Number(parsed.col),
+          }
           : null,
       });
     };
@@ -257,7 +257,7 @@ export function hover(element: HTMLElement): void {
   state.tagTip!.style.display = "block";
   const rect = getLayoutBox(element)!.getBoundingClientRect();
   state.tagTip!.style.left = Math.max(0, rect.left - 1) + "px";
-  state.tagTip!.style.top = Math.max(0, rect.top - (isUni() ? 26 : 24)) + "px";
+  state.tagTip!.style.top = Math.max(0, rect.top - (isUni() ? 24 : 24)) + "px";
 }
 
 /** 收起悬停态 */

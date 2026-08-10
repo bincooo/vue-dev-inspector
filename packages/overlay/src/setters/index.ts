@@ -73,6 +73,15 @@ export function inferDefaultSetter(
   )
     return "CodeSetter";
   if (entry.value === "true" || entry.value === "false") return "BoolSetter";
-  if (attr?.options?.length) return "SelectSetter";
+  if (attr?.options?.length) {
+    if (
+      attr.options.length == 2 &&
+      attr.options.includes('true') &&
+      attr.options.includes('false')
+    ) {
+      return "BoolSetter";
+    }
+    return "SelectSetter";
+  }
   return "TextSetter";
 }
