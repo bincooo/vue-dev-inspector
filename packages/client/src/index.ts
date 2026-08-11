@@ -8,7 +8,7 @@ export {
   getSfcBlocks,
   updateSfcBlock,
   COMPONENT_CATALOG,
-} from "./editor";
+} from './editor';
 export type {
   PropEntry,
   ElementProps,
@@ -16,5 +16,5 @@ export type {
   MoveDirection,
   SfcBlockKind,
   SfcBlock,
-} from "./editor";
-export { createDevServer } from "./server";
+} from './editor';
+export { createDevServer } from './server';

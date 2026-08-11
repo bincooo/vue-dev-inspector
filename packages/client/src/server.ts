@@ -1,8 +1,8 @@
-import type { ViteDevServer } from "vite";
-import type { IncomingMessage, ServerResponse } from "node:http";
-import fs from "node:fs";
-import path from "node:path";
-import { exec } from "node:child_process";
+import type { ViteDevServer } from 'vite';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { exec } from 'node:child_process';
 import {
   getElementProps,
   editElementProps,
@@ -18,35 +18,35 @@ import {
   type MoveDirection,
   type PropEntry,
   type SfcBlockKind,
-} from "./editor";
+} from './editor';
 import {
   API_PREFIX,
   EDITOR_PROTOCOLS,
   SOURCE_REF_RE,
   type ComponentConfig,
   type ComponentConfigEntry,
-} from "@vue-dev-inspector/shared";
+} from '@vue-dev-inspector/shared';
 
 // ─── Server middleware ───────────────────────────────────
 
 /** 路由表 */
 const ROUTES: Record<string, Record<string, RouteHandler>> = {
-  "/get-props": { POST: handleGetProps },
-  "/update-props": { POST: handleUpdateProps },
-  "/delete-element": { POST: handleDeleteElement },
-  "/open-in-editor": { POST: handleOpenInEditor },
-  "/list-components": { POST: handleListComponents },
-  "/get-component-config": { POST: handleGetComponentConfig },
-  "/insert-component": { POST: handleInsertComponent },
-  "/duplicate-element": { POST: handleDuplicateElement },
-  "/move-element": { POST: handleMoveElement },
-  "/get-block": { POST: handleGetBlock },
-  "/update-block": { POST: handleUpdateBlock },
-  "/get-child-text": { POST: handleGetChildText },
-  "/update-child-text": { POST: handleUpdateChildText },
-  "/resolve-path": { POST: handleResolvePath },
-  "/report-selection": { POST: handleReportSelection },
-  "/get-selection": { POST: handleGetSelection },
+  '/get-props': { POST: handleGetProps },
+  '/update-props': { POST: handleUpdateProps },
+  '/delete-element': { POST: handleDeleteElement },
+  '/open-in-editor': { POST: handleOpenInEditor },
+  '/list-components': { POST: handleListComponents },
+  '/get-component-config': { POST: handleGetComponentConfig },
+  '/insert-component': { POST: handleInsertComponent },
+  '/duplicate-element': { POST: handleDuplicateElement },
+  '/move-element': { POST: handleMoveElement },
+  '/get-block': { POST: handleGetBlock },
+  '/update-block': { POST: handleUpdateBlock },
+  '/get-child-text': { POST: handleGetChildText },
+  '/update-child-text': { POST: handleUpdateChildText },
+  '/resolve-path': { POST: handleResolvePath },
+  '/report-selection': { POST: handleReportSelection },
+  '/get-selection': { POST: handleGetSelection },
 };
 
 // ─── Types ────────────────────────────────────────────────
@@ -57,7 +57,7 @@ type RouteBody = Record<string, unknown>;
 /** Vite 暴露的 Node HTTP 响应对象在中间件中需要的能力。 */
 type MiddlewareResponse = Pick<
   ServerResponse,
-  "setHeader" | "writeHead" | "end"
+  'setHeader' | 'writeHead' | 'end'
 >;
 
 /**
@@ -84,43 +84,43 @@ type RouteHandler = (
 ) => void;
 
 /** 仅暴露路由需要的事件订阅能力的最小请求类型。 */
-type RouteRequest = Pick<IncomingMessage, "on" | "url" | "method">;
+type RouteRequest = Pick<IncomingMessage, 'on' | 'url' | 'method'>;
 
 // ─── Helpers ────────────────────────────────────────────
 
 function parseBody(req: RouteRequest): Promise<unknown> {
   return new Promise((resolve, reject) => {
-    let body = "";
-    req.on("data", (c: Buffer) => (body += c.toString()));
-    req.on("end", () => {
+    let body = '';
+    req.on('data', (c: Buffer) => (body += c.toString()));
+    req.on('end', () => {
       try {
         resolve(JSON.parse(body));
       } catch (e) {
         reject(e);
       }
     });
-    req.on("error", reject);
+    req.on('error', reject);
   });
 }
 
 /** 解析失败/拒绝统一 JSON 响应（含 CORS 头）。 */
 function json(res: MiddlewareResponse, status: number, data: unknown): void {
-  res.setHeader("Content-Type", "application/json");
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.writeHead(status);
   res.end(JSON.stringify(data));
 }
 
 /** 从请求体中读取字符串字段。 */
-function readString(body: RouteBody, key: string, fallback = ""): string {
-  return typeof body[key] === "string" ? (body[key] as string) : fallback;
+function readString(body: RouteBody, key: string, fallback = ''): string {
+  return typeof body[key] === 'string' ? (body[key] as string) : fallback;
 }
 
 /** 从请求体中读取数字字段。 */
 function readNumber(body: RouteBody, key: string, fallback = 0): number {
-  return typeof body[key] === "number" ? (body[key] as number) : fallback;
+  return typeof body[key] === 'number' ? (body[key] as number) : fallback;
 }
 
 /** 从请求体中读取字符串数组字段，过滤掉非字符串与空白项。用于 ComponentItem.imports 透传。 */
@@ -128,7 +128,7 @@ function readStringArray(body: RouteBody, key: string): string[] {
   const v = body[key];
   if (!Array.isArray(v)) return [];
   return v.filter(
-    (s): s is string => typeof s === "string" && s.trim().length > 0,
+    (s): s is string => typeof s === 'string' && s.trim().length > 0,
   );
 }
 
@@ -138,10 +138,10 @@ function readPropEntries(value: unknown): PropEntry[] {
   return value
     .filter(
       (entry): entry is PropEntry =>
-        typeof entry === "object" &&
+        typeof entry === 'object' &&
         entry !== null &&
-        typeof (entry as PropEntry).key === "string" &&
-        typeof (entry as PropEntry).value === "string",
+        typeof (entry as PropEntry).key === 'string' &&
+        typeof (entry as PropEntry).value === 'string',
     )
     .map((entry) => ({ key: entry.key, value: entry.value }));
 }
@@ -177,16 +177,16 @@ function resolveMeta(
   col: number;
   rootIndex: number;
 } | null {
-  const raw = readString(body, "file");
+  const raw = readString(body, 'file');
   const parsed = parseSource(raw);
   if (!parsed) {
     json(res, 400, {
-      error: "Invalid source format; expected r<N>:<path>:<line>:<col>",
+      error: 'Invalid source format; expected r<N>:<path>:<line>:<col>',
     });
     return null;
   }
   if (parsed.rootIndex < 0 || parsed.rootIndex >= projectRoots.length) {
-    json(res, 400, { error: "Unknown root index" });
+    json(res, 400, { error: 'Unknown root index' });
     return null;
   }
   const resolved = safePath(projectRoots, {
@@ -194,7 +194,7 @@ function resolveMeta(
     file: parsed.file,
   });
   if (!resolved) {
-    json(res, 403, { error: "Forbidden" });
+    json(res, 403, { error: 'Forbidden' });
     return null;
   }
   return {
@@ -221,7 +221,7 @@ function resolveSource(
 } | null {
   const meta = resolveMeta(projectRoots, body, res);
   if (!meta) return null;
-  const source = fs.readFileSync(meta.absolutePath, "utf-8");
+  const source = fs.readFileSync(meta.absolutePath, 'utf-8');
   return { ...meta, source };
 }
 
@@ -236,9 +236,9 @@ function enforceEnum<T extends string>(
     : fallback;
 }
 
-const INSERT_DIRECTIONS = ["inside", "before", "after"] as const;
+const INSERT_DIRECTIONS = ['inside', 'before', 'after'] as const;
 const MOVE_DIRECTIONS = INSERT_DIRECTIONS;
-const SFC_BLOCK_KINDS = ["script", "style"] as const;
+const SFC_BLOCK_KINDS = ['script', 'style'] as const;
 
 // ─── Editor 路由 ────────────────────────────────────────
 
@@ -252,10 +252,10 @@ function handleGetProps(
   const result = getElementProps(
     ctx.source,
     ctx.file,
-    readNumber(body, "line"),
-    readNumber(body, "col"),
+    readNumber(body, 'line'),
+    readNumber(body, 'col'),
   );
-  json(res, result ? 200 : 404, result ?? { error: "Element not found" });
+  json(res, result ? 200 : 404, result ?? { error: 'Element not found' });
 }
 
 function handleUpdateProps(
@@ -268,11 +268,11 @@ function handleUpdateProps(
   const result = editElementProps(
     ctx.source,
     ctx.file,
-    readNumber(body, "line"),
-    readNumber(body, "col"),
+    readNumber(body, 'line'),
+    readNumber(body, 'col'),
     readPropEntries(body.props),
   );
-  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
+  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
   json(res, 200, { success: true });
 }
 
@@ -286,14 +286,14 @@ function handleDeleteElement(
   const result = deleteElement(
     ctx.source,
     ctx.file,
-    readNumber(body, "line"),
-    readNumber(body, "col"),
+    readNumber(body, 'line'),
+    readNumber(body, 'col'),
   );
   if (result === ctx.source) {
-    json(res, 404, { error: "Element not found" });
+    json(res, 404, { error: 'Element not found' });
     return;
   }
-  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
+  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
   json(res, 200, { success: true });
 }
 
@@ -307,14 +307,14 @@ function handleDuplicateElement(
   const result = duplicateElement(
     ctx.source,
     ctx.file,
-    readNumber(body, "line"),
-    readNumber(body, "col"),
+    readNumber(body, 'line'),
+    readNumber(body, 'col'),
   );
   if (result === null) {
-    json(res, 404, { error: "Element not found" });
+    json(res, 404, { error: 'Element not found' });
     return;
   }
-  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
+  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
   json(res, 200, { success: true });
 }
 
@@ -325,31 +325,31 @@ function handleInsertComponent(
 ): void {
   const ctx = resolveSource(projectRoots, body, res);
   if (!ctx) return;
-  const tag = readString(body, "componentTag") || readString(body, "tag");
+  const tag = readString(body, 'componentTag') || readString(body, 'tag');
   const direction = enforceEnum(
-    readString(body, "direction"),
+    readString(body, 'direction'),
     INSERT_DIRECTIONS,
-    "inside",
+    'inside',
   );
   // 面板透传的 snippet（非空时优先于服务端 catalog）；空串视作未传
-  const snippet = readString(body, "snippet") || undefined;
+  const snippet = readString(body, 'snippet') || undefined;
   let result = insertComponent(
     ctx.source,
     ctx.file,
-    readNumber(body, "line"),
-    readNumber(body, "col"),
+    readNumber(body, 'line'),
+    readNumber(body, 'col'),
     tag,
     direction,
     snippet,
   );
   if (result === null) {
-    json(res, 404, { error: "Target element not found" });
+    json(res, 404, { error: 'Target element not found' });
     return;
   }
   // 组件自带的 import 声明：插入模板后按需写入 <script>（幂等合并同模块具名导入）
-  const importStmts = readStringArray(body, "imports");
+  const importStmts = readStringArray(body, 'imports');
   if (importStmts.length) result = ensureImports(result, ctx.file, importStmts);
-  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
+  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
   json(res, 200, { success: true });
 }
 
@@ -362,7 +362,7 @@ function handleMoveElement(
   const target = body.target as
     | { file: string; line: number; col: number }
     | undefined;
-  if (!target) return json(res, 400, { error: "Missing target" });
+  if (!target) return json(res, 400, { error: 'Missing target' });
 
   const ctx = resolveSource(projectRoots, body, res);
   if (!ctx) return;
@@ -371,30 +371,30 @@ function handleMoveElement(
    * 与 ctx.file（parseSource 已剥成纯路径段）字符串比较会一直 false，
    * 所以必须先 parseSource 再比对 file / rootIndex 段。 */
   const targetRef = parseSource(
-    readString(target as unknown as RouteBody, "file"),
+    readString(target as unknown as RouteBody, 'file'),
   );
   if (!targetRef) {
     json(res, 400, {
-      error: "Invalid target source format; expected r<N>:<path>:<line>:<col>",
+      error: 'Invalid target source format; expected r<N>:<path>:<line>:<col>',
     });
     return;
   }
   if (targetRef.rootIndex !== ctx.rootIndex || targetRef.file !== ctx.file) {
-    json(res, 400, { error: "Cross-file move not supported in v1" });
+    json(res, 400, { error: 'Cross-file move not supported in v1' });
     return;
   }
 
   const direction = enforceEnum(
-    readString(body, "direction"),
+    readString(body, 'direction'),
     MOVE_DIRECTIONS,
-    "inside",
+    'inside',
   ) as MoveDirection;
 
   const result = moveElement(
     ctx.source,
     ctx.file,
-    readNumber(body, "line"),
-    readNumber(body, "col"),
+    readNumber(body, 'line'),
+    readNumber(body, 'col'),
     targetRef.line,
     targetRef.col,
     direction,
@@ -402,11 +402,11 @@ function handleMoveElement(
   if (result === null) {
     json(res, 400, {
       error:
-        "Move rejected (source/target not found, or target is descendant of source)",
+        'Move rejected (source/target not found, or target is descendant of source)',
     });
     return;
   }
-  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
+  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
   json(res, 200, { success: true });
 }
 
@@ -442,20 +442,20 @@ function handleUpdateBlock(
   const ctx = resolveSource(projectRoots, body, res);
   if (!ctx) return;
   const kind = enforceEnum(
-    readString(body, "kind"),
+    readString(body, 'kind'),
     SFC_BLOCK_KINDS,
-    "script",
+    'script',
   ) as SfcBlockKind;
-  const content = readString(body, "content");
+  const content = readString(body, 'content');
   const scoped = !!body.scoped;
   const result = updateSfcBlock(ctx.source, ctx.file, kind, content, {
     scoped,
   });
   if (result === ctx.source) {
-    json(res, 404, { error: "Block not found" });
+    json(res, 404, { error: 'Block not found' });
     return;
   }
-  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
+  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
   json(res, 200, { success: true });
 }
 
@@ -471,11 +471,11 @@ function handleGetChildText(
   const result = getChildText(
     ctx.source,
     ctx.file,
-    readNumber(body, "line"),
-    readNumber(body, "col"),
+    readNumber(body, 'line'),
+    readNumber(body, 'col'),
   );
   if (!result) {
-    json(res, 404, { error: "Element not found" });
+    json(res, 404, { error: 'Element not found' });
     return;
   }
   json(res, 200, result);
@@ -491,19 +491,19 @@ function handleUpdateChildText(
 ): void {
   const ctx = resolveSource(projectRoots, body, res);
   if (!ctx) return;
-  const content = readString(body, "content");
+  const content = readString(body, 'content');
   const result = updateChildText(
     ctx.source,
     ctx.file,
-    readNumber(body, "line"),
-    readNumber(body, "col"),
+    readNumber(body, 'line'),
+    readNumber(body, 'col'),
     content,
   );
   if (result === null) {
-    json(res, 404, { error: "Element not found" });
+    json(res, 404, { error: 'Element not found' });
     return;
   }
-  fs.writeFileSync(ctx.absolutePath, result, "utf-8");
+  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
   json(res, 200, { success: true });
 }
 
@@ -545,8 +545,8 @@ function handleListComponents(
       const full = path.join(dir, ent.name);
       if (ent.isDirectory()) {
         walk(rootIndex, root, full);
-      } else if (ent.isFile() && ent.name.endsWith(".vue")) {
-        const rel = path.relative(root, full).split(path.sep).join("/");
+      } else if (ent.isFile() && ent.name.endsWith('.vue')) {
+        const rel = path.relative(root, full).split(path.sep).join('/');
         const key = `r${rootIndex}:${rel}`;
         if (seen.has(key)) continue;
         seen.add(key);
@@ -614,7 +614,7 @@ function handleReportSelection(
   body: RouteBody,
   res: MiddlewareResponse,
 ): void {
-  const raw = readString(body, "file");
+  const raw = readString(body, 'file');
   if (!raw) {
     currentSelection = null;
     json(res, 200, { success: true });
@@ -623,13 +623,13 @@ function handleReportSelection(
   const parsed = parseSource(raw);
   if (!parsed) {
     json(res, 400, {
-      error: "Invalid source format; expected r<N>:<path>:<line>:<col>",
+      error: 'Invalid source format; expected r<N>:<path>:<line>:<col>',
     });
     return;
   }
   currentSelection = {
     source: raw,
-    tag: readString(body, "tag"),
+    tag: readString(body, 'tag'),
     at: Date.now(),
   };
   json(res, 200, { success: true });
@@ -667,8 +667,8 @@ function protocolCmd(
 ): string {
   const proto = EDITOR_PROTOCOLS[editor] ?? EDITOR_PROTOCOLS.vscode;
   const url = `${proto}${fp}:${line}:${col}`;
-  if (process.platform === "win32") return `start "" "${url}"`;
-  if (process.platform === "darwin") return `open "${url}"`;
+  if (process.platform === 'win32') return `start "" "${url}"`;
+  if (process.platform === 'darwin') return `open "${url}"`;
   return `xdg-open "${url}"`;
 }
 
@@ -679,9 +679,9 @@ function handleOpenInEditor(
 ): void {
   const ctx = resolveSource(projectRoots, body, res);
   if (!ctx) return;
-  const line = readNumber(body, "line", 1) || 1;
-  const col = readNumber(body, "col", 1) || 1;
-  const editor = readString(body, "editor", "vscode");
+  const line = readNumber(body, 'line', 1) || 1;
+  const col = readNumber(body, 'col', 1) || 1;
+  const editor = readString(body, 'editor', 'vscode');
   const cmd =
     EDITOR_CLI[editor]?.(ctx.absolutePath, line, col) ??
     protocolCmd(editor, ctx.absolutePath, line, col);
@@ -705,31 +705,31 @@ function attachMiddleware(
   extra: RouteExtra,
 ): void {
   if (projectRoots.length === 0) {
-    throw new Error("[vdi] createDevServer received empty projectRoots.");
+    throw new Error('[vdi] createDevServer received empty projectRoots.');
   }
   server.middlewares.use(async (req, res, next) => {
-    const url = req.url || "";
-    if (!url.startsWith(API_PREFIX + "/")) return next();
+    const url = req.url || '';
+    if (!url.startsWith(API_PREFIX + '/')) return next();
 
     // CORS preflight
-    if (req.method === "OPTIONS") {
-      res.setHeader("Access-Control-Allow-Origin", "*");
-      res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === 'OPTIONS') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
       res.writeHead(204);
       res.end();
       return;
     }
 
-    const pathname = url.split("?")[0].replace(API_PREFIX, "");
-    const handler = routes[pathname]?.[req.method || ""];
+    const pathname = url.split('?')[0].replace(API_PREFIX, '');
+    const handler = routes[pathname]?.[req.method || ''];
     if (!handler) return next();
 
     try {
       const body = await parseBody(req);
       handler(projectRoots, body as RouteBody, res, extra);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const message = err instanceof Error ? err.message : 'Unknown error';
       console.error(
         `[vdi] ${pathname} 失败:`,
         err instanceof Error ? err : message,
@@ -808,7 +808,7 @@ export function safePath(
   const root = projectRoots[ctx.rootIndex];
   if (!root) return null;
   const candidate = path.resolve(root, ctx.file);
-  const sep = root.endsWith(path.sep) ? "" : path.sep;
+  const sep = root.endsWith(path.sep) ? '' : path.sep;
   if (candidate === root || candidate.startsWith(root + sep)) {
     return { root, absolutePath: candidate };
   }

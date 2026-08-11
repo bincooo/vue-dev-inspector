@@ -4,7 +4,7 @@
  * 公开 API：openPanel / closePanel / rerenderPropList。
  * 值控件管理在 ./control，列表渲染在 ./render，setter 实现在 ../setters。
  */
-import { state } from "../state";
+import { state } from '../state';
 import {
   parsePosition,
   apiRequest,
@@ -14,10 +14,10 @@ import {
   logSuccess,
   apiError,
   errMsg,
-} from "../utils";
-import { openAttrDrawer, closeAttrDrawer } from "./attr-drawer";
-import { renderList } from "./render";
-import { cleanupValueControl } from "./control";
+} from '../utils';
+import { openAttrDrawer, closeAttrDrawer } from './attr-drawer';
+import { renderList } from './render';
+import { cleanupValueControl } from './control';
 
 /** 当前 prop panel 的属性行列表容器，供 attr-drawer 触发重渲染 */
 let currentListEl: HTMLDivElement | null = null;
@@ -32,7 +32,7 @@ export function closePanel(): void {
   closeAttrDrawer();
   // 释放 prop panel 内所有 Monaco 编辑器
   if (state.propPanel) {
-    state.propPanel.querySelectorAll(".__vdi-prop-code-wrap").forEach((el) => {
+    state.propPanel.querySelectorAll('.__vdi-prop-code-wrap').forEach((el) => {
       cleanupValueControl(el as HTMLElement);
     });
   }
@@ -46,7 +46,7 @@ export function closePanel(): void {
 /** 弹出属性编辑模态 */
 export function openPanel(el: HTMLElement): void {
   closePanel();
-  state.contextMenu!.style.display = "none";
+  state.contextMenu!.style.display = 'none';
   const pos = parsePosition(el.getAttribute(state.attrName)!)!;
   state.panelData = {
     rootIndex: pos.rootIndex,
@@ -57,58 +57,58 @@ export function openPanel(el: HTMLElement): void {
     entries: [],
   };
 
-  const mask = createElement("div", "__vdi-panel-mask");
+  const mask = createElement('div', '__vdi-panel-mask');
   mask.onmousedown = (e) => {
     if (e.target === mask) closePanel();
   };
 
-  const card = createElement("div", "__vdi-prop-card");
+  const card = createElement('div', '__vdi-prop-card');
 
-  const headerTitle = createElement("div", "__vdi-prop-title", "⚙️ 编辑属性");
+  const headerTitle = createElement('div', '__vdi-prop-title', '⚙️ 编辑属性');
   const tagSpan = createElement(
-    "span",
-    "__vdi-prop-subtitle-tag",
+    'span',
+    '__vdi-prop-subtitle-tag',
     getElementTagName(el),
   );
-  const subtitle = createElement("div", "__vdi-prop-subtitle");
-  const fileSpan = createElement("span", undefined, formatPosition(pos));
-  const loadingHint = createElement("span", "__vdi-loading-hint", "  加载中…");
+  const subtitle = createElement('div', '__vdi-prop-subtitle');
+  const fileSpan = createElement('span', undefined, formatPosition(pos));
+  const loadingHint = createElement('span', '__vdi-loading-hint', '  加载中…');
   subtitle.append(
     tagSpan,
-    document.createTextNode(" - "),
+    document.createTextNode(' - '),
     fileSpan,
     loadingHint,
   );
-  const headerLeft = createElement("div");
+  const headerLeft = createElement('div');
   headerLeft.append(headerTitle, subtitle);
 
   const closeButton = createElement<HTMLButtonElement>(
-    "button",
-    "__vdi-close-btn",
-    "✕",
+    'button',
+    '__vdi-close-btn',
+    '✕',
   );
   closeButton.onclick = closePanel;
-  const header = createElement("div", "__vdi-prop-header");
+  const header = createElement('div', '__vdi-prop-header');
   header.append(headerLeft, closeButton);
 
-  const list = createElement("div", "__vdi-prop-body");
+  const list = createElement('div', '__vdi-prop-body');
 
-  const footer = createElement("div", "__vdi-prop-footer");
+  const footer = createElement('div', '__vdi-prop-footer');
   const hint = createElement(
-    "span",
-    "__vdi-prop-hint",
-    "修改后基于 AST 回写源码，Vite 自动热更新",
+    'span',
+    '__vdi-prop-hint',
+    '修改后基于 AST 回写源码，Vite 自动热更新',
   );
   const attrButton = createElement<HTMLButtonElement>(
-    "button",
-    "__vdi-attr-btn",
-    "📋 属性",
+    'button',
+    '__vdi-attr-btn',
+    '📋 属性',
   );
   attrButton.onclick = () => openAttrDrawer();
   const saveButton = createElement<HTMLButtonElement>(
-    "button",
-    "__vdi-save-btn",
-    "💾 保存",
+    'button',
+    '__vdi-save-btn',
+    '💾 保存',
   );
   saveButton.onclick = () => submit();
   footer.append(hint, attrButton, saveButton);
@@ -119,8 +119,8 @@ export function openPanel(el: HTMLElement): void {
   state.propPanel = mask;
   currentListEl = list;
 
-  apiRequest("/get-props", {
-    method: "POST",
+  apiRequest('/get-props', {
+    method: 'POST',
     body: JSON.stringify({
       file: formatPosition(state.panelData),
       line: state.panelData.line,
@@ -134,14 +134,14 @@ export function openPanel(el: HTMLElement): void {
       loadingHint.remove();
     })
     .catch(() => {
-      loadingHint.textContent = " 读取失败";
+      loadingHint.textContent = ' 读取失败';
     });
 }
 
 /** 收集 entries 回写源码 */
 function submit(): void {
-  apiRequest("/update-props", {
-    method: "POST",
+  apiRequest('/update-props', {
+    method: 'POST',
     body: JSON.stringify({
       file: formatPosition(state.panelData),
       line: state.panelData.line,
@@ -155,10 +155,10 @@ function submit(): void {
     .then((response) => {
       if (response && response.success) {
         closePanel();
-        logSuccess("属性已更新");
+        logSuccess('属性已更新');
       }
     })
     .catch((e: unknown) => {
-      apiError("属性更新失败", errMsg(e));
+      apiError('属性更新失败', errMsg(e));
     });
 }

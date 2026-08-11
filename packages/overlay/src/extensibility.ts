@@ -8,9 +8,9 @@ import type {
   InspectEvent,
   SelectEvent,
   Unregister,
-} from "@vue-dev-inspector/shared";
-import { installHost as sharedInstallHost } from "@vue-dev-inspector/shared/browser";
-import { state } from "./state";
+} from '@vue-dev-inspector/shared';
+import { installHost as sharedInstallHost } from '@vue-dev-inspector/shared/browser';
+import { state } from './state';
 import {
   parsePosition,
   formatPosition,
@@ -18,7 +18,7 @@ import {
   apiRequest,
   apiError,
   errMsg,
-} from "./utils";
+} from './utils';
 
 /** 注册一组自定义工具按钮；同 id 覆盖。返回反注册函数。 */
 export function registerBtn(btns: ActionButtonDef[]): Unregister {
@@ -51,12 +51,12 @@ export function onSelect(cb: EventCallback<SelectEvent>): Unregister {
 
 /** 派发"进入审查"事件。调用方负责仅在 inspecting 从 false 变 true 时调用。 */
 export function emitInspect(): void {
-  const event: InspectEvent = { kind: "inspect", at: Date.now() };
+  const event: InspectEvent = { kind: 'inspect', at: Date.now() };
   for (const cb of state.inspectCallbacks) {
     try {
       cb(event);
     } catch (err) {
-      console.error("[vdi] onInspect callback threw:", err);
+      console.error('[vdi] onInspect callback threw:', err);
     }
   }
 }
@@ -66,7 +66,7 @@ export function emitSelect(target: HTMLElement | null): void {
   const raw = target ? target.getAttribute(state.attrName) : null;
   const parsed = raw ? parsePosition(raw) : null;
   const event: SelectEvent = {
-    kind: "select",
+    kind: 'select',
     at: Date.now(),
     target,
     source: parsed
@@ -86,7 +86,7 @@ export function emitSelect(target: HTMLElement | null): void {
     try {
       cb(event);
     } catch (err) {
-      console.error("[vdi] onSelect callback threw:", err);
+      console.error('[vdi] onSelect callback threw:', err);
     }
   }
 }
@@ -112,11 +112,11 @@ function reportSelection(target: HTMLElement | null): void {
     parsed != null
       ? {
           file: formatPosition(parsed),
-          tag: target ? getElementTagName(target) : "",
+          tag: target ? getElementTagName(target) : '',
         }
       : {};
-  apiRequest("/report-selection", {
-    method: "POST",
+  apiRequest('/report-selection', {
+    method: 'POST',
     body: JSON.stringify(body),
   })
     .then(() => {
@@ -124,11 +124,11 @@ function reportSelection(target: HTMLElement | null): void {
       reportFailLastToast = 0;
     })
     .catch((err) => {
-      console.warn("[vdi] report-selection 失败：", err);
+      console.warn('[vdi] report-selection 失败：', err);
       const now = Date.now();
       if (now - reportFailLastToast >= REPORT_FAIL_THROTTLE_MS) {
         reportFailLastToast = now;
-        apiError("上报选中失败", errMsg(err));
+        apiError('上报选中失败', errMsg(err));
       }
     });
 }

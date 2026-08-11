@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { setCdnBuilder, getCdnBuilder, buildCdnUrl } from "../src/cdn";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { setCdnBuilder, getCdnBuilder, buildCdnUrl } from '../src/cdn';
 
 /**
  * cdn builder 注入点测试。
@@ -13,32 +13,32 @@ import { setCdnBuilder, getCdnBuilder, buildCdnUrl } from "../src/cdn";
  *   - buildCdnUrl 直接返回 builder(pkg, ver)，**不拼 relPath**：CDN URL 形状
  *     完全由 builder 决定；core 以 `<script src=url>` 注入，不发起 IO。
  */
-describe("cdn builder injection", () => {
+describe('cdn builder injection', () => {
   afterEach(() => {
     // 回到默认 builder，避免用例间相互污染
     setCdnBuilder(undefined);
   });
 
-  it("setCdnBuilder(undefined) clears the builder (default removed)", () => {
+  it('setCdnBuilder(undefined) clears the builder (default removed)', () => {
     setCdnBuilder(undefined);
     expect(getCdnBuilder()).toBeUndefined();
   });
 
-  it("setCdnBuilder stores the builder", () => {
+  it('setCdnBuilder stores the builder', () => {
     const b = (pkg: string, ver: string) =>
       `https://cdn.jsdelivr.net/npm/${pkg}@${ver}`;
     setCdnBuilder(b);
     expect(getCdnBuilder()).toBe(b);
   });
 
-  it("setCdnBuilder(undefined) clears a previously-set builder", () => {
-    setCdnBuilder(() => "x");
+  it('setCdnBuilder(undefined) clears a previously-set builder', () => {
+    setCdnBuilder(() => 'x');
     setCdnBuilder(undefined);
     expect(getCdnBuilder()).toBeUndefined();
   });
 });
 
-describe("buildCdnUrl", () => {
+describe('buildCdnUrl', () => {
   beforeEach(() => {
     setCdnBuilder(undefined);
   });
@@ -46,43 +46,43 @@ describe("buildCdnUrl", () => {
     setCdnBuilder(undefined);
   });
 
-  it("throws when no builder registered", () => {
+  it('throws when no builder registered', () => {
     setCdnBuilder(undefined);
-    expect(() => buildCdnUrl("foo", "1.0.0")).toThrow(
-      "[vdi] cdn builder 未注册",
+    expect(() => buildCdnUrl('foo', '1.0.0')).toThrow(
+      '[vdi] cdn builder 未注册',
     );
   });
 
-  it("returns exactly builder(pkg, ver) — no relPath joining (current contract)", () => {
+  it('returns exactly builder(pkg, ver) — no relPath joining (current contract)', () => {
     // cdn scheme 现在不再接受 relPath：URL 形状由 builder 全权决定。
     setCdnBuilder(
       (pkg, ver) =>
         `https://cdn.jsdelivr.net/npm/${pkg}@${ver}/dist/expand.iife.js`,
     );
 
-    expect(buildCdnUrl("jquery", "3.7.0")).toBe(
-      "https://cdn.jsdelivr.net/npm/jquery@3.7.0/dist/expand.iife.js",
+    expect(buildCdnUrl('jquery', '3.7.0')).toBe(
+      'https://cdn.jsdelivr.net/npm/jquery@3.7.0/dist/expand.iife.js',
     );
   });
 
-  it("builder may return a bare base url (full responsibility on builder)", () => {
-    setCdnBuilder(() => "https://cdn.example.com/lib/x.js");
-    expect(buildCdnUrl("lib", "1.0.0")).toBe(
-      "https://cdn.example.com/lib/x.js",
+  it('builder may return a bare base url (full responsibility on builder)', () => {
+    setCdnBuilder(() => 'https://cdn.example.com/lib/x.js');
+    expect(buildCdnUrl('lib', '1.0.0')).toBe(
+      'https://cdn.example.com/lib/x.js',
     );
   });
 
-  it("returns a plain string synchronously", () => {
-    setCdnBuilder(() => "https://cdn.example.com/lib");
-    const out = buildCdnUrl("lib", "1.0.0");
-    expect(typeof out).toBe("string");
-    expect(out).toBe("https://cdn.example.com/lib");
+  it('returns a plain string synchronously', () => {
+    setCdnBuilder(() => 'https://cdn.example.com/lib');
+    const out = buildCdnUrl('lib', '1.0.0');
+    expect(typeof out).toBe('string');
+    expect(out).toBe('https://cdn.example.com/lib');
   });
 
-  it("custom CDN builder contract", () => {
+  it('custom CDN builder contract', () => {
     setCdnBuilder((pkg, ver) => `https://unpkg.com/${pkg}@${ver}/dist/x.js`);
-    expect(buildCdnUrl("@scope/lib", "2.0.0")).toBe(
-      "https://unpkg.com/@scope/lib@2.0.0/dist/x.js",
+    expect(buildCdnUrl('@scope/lib', '2.0.0')).toBe(
+      'https://unpkg.com/@scope/lib@2.0.0/dist/x.js',
     );
   });
 });

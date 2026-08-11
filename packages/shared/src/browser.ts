@@ -9,4 +9,4 @@
  * `@vue-dev-inspector/shared`（常量 + 类型）时不会把 window / setInterval
  * 轮询代码拉进 node 产物。host-bridge 自身仅 import `./extensibility` 的类型。
  */
-export * from "./host-bridge";
+export * from './host-bridge';

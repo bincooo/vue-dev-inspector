@@ -1,13 +1,13 @@
-import type { Plugin } from "vite";
-import path from "node:path";
-import { parse, compileTemplate } from "@vue/compiler-sfc";
-import MagicString from "magic-string";
-import { createDevServer } from "@vue-dev-inspector/client";
+import type { Plugin } from 'vite';
+import path from 'node:path';
+import { parse, compileTemplate } from '@vue/compiler-sfc';
+import MagicString from 'magic-string';
+import { createDevServer } from '@vue-dev-inspector/client';
 import {
   resolveProjectRootIndex,
   toPosixRelative,
   setCdnBuilder,
-} from "@vue-dev-inspector/utils";
+} from '@vue-dev-inspector/utils';
 import {
   createInspectorTransform,
   getDiskTemplateLine,
@@ -15,9 +15,9 @@ import {
   loadOverlayScript,
   buildCfgJson,
   buildExpandScripts,
-} from "@vue-dev-inspector/pluginkit";
-import type { DevInspectorOptions } from "./options";
-import { DEFAULT_OPTIONS } from "./options";
+} from '@vue-dev-inspector/pluginkit';
+import type { DevInspectorOptions } from './options';
+import { DEFAULT_OPTIONS } from './options';
 
 // core / PC 场景直接 ESM import 取 npm 装的 @vue/compiler-sfc；
 // 传给 pluginkit 的 getDiskTemplateLine 作为 SfcParser。
@@ -39,11 +39,11 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
   let projectRoots: string[] = [];
 
   return {
-    name: "vue-dev-inspector",
-    enforce: "pre",
+    name: 'vue-dev-inspector',
+    enforce: 'pre',
 
     configResolved(config) {
-      isDev = config.command === "serve";
+      isDev = config.command === 'serve';
       const userRoots = options.projectRoots;
       if (Array.isArray(userRoots) && userRoots.length > 0) {
         // 相对路径以 config.root 为基准（与 monorepo 用户的目录直觉一致）
@@ -62,7 +62,7 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
 
     transform(code, id) {
       if (!isDev || !options.enabled) return null;
-      if (!id.endsWith(".vue")) return null;
+      if (!id.endsWith('.vue')) return null;
       if (options.exclude.some((re) => re.test(id))) return null;
 
       // 多根支持：只在声明的根下注入，避免越界文件被错误标记
@@ -138,8 +138,8 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
         `<script type="module">\n${overlayScript}\n</script>\n` +
         expandInjection;
       return html
-        .replace("<body>", "<body class='pc'>")
-        .replace("</body>", injection + "\n</body>");
+        .replace('<body>', "<body class='pc'>")
+        .replace('</body>', injection + '\n</body>');
     },
   };
 }

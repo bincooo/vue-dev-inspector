@@ -13,7 +13,7 @@
  */
 
 /** 渲染到浏览器 DOM、overlay 可运行的平台。 */
-const BROWSER_PLATFORMS = new Set(["h5", "web"]);
+const BROWSER_PLATFORMS = new Set(['h5', 'web']);
 
 /**
  * 解析当前目标平台。
@@ -26,7 +26,7 @@ const BROWSER_PLATFORMS = new Set(["h5", "web"]);
  * 在钩子调用点读取可彻底绕开这段时序，且 CLI 实际在 vite 启动前就已设好该变量。
  */
 export function resolvePlatform(explicit?: string): string {
-  return explicit || process.env.UNI_PLATFORM || "h5";
+  return explicit || process.env.UNI_PLATFORM || 'h5';
 }
 
 /** 该平台是否渲染到浏览器 DOM（overlay 可运行）。 */

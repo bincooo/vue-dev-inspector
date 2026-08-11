@@ -1,7 +1,7 @@
 /**
  * 右键菜单。
  */
-import { state, setSelectedElement } from "./state";
+import { state, setSelectedElement } from './state';
 import {
   parsePosition,
   apiRequest,
@@ -10,11 +10,11 @@ import {
   formatPosition,
   apiError,
   errMsg,
-} from "./utils";
-import { redrawSelection } from "./inspector";
-import { openPanel } from "./panel";
-import { openDrawer } from "./panel/comp-drawer";
-import { openCodeDrawer } from "./panel/code-drawer";
+} from './utils';
+import { redrawSelection } from './inspector';
+import { openPanel } from './panel';
+import { openDrawer } from './panel/comp-drawer';
+import { openCodeDrawer } from './panel/code-drawer';
 
 type MenuAction = (
   element: HTMLElement,
@@ -23,7 +23,7 @@ type MenuAction = (
 
 interface MenuItem {
   label: string;
-  action: "open" | "props" | "catalog" | "copy" | "del" | "code";
+  action: 'open' | 'props' | 'catalog' | 'copy' | 'del' | 'code';
   isDanger?: boolean;
 }
 
@@ -38,8 +38,8 @@ interface MenuItem {
  */
 export function deleteElementViaApi(element: HTMLElement): Promise<unknown> {
   const pos = parsePosition(element.getAttribute(state.attrName)!)!;
-  return apiRequest("/delete-element", {
-    method: "POST",
+  return apiRequest('/delete-element', {
+    method: 'POST',
     body: JSON.stringify({
       file: formatPosition(pos),
       line: +pos.line,
@@ -54,36 +54,36 @@ export function deleteElementViaApi(element: HTMLElement): Promise<unknown> {
       }
     })
     .catch((e: unknown) => {
-      apiError("删除失败", errMsg(e));
+      apiError('删除失败', errMsg(e));
     });
 }
 
 export function showMenu(x: number, y: number, element: HTMLElement): void {
   const pos = parsePosition(element.getAttribute(state.attrName)!)!;
   /* 上次右键的按钮仍挂在 DOM 上（display:none 不清节点），先清空避免新旧并存 */
-  state.contextMenu!.innerHTML = "";
-  state.contextMenu!.style.display = "block";
+  state.contextMenu!.innerHTML = '';
+  state.contextMenu!.style.display = 'block';
   // 读取渲染后宽度做 clamp，避免菜单宽度变更（CSS）与位置夹紧逻辑（TS）之间静默脱钩。
   const menuW = state.contextMenu!.offsetWidth || 210;
-  state.contextMenu!.style.left = Math.min(x, innerWidth - menuW) + "px";
-  state.contextMenu!.style.top = Math.min(y, innerHeight - 200) + "px";
+  state.contextMenu!.style.left = Math.min(x, innerWidth - menuW) + 'px';
+  state.contextMenu!.style.top = Math.min(y, innerHeight - 200) + 'px';
 
-  const titleTag = createElement("div", "__vdi-menu-title-tag");
+  const titleTag = createElement('div', '__vdi-menu-title-tag');
   titleTag.textContent = getElementTagName(element);
   const titlePath = createElement(
-    "div",
-    "__vdi-menu-title-path",
+    'div',
+    '__vdi-menu-title-path',
     formatPosition(pos),
   );
-  const title = createElement("div", "__vdi-menu-title");
+  const title = createElement('div', '__vdi-menu-title');
   title.append(titleTag, titlePath);
   state.contextMenu!.appendChild(title);
 
   /* 同一 action 单一映射，避免 if/if 链 */
-  const actions: Record<MenuItem["action"], MenuAction> = {
+  const actions: Record<MenuItem['action'], MenuAction> = {
     open: () => {
-      apiRequest("/open-in-editor", {
-        method: "POST",
+      apiRequest('/open-in-editor', {
+        method: 'POST',
         body: JSON.stringify({
           file: formatPosition(pos),
           line: +pos.line,
@@ -91,7 +91,7 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
           editor: state.editor,
         }),
       }).catch((e: unknown) => {
-        apiError("打开编辑器失败", errMsg(e));
+        apiError('打开编辑器失败', errMsg(e));
       });
     },
     props: () => openPanel(element),
@@ -102,8 +102,8 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
       // 旧版只复制 `rN:path:line:col`，编辑器里粘贴不可用。
       // 现在的语义：异步问服务端 /resolve-path 取绝对路径；网络失败时回落到相对路径。
       const fallback = formatPosition(pos);
-      apiRequest("/resolve-path", {
-        method: "POST",
+      apiRequest('/resolve-path', {
+        method: 'POST',
         body: JSON.stringify({ file: fallback }),
       })
         .then((res) => {
@@ -122,25 +122,25 @@ export function showMenu(x: number, y: number, element: HTMLElement): void {
   };
 
   const menuItems: MenuItem[] = [
-    { label: "📦 在编辑器中打开", action: "open" },
-    { label: "⚙️ 编辑属性", action: "props" },
-    { label: "🧩 组件面板", action: "catalog" },
-    { label: "✏️ 编辑代码", action: "code" },
-    { label: "📋 复制路径", action: "copy" },
-    { label: "🗑️ 删除", action: "del", isDanger: true },
+    { label: '📦 在编辑器中打开', action: 'open' },
+    { label: '⚙️ 编辑属性', action: 'props' },
+    { label: '🧩 组件面板', action: 'catalog' },
+    { label: '✏️ 编辑代码', action: 'code' },
+    { label: '📋 复制路径', action: 'copy' },
+    { label: '🗑️ 删除', action: 'del', isDanger: true },
   ];
 
   for (const option of menuItems) {
     const button = createElement<HTMLButtonElement>(
-      "button",
-      "__vdi-menu-item " +
+      'button',
+      '__vdi-menu-item ' +
         (option.isDanger
-          ? "__vdi-menu-item--danger"
-          : "__vdi-menu-item--normal"),
+          ? '__vdi-menu-item--danger'
+          : '__vdi-menu-item--normal'),
       option.label,
     );
     button.onclick = () => {
-      state.contextMenu!.style.display = "none";
+      state.contextMenu!.style.display = 'none';
       actions[option.action](element, pos!);
     };
     state.contextMenu!.appendChild(button);

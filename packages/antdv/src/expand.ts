@@ -14,7 +14,7 @@
  * 这里的代码原本散落在 packages/demo/src/inspector-demo.ts，
  * 现迁移到物料库本体作为"开箱即用"演示。
  */
-import { onInspect, onSelect } from "@vue-dev-inspector/shared/browser";
+import { onInspect, onSelect } from '@vue-dev-inspector/shared/browser';
 
 // addToolBtn(
 //   {
@@ -29,12 +29,12 @@ import { onInspect, onSelect } from "@vue-dev-inspector/shared/browser";
 // );
 
 onInspect(() => {
-  window.console.log("[antdv-demo] enter inspect mode");
+  window.console.log('[antdv-demo] enter inspect mode');
 });
 
 onSelect((event) => {
   window.console.log(
-    "[antdv-demo] select",
+    '[antdv-demo] select',
     event.target?.tagName,
     event.source,
   );

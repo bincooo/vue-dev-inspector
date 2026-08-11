@@ -3,10 +3,10 @@
  *
  * 从原 prop-panel.ts 抽取，供 panel/render.ts 消费。
  */
-import { createElement } from "../utils";
-import type { ComponentAttr } from "@vue-dev-inspector/shared";
-import type { PropEntry } from "../types";
-import { setters, getSetters, inferDefaultSetter } from "../setters";
+import { createElement } from '../utils';
+import type { ComponentAttr } from '@vue-dev-inspector/shared';
+import type { PropEntry } from '../types';
+import { setters, getSetters, inferDefaultSetter } from '../setters';
 
 /** 每条 entry 当前选中的 setter 名（UI 状态，不参与回写） */
 const entrySetter = new WeakMap<PropEntry, string>();
@@ -30,7 +30,7 @@ export function makeSetterSwitcher(
   attr: ComponentAttr | null,
   rebuild: () => void,
 ): HTMLButtonElement {
-  const btn = createElement<HTMLButtonElement>("button", "__vdi-prop-mode-btn");
+  const btn = createElement<HTMLButtonElement>('button', '__vdi-prop-mode-btn');
   const refresh = () => {
     const name = getEntrySetter(entry, attr);
     const def = setters[name] ?? setters.TextSetter;

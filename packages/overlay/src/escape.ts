@@ -1,7 +1,7 @@
 const ESCAPE_MAP: Record<string, string> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
 };
 
 /**

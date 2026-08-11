@@ -143,7 +143,7 @@ function buildCss(cfg: PhoneShellConfig): string {
     `[data-vdi-phone-status-battery]{position:relative;width:${px(BAT_W)};height:${px(BAT_H)};border:1.5px solid grey;border-radius:3px;padding:1.5px;box-sizing:border-box;display:flex;align-items:center}`,
     `[data-vdi-phone-status-battery]::after{content:"";position:absolute;right:-${px(BAT_NUB_W)};top:50%;transform:translateY(-50%);width:${px(BAT_NUB_W)};height:${px(BAT_NUB_H)};background:grey;border-radius:0 1.5px 1.5px 0}`,
     `[data-vdi-phone-status-battery] span{display:block;width:75%;height:100%;background:grey;border-radius:1px}`,
-  ].join("");
+  ].join('');
 }
 
 // ─── 运行时脚本 ──────────────────────────────────────────────

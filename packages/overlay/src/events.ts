@@ -16,7 +16,7 @@ import {
   clientConfig,
   actionButtons,
   setSelectedElement,
-} from "./state";
+} from './state';
 import {
   findInspectableElement,
   createElement,
@@ -28,7 +28,7 @@ import {
   logInfo,
   logSuccess,
   apiError,
-} from "./utils";
+} from './utils';
 import {
   createUI,
   hover,
@@ -40,11 +40,11 @@ import {
   deleteElement,
   endDrag,
   startDrag,
-} from "./inspector";
-import { showMenu } from "./menu";
-import { closePanel, openPanel } from "./panel";
-import { closeDrawer } from "./panel/comp-drawer";
-import { closeCodeDrawer } from "./panel/code-drawer";
+} from './inspector';
+import { showMenu } from './menu';
+import { closePanel, openPanel } from './panel';
+import { closeDrawer } from './panel/comp-drawer';
+import { closeCodeDrawer } from './panel/code-drawer';
 
 /** Heroicons (MIT) 齿轮 SVG path */
 const GEAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg"
@@ -57,14 +57,14 @@ const GEAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg"
 /** 把 user-config 的 shortcut 翻成可读的展示字符串，例如 "Alt+Shift+I"。 */
 function formatShortcut(s: typeof clientConfig.shortcut): string {
   return [
-    s.altKey && "Alt",
-    s.shiftKey && "Shift",
-    s.ctrlKey && "Ctrl",
-    s.metaKey && "Meta",
-    s.code.replace(/^Key/, ""),
+    s.altKey && 'Alt',
+    s.shiftKey && 'Shift',
+    s.ctrlKey && 'Ctrl',
+    s.metaKey && 'Meta',
+    s.code.replace(/^Key/, ''),
   ]
     .filter(Boolean)
-    .join("+");
+    .join('+');
 }
 
 /** 单击已选中元素的「取消选中」挂起计时器：等待是否紧跟 dblclick，
@@ -73,13 +73,13 @@ let cancelSelectionTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** Ctrl 键是否按住：驱动 body.__vdi-ctrl 类切换，让可审查元素光标变 grab */
 function setCtrlHeld(active: boolean): void {
-  document.body.classList.toggle("__vdi-ctrl", active);
+  document.body.classList.toggle('__vdi-ctrl', active);
 }
 
 /** 操作按钮区域判定：避免 mousemove 在按钮上时切换悬停态造成红框闪烁 */
 function isOverActionButton(target: EventTarget | null): boolean {
   for (const btn of actionButtons()) {
-    if (btn && btn.style.display === "flex" && btn.contains(target as Node)) {
+    if (btn && btn.style.display === 'flex' && btn.contains(target as Node)) {
       return true;
     }
   }
@@ -103,14 +103,14 @@ function findElementUnderOverlay(x: number, y: number): HTMLElement | null {
   for (const el of document.elementsFromPoint(x, y)) {
     const node = el as HTMLElement;
     if (
-      node.id === "__vdi-overlay-style__" ||
+      node.id === '__vdi-overlay-style__' ||
       node === document.documentElement ||
       node === document.body
     )
       continue;
     if (
-      typeof node.className === "string" &&
-      node.className.startsWith("__vdi-")
+      typeof node.className === 'string' &&
+      node.className.startsWith('__vdi-')
     )
       continue;
     if (node.getAttribute(state.attrName)) return node;
@@ -135,7 +135,7 @@ function forwardWheel(e: WheelEvent): void {
   while (scroller && scroller !== document.documentElement) {
     const style = getComputedStyle(scroller);
     if (
-      (style.overflowY === "auto" || style.overflowY === "scroll") &&
+      (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
       scroller.scrollHeight > scroller.clientHeight
     ) {
       scroller.scrollTop += e.deltaY;
@@ -187,7 +187,7 @@ function handleEscape(): void {
  * 非 panel 区域的 focusin 不会被拦截，原有焦点行为不变。
  */
 window.addEventListener(
-  "focusin",
+  'focusin',
   (e) => {
     if (!(e.target instanceof Node)) return;
     const panel = state.propPanel;
@@ -205,11 +205,11 @@ window.addEventListener(
 
 /** 审查关闭时清掉所有浮层与选中态。 */
 function closeAll(): void {
-  state.contextMenu!.style.display = "none";
+  state.contextMenu!.style.display = 'none';
   setSelectedElement(null);
-  state.selectOverlay!.style.display = "none";
+  state.selectOverlay!.style.display = 'none';
   for (const btn of actionButtons()) {
-    if (btn) btn.style.display = "none";
+    if (btn) btn.style.display = 'none';
   }
 }
 
@@ -223,7 +223,7 @@ function clearPendingCancel(): void {
 /** 绑定所有事件 + 初始化 UI */
 export function init(): void {
   document.addEventListener(
-    "mousemove",
+    'mousemove',
     function (e) {
       if (!state.inspecting) return;
 
@@ -262,7 +262,7 @@ export function init(): void {
   );
 
   document.addEventListener(
-    "mousedown",
+    'mousedown',
     function (e) {
       if (!state.inspecting) return;
       const target = resolveHitElement(e);
@@ -285,7 +285,7 @@ export function init(): void {
   );
 
   document.addEventListener(
-    "click",
+    'click',
     function (e) {
       /* drag mode 中不响应 click：mousedown 已 stopImmediatePropagation，
        兜底再挡一层，防止用户拖到非 inspectable 区域释放触发 click */
@@ -294,18 +294,18 @@ export function init(): void {
         return;
       }
       /* 点击菜单内部先处理菜单关闭 */
-      if (state.contextMenu!.style.display === "block") {
+      if (state.contextMenu!.style.display === 'block') {
         if (state.contextMenu!.contains(e.target as Node)) {
-          state.contextMenu!.style.display = "none";
+          state.contextMenu!.style.display = 'none';
           return;
         }
-        state.contextMenu!.style.display = "none";
+        state.contextMenu!.style.display = 'none';
       }
       if (!state.inspecting || !state.hoveredElement) return;
 
       /* 复制按钮 */
       if (
-        state.copyButton!.style.display === "flex" &&
+        state.copyButton!.style.display === 'flex' &&
         state.copyButton!.contains(e.target as Node)
       ) {
         swallow(e);
@@ -314,7 +314,7 @@ export function init(): void {
       }
       /* 删除按钮 */
       if (
-        state.deleteButton!.style.display === "flex" &&
+        state.deleteButton!.style.display === 'flex' &&
         state.deleteButton!.contains(e.target as Node)
       ) {
         swallow(e);
@@ -358,7 +358,7 @@ export function init(): void {
   );
 
   document.addEventListener(
-    "contextmenu",
+    'contextmenu',
     function (e) {
       if (!state.inspecting) return;
       const el = resolveHitElement(e);
@@ -377,7 +377,7 @@ export function init(): void {
   );
 
   document.addEventListener(
-    "dblclick",
+    'dblclick',
     function (e) {
       if (state.dragging) {
         swallow(e);
@@ -399,7 +399,7 @@ export function init(): void {
 
   /** drag mode 提交：mouseup 在捕获阶段处理，先清场再异步提交 */
   document.addEventListener(
-    "mouseup",
+    'mouseup',
     function () {
       const source = state.dragSource;
       const target = state.dropTarget;
@@ -409,8 +409,8 @@ export function init(): void {
       if (!source || !target || !dropDir) return;
       const src = parsePosition(source.getAttribute(state.attrName)!)!;
       const tgt = parsePosition(target.getAttribute(state.attrName)!)!;
-      apiRequest("/move-element", {
-        method: "POST",
+      apiRequest('/move-element', {
+        method: 'POST',
         body: JSON.stringify({
           file: formatPosition(src),
           line: +src.line,
@@ -420,18 +420,18 @@ export function init(): void {
         }),
       })
         .then((response) => {
-          if (response && response.success) logInfo("元素已移动");
+          if (response && response.success) logInfo('元素已移动');
           else
-            apiError("move 失败", (response && response.error) || "未知错误");
+            apiError('move 失败', (response && response.error) || '未知错误');
         })
-        .catch(() => apiError("move 失败", "网络错误"));
+        .catch(() => apiError('move 失败', '网络错误'));
     },
     true,
   );
 
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Control") setCtrlHeld(true);
-    if (e.code === "Escape") {
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Control') setCtrlHeld(true);
+    if (e.code === 'Escape') {
       handleEscape();
       return;
     }
@@ -441,12 +441,12 @@ export function init(): void {
     }
   });
 
-  document.addEventListener("keyup", function (e) {
-    if (e.key === "Control") setCtrlHeld(false);
+  document.addEventListener('keyup', function (e) {
+    if (e.key === 'Control') setCtrlHeld(false);
   });
 
   /* 切窗/失焦时清掉 Ctrl 状态，避免持续显示 grab 光标 */
-  window.addEventListener("blur", () => setCtrlHeld(false));
+  window.addEventListener('blur', () => setCtrlHeld(false));
 
   /* 滚动/缩放时：刷新 hover / 选中框 / drop indicator（drag 中） */
   function refreshOverlays(): void {
@@ -455,8 +455,8 @@ export function init(): void {
     redrawSelection();
     if (state.dragging) redrawDropIndicator();
   }
-  window.addEventListener("scroll", refreshOverlays, true);
-  window.addEventListener("resize", refreshOverlays);
+  window.addEventListener('scroll', refreshOverlays, true);
+  window.addEventListener('resize', refreshOverlays);
 
   /* 启动 */
   createUI();
@@ -464,7 +464,7 @@ export function init(): void {
   /* overlay pointer-events:auto 会拦截 wheel 导致页面无法滚动。
      绑 wheel 透传：找到下方可滚动容器手动滚动 + 刷新 overlay 定位。 */
   for (const overlay of [state.hoverOverlay!, state.selectOverlay!]) {
-    overlay.addEventListener("wheel", (e) => {
+    overlay.addEventListener('wheel', (e) => {
       forwardWheel(e);
       refreshOverlays();
     });
@@ -472,17 +472,17 @@ export function init(): void {
 
   /* 右下角齿轮按钮（配置可控） */
   if (clientConfig.toggleBtn) {
-    const gearButton = createElement("div", "__vdi-gear-btn");
-    gearButton.title = "开启审查模式";
+    const gearButton = createElement('div', '__vdi-gear-btn');
+    gearButton.title = '开启审查模式';
     gearButton.innerHTML = GEAR_SVG;
-    gearButton.style = "opacity: 0.7;transform: scale(1)";
+    gearButton.style = 'opacity: 0.7;transform: scale(1)';
     gearButton.onmouseenter = () => {
-      gearButton.style.opacity = "1";
-      gearButton.style.transform = "scale(1.1)";
+      gearButton.style.opacity = '1';
+      gearButton.style.transform = 'scale(1.1)';
     };
     gearButton.onmouseleave = () => {
-      gearButton.style.opacity = ".7";
-      gearButton.style.transform = "scale(1)";
+      gearButton.style.opacity = '.7';
+      gearButton.style.transform = 'scale(1)';
     };
     gearButton.onclick = (e) => {
       swallow(e);
@@ -493,7 +493,7 @@ export function init(): void {
   }
 
   logSuccess(
-    "Ready — " + formatShortcut(clientConfig.shortcut) + " to inspect",
+    'Ready — ' + formatShortcut(clientConfig.shortcut) + ' to inspect',
   );
   // 抑制可能的 unused 警告
   void formatPosition;

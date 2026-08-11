@@ -45,7 +45,7 @@ export function buildCdnUrl(pkg: string, version: string): string {
   const builder = _builder;
   if (!builder) {
     throw new Error(
-      "[vdi] cdn builder 未注册；请在 vueDevInspector({ cdn }) 中提供",
+      '[vdi] cdn builder 未注册；请在 vueDevInspector({ cdn }) 中提供',
     );
   }
   return builder(pkg, version);

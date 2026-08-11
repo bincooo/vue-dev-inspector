@@ -8,11 +8,11 @@
  *   npx vite          # 启动 dev server
  *   # 浏览器中按 Alt+Shift+I 开启审查模式
  */
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
 // 在 monorepo 中直接引用本地插件源码
-import vueDevInspector from "@vue-dev-inspector/core";
-import antdv from "@vue-dev-inspector/antdv";
+import vueDevInspector from '@vue-dev-inspector/core';
+import antdv from '@vue-dev-inspector/antdv';
 
 export default defineConfig({
   plugins: [
@@ -30,19 +30,19 @@ export default defineConfig({
 
       // 注入的属性名
       // 格式: data-source-file="src/components/Card.vue:3:5"
-      attrName: "data-source-file",
+      attrName: 'data-source-file',
 
       // 这些组件因 inheritAttrs:false / Teleport 等导致 fallthrough attrs
       // 丢失审查标记，改用 display:contents 的 span 包裹，标记挂 span
-      wrapComponents: ["a-date-picker", "a-input-password"],
+      wrapComponents: ['a-date-picker', 'a-input-password'],
 
       // 经 Teleport/Portal 动态挂到 body 的组件：data-source-file 会在挂载过程
       // 中丢失，改把位置信息编码进 class（class 能透传到挂载后的根元素），
       // overlay 运行时解码 class 后重新写回 data-source-file
-      portalComponents: ["*modal"],
+      portalComponents: ['*modal'],
 
       // 编辑器类型
-      editor: "vscode",
+      editor: 'vscode',
 
       // 默认启用齿轮按钮
       toggleBtn: true,
@@ -52,12 +52,12 @@ export default defineConfig({
       // 只需新增对应包并在此处 append 工厂调用。
       componentConfig: [antdv()],
 
-      projectRoots: ["."],
+      projectRoots: ['.'],
     }),
 
     vue(),
   ],
   server: {
-    host: "0.0.0.0",
+    host: '0.0.0.0',
   },
 });

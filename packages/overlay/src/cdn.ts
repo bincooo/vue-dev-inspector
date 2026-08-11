@@ -21,11 +21,11 @@ const loaded = new Set<string>();
  *   - <link> 没有可靠 onload：默认立即 resolve（DOM 加载是异步但对我们只关心是否注册成功）。
  */
 export function injectOnce(
-  tag: "link" | "script",
+  tag: 'link' | 'script',
   attrs: Record<string, string>,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const key = tag + ":" + JSON.stringify(attrs);
+    const key = tag + ':' + JSON.stringify(attrs);
     if (loaded.has(key)) {
       resolve();
       return;
@@ -38,10 +38,10 @@ export function injectOnce(
     for (const [k, v] of Object.entries(attrs)) {
       el.setAttribute(k, v);
     }
-    if (tag === "script") {
+    if (tag === 'script') {
       (el as HTMLScriptElement).onload = () => resolve();
       (el as HTMLScriptElement).onerror = () =>
-        reject(new Error("Failed to load " + attrs.src));
+        reject(new Error('Failed to load ' + attrs.src));
     } else {
       resolve();
     }

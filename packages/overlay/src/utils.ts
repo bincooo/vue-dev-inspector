@@ -1,14 +1,14 @@
 /**
  * 纯计算工具函数——无 DOM 副作用。
  */
-import { state } from "./state";
-import type { PropEntry } from "./types";
+import { state } from './state';
+import type { PropEntry } from './types';
 import {
   SOURCE_REF_RE,
   decodeSourceClass,
   SOURCE_CLASS_PREFIX,
-} from "@vue-dev-inspector/shared";
-import { showToast } from "./toast";
+} from '@vue-dev-inspector/shared';
+import { showToast } from './toast';
 
 /**
  * 解析形如 `rN:path/file.vue:line:col` 的位置串。
@@ -51,7 +51,7 @@ export function readPosition(element: HTMLElement): {
   const parsed = parsePosition(raw);
   if (!parsed) {
     logError(
-      "Outdated source format",
+      'Outdated source format',
       `expected rN:path:line:col, got: ${raw}`,
     );
     return null;
@@ -65,8 +65,8 @@ export interface ApiResponse<T = unknown> {
   error?: string;
   props?: PropEntry[];
   components?: Array<{ path: string; name: string }>;
-  script?: import("./types").CodeBlockData;
-  style?: import("./types").CodeBlockData;
+  script?: import('./types').CodeBlockData;
+  style?: import('./types').CodeBlockData;
   data?: T;
   /** /resolve-path 响应字段：按当前 rootIndex 拼接出的绝对路径。 */
   absolutePath?: string;
@@ -82,7 +82,7 @@ export function apiRequest<T = unknown>(
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
   return fetch(state.apiPrefix + path, {
-    headers: { "Content-Type": "application/json" },
+    headers: { 'Content-Type': 'application/json' },
     ...init,
     signal: controller.signal,
   })
@@ -108,11 +108,11 @@ export function apiRequest<T = unknown>(
       // HTTP 错误（上面 .then 里 throw 的 Error，message 是 body.error 或 "HTTP xxx"）
       // 原样透传，不被这里吞掉。
       const name = (err as { name?: string })?.name;
-      if (name === "AbortError") {
-        throw new Error("请求超时：服务端无响应");
+      if (name === 'AbortError') {
+        throw new Error('请求超时：服务端无响应');
       }
       if (err instanceof TypeError) {
-        throw new Error("网络错误：无法连接服务端");
+        throw new Error('网络错误：无法连接服务端');
       }
       throw err;
     })
@@ -145,7 +145,7 @@ export function createElement<T extends HTMLElement = HTMLDivElement>(
  * 在 `classList` 上抛错（本前缀 token 仅含 `[A-Za-z0-9_-]`，实为安全，但保持稳健）。
  */
 function readSourceClassToken(el: HTMLElement): string | null {
-  const cls = el.getAttribute("class");
+  const cls = el.getAttribute('class');
   if (!cls) return null;
   for (const tok of cls.split(/\s+/)) {
     if (tok.startsWith(SOURCE_CLASS_PREFIX)) return tok;
@@ -187,7 +187,7 @@ export function findInspectableElement(
 export function getLayoutBox(element: HTMLElement | null): HTMLElement | null {
   if (!element) return element;
   if (
-    getComputedStyle(element).display === "contents" &&
+    getComputedStyle(element).display === 'contents' &&
     element.firstElementChild
   ) {
     return element.firstElementChild as HTMLElement;
@@ -203,15 +203,15 @@ export function positionOverlay(
 ): void {
   const rect = getLayoutBox(element)!.getBoundingClientRect();
   Object.assign(overlay.style, {
-    display: "block",
-    left: rect.left - margin + "px",
-    top: rect.top - margin + "px",
-    width: rect.width + margin * 2 + "px",
-    height: rect.height + margin * 2 + "px",
+    display: 'block',
+    left: rect.left - margin + 'px',
+    top: rect.top - margin + 'px',
+    width: rect.width + margin * 2 + 'px',
+    height: rect.height + margin * 2 + 'px',
   });
 }
 
-import type { DropDirection } from "./state";
+import type { DropDirection } from './state';
 
 /**
  * 根据光标在目标盒中的 Y 位置，返回放置方向：
@@ -224,36 +224,36 @@ export function computeDropDirection(
   clientY: number,
 ): DropDirection {
   const y = clientY - rect.top;
-  if (y < rect.height / 3) return "before";
-  if (y < (rect.height * 2) / 3) return "inside";
-  return "after";
+  if (y < rect.height / 3) return 'before';
+  if (y < (rect.height * 2) / 3) return 'inside';
+  return 'after';
 }
 
 /* ─── 控制台日志模板 ───────────────────────────────────────── */
 
-const BRAND = "[Vue DevInspector]";
+const BRAND = '[Vue DevInspector]';
 
 /** 「蓝色 + 加粗」品牌前缀 + 信息。 */
 export function logInfo(msg: string): void {
   console.log(
-    "%c" + BRAND + "%c " + msg,
-    "color:#3b82f6;font-weight:bold",
-    "color:inherit",
+    '%c' + BRAND + '%c ' + msg,
+    'color:#3b82f6;font-weight:bold',
+    'color:inherit',
   );
 }
 
 /** 「绿色 + 加粗」品牌前缀 + 成功信息。 */
 export function logSuccess(msg: string): void {
   console.log(
-    "%c" + BRAND + "%c " + msg,
-    "color:#10b981;font-weight:bold",
-    "color:inherit",
+    '%c' + BRAND + '%c ' + msg,
+    'color:#10b981;font-weight:bold',
+    'color:inherit',
   );
 }
 
 /** 「红色」品牌前缀 + 报错信息（首参作标签，第二参接描述）。仅控制台，不弹 toast -- 用于诊断性日志（如 Outdated source format）。 */
 export function logError(label: string, detail: string): void {
-  console.warn(BRAND + " " + label + "：", detail);
+  console.warn(BRAND + ' ' + label + '：', detail);
 }
 
 /**
@@ -264,8 +264,8 @@ export function logError(label: string, detail: string): void {
  * 读操作（get-props/get-child-text 等）失败时面板/抽屉内已有 inline 状态，不在此列。
  */
 export function apiError(label: string, detail: string): void {
-  console.warn(BRAND + " " + label + "：", detail);
-  showToast(label, detail, "error");
+  console.warn(BRAND + ' ' + label + '：', detail);
+  showToast(label, detail, 'error');
 }
 
 /** 从任意 catch 值提取可读错误信息。 */
@@ -286,12 +286,12 @@ export function stripCommonIndent(src: string): {
   text: string;
   indent: string;
 } {
-  const lines = src.split("\n");
+  const lines = src.split('\n');
   // 取所有「非空行」的前导空白作为候选，求最小公共前缀。
   const leads = lines
     .filter((l) => l.trim().length > 0)
-    .map((l) => l.match(/^[ \t]*/)?.[0] ?? "");
-  let indent = "";
+    .map((l) => l.match(/^[ \t]*/)?.[0] ?? '');
+  let indent = '';
   if (leads.length) {
     indent = leads[0];
     for (let i = 1; i < leads.length; i++) {
@@ -303,12 +303,12 @@ export function stripCommonIndent(src: string): {
       if (!indent) break;
     }
   }
-  if (!indent) return { text: src, indent: "" };
+  if (!indent) return { text: src, indent: '' };
   // 从每个非空行前去 indent；空行（全是空白或空串）保持原样。
   const out = lines.map((l) =>
     l.trim().length > 0 && l.startsWith(indent) ? l.slice(indent.length) : l,
   );
-  return { text: out.join("\n").replace(/[ \t]+$/, ""), indent };
+  return { text: out.join('\n').replace(/[ \t]+$/, ''), indent };
 }
 
 /**
@@ -320,11 +320,11 @@ export function stripCommonIndent(src: string): {
 export function applyIndent(edited: string, indent: string): string {
   if (!indent) return edited;
   edited = edited
-    .split("\n")
+    .split('\n')
     .map((l) => (l.length === 0 || l.trim().length === 0 ? l : indent + l))
-    .join("\n");
-  if (!edited.startsWith("\n")) {
-    edited = "\n" + edited;
+    .join('\n');
+  if (!edited.startsWith('\n')) {
+    edited = '\n' + edited;
   }
   return edited;
 }

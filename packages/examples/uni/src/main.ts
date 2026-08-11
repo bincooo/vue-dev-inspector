@@ -1,6 +1,6 @@
-import { createSSRApp } from "vue";
-import uViewPro from "uview-pro";
-import App from "./App.vue";
+import { createSSRApp } from 'vue';
+import uViewPro from 'uview-pro';
+import App from './App.vue';
 
 /**
  * uni-app Vue3 入口。`uni()` 插件会以其约定的方式接管等价于 SPA mount 的部分。

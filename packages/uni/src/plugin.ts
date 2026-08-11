@@ -1,17 +1,17 @@
 // ⚠ 必须在所有其他 import 之前 -- 深度优先执行确保 CJS 缓存预热
 // 早于 @dcloudio/vite-plugin-uni 污染的 @vue/shared@3.4.21
-import "./priming";
+import './priming';
 
-import path from "node:path";
-import { createRequire } from "node:module";
-import type { Plugin } from "vite";
-import MagicString from "magic-string";
-import { createDevServer } from "@vue-dev-inspector/client";
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import type { Plugin } from 'vite';
+import MagicString from 'magic-string';
+import { createDevServer } from '@vue-dev-inspector/client';
 import {
   resolveProjectRootIndex,
   toPosixRelative,
   setCdnBuilder,
-} from "@vue-dev-inspector/utils";
+} from '@vue-dev-inspector/utils';
 import {
   createInspectorTransform,
   getDiskTemplate,
@@ -20,18 +20,18 @@ import {
   loadOverlayScript,
   buildCfgJson,
   buildExpandScripts,
-} from "@vue-dev-inspector/pluginkit";
-import { DEFAULT_OPTIONS } from "./options";
-import type { UniDevInspectorOptions } from "./options";
-import { resolvePlatform, isBrowserPlatform } from "./platform";
-import { resolvePhoneShell, buildPhoneShellScript } from "./phone-shell";
+} from '@vue-dev-inspector/pluginkit';
+import { DEFAULT_OPTIONS } from './options';
+import type { UniDevInspectorOptions } from './options';
+import { resolvePlatform, isBrowserPlatform } from './platform';
+import { resolvePhoneShell, buildPhoneShellScript } from './phone-shell';
 
 // priming.ts 已将 @vue/shared@3.5.38 装入 CJS 缓存，这里直接走 createRequire
 // 确保 transform() 使用的 parse/compileTemplate 拿到正确的 shared。
 // parse 同样经此路径取，作为 SfcParser 注入 pluginkit 的 getDiskTemplate --
 // 保证读盘解析与 transform 用的 compileTemplate 来自同一份 compiler-sfc。
 const _require = createRequire(import.meta.url);
-const { parse, compileTemplate } = _require("@vue/compiler-sfc");
+const { parse, compileTemplate } = _require('@vue/compiler-sfc');
 
 // ─── 插件 ─────────────────────────────────────────────────
 
@@ -64,11 +64,11 @@ export function uniDevInspector(opts: UniDevInspectorOptions = {}): Plugin {
   const shell = resolvePhoneShell(rawShell);
 
   return {
-    name: "vue-dev-inspector-uni",
-    enforce: "pre",
+    name: 'vue-dev-inspector-uni',
+    enforce: 'pre',
 
     configResolved(config) {
-      isDev = config.command === "serve";
+      isDev = config.command === 'serve';
       const userRoots = options.projectRoots;
       if (Array.isArray(userRoots) && userRoots.length > 0) {
         projectRoots = userRoots.map((p) => path.resolve(config.root, p));
@@ -94,7 +94,7 @@ export function uniDevInspector(opts: UniDevInspectorOptions = {}): Plugin {
       if (!isDev || !options.enabled) return null;
       // 非浏览器平台：不注入 data-source-file，保持 mp/app 产物干净。
       if (!isBrowserPlatform(resolvePlatform(explicitPlatform))) return null;
-      if (!id.endsWith(".vue")) return null;
+      if (!id.endsWith('.vue')) return null;
       if (options.exclude.some((re) => re.test(id))) return null;
 
       // 多根支持：只在声明的根下注入，避免越界文件被错误标记
@@ -164,8 +164,8 @@ export function uniDevInspector(opts: UniDevInspectorOptions = {}): Plugin {
       // phone shell 注入（在 overlay 脚本之前，先铺好壳避免遮挡）
       if (shell.enabled)
         html = html
-          .replace("<body>", "<body class='uni'>")
-          .replace("</body>", buildPhoneShellScript(shell) + "\n</body>");
+          .replace('<body>', "<body class='uni'>")
+          .replace('</body>', buildPhoneShellScript(shell) + '\n</body>');
 
       const overlayScript = loadOverlayScript();
       const cfgJson = buildCfgJson(options, projectRoots);
@@ -174,7 +174,7 @@ export function uniDevInspector(opts: UniDevInspectorOptions = {}): Plugin {
         `<script>window.__DEV_INSPECTOR_CFG__=${cfgJson};</script>\n` +
         `<script type="module">\n${overlayScript}\n</script>\n` +
         expandInjection;
-      return html.replace("</body>", injection + "\n</body>");
+      return html.replace('</body>', injection + '\n</body>');
     },
   };
 }

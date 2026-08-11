@@ -6,14 +6,14 @@
       :href="item.href"
       class="nav-link"
     >
-      {{ item.label }}</a
-    >
+      {{ item.label }}
+    </a>
   </nav>
 </template>
 
 <script setup>
 defineProps({
-  mode: { type: String, default: "horizontal" },
+  mode: { type: String, default: 'horizontal' },
   items: { type: Array, default: () => [] },
 });
 </script>

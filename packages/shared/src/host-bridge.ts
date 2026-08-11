@@ -23,7 +23,7 @@ import type {
   InspectEvent,
   SelectEvent,
   Unregister,
-} from "./extensibility";
+} from './extensibility';
 
 /** overlay IIFE 暴露给 host 的内部函数集合。 */
 export interface VdiHost {
@@ -43,13 +43,13 @@ declare global {
 
 /** 入队中的按钮任务。flush 时调用 host.registerBtn 并记下 unregister。 */
 interface PendingBtnTask {
-  kind: "btn";
+  kind: 'btn';
   btns: ActionButtonDef[];
   unregister?: Unregister;
 }
 interface PendingCbTask {
-  kind: "cb";
-  which: "inspect" | "select";
+  kind: 'cb';
+  which: 'inspect' | 'select';
   cb: EventCallback<InspectEvent> | EventCallback<SelectEvent>;
   unregister?: Unregister;
 }
@@ -64,7 +64,7 @@ export function addToolBtn(...btns: ActionButtonDef[]): Unregister {
   if (host) {
     return host.registerBtn(btns);
   }
-  const task: PendingBtnTask = { kind: "btn", btns };
+  const task: PendingBtnTask = { kind: 'btn', btns };
   pending.push(task);
   startPolling();
   return () => removePending(task);
@@ -76,7 +76,7 @@ export function onInspect(cb: EventCallback<InspectEvent>): Unregister {
   if (host) {
     return host.onInspect(cb);
   }
-  const task: PendingCbTask = { kind: "cb", which: "inspect", cb };
+  const task: PendingCbTask = { kind: 'cb', which: 'inspect', cb };
   pending.push(task);
   startPolling();
   return () => removePending(task);
@@ -88,7 +88,7 @@ export function onSelect(cb: EventCallback<SelectEvent>): Unregister {
   if (host) {
     return host.onSelect(cb);
   }
-  const task: PendingCbTask = { kind: "cb", which: "select", cb };
+  const task: PendingCbTask = { kind: 'cb', which: 'select', cb };
   pending.push(task);
   startPolling();
   return () => removePending(task);
@@ -125,15 +125,15 @@ function flushPending(host: VdiHost): void {
   const tasks = pending.splice(0, pending.length);
   for (const t of tasks) {
     try {
-      if (t.kind === "btn") {
+      if (t.kind === 'btn') {
         t.unregister = host.registerBtn(t.btns);
-      } else if (t.which === "inspect") {
+      } else if (t.which === 'inspect') {
         t.unregister = host.onInspect(t.cb as EventCallback<InspectEvent>);
       } else {
         t.unregister = host.onSelect(t.cb as EventCallback<SelectEvent>);
       }
     } catch (err) {
-      console.error("[vdi] host-bridge flush failed:", err);
+      console.error('[vdi] host-bridge flush failed:', err);
     }
   }
 }

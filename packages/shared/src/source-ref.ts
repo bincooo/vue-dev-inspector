@@ -32,11 +32,11 @@ export const SOURCE_REF_RE = /^r(\d+):([^:]+):(\d+):(\d+)$/;
  * `TextEncoder`/`TextDecoder` + `btoa`/`atob` 在 Node 18+ 与现代浏览器均为全局可用，
  * 因此 encode（pluginkit，Node 编译期）与 decode（overlay，浏览器运行期）共用同一份实现。
  */
-export const SOURCE_CLASS_PREFIX = "__vdi-src-";
+export const SOURCE_CLASS_PREFIX = '__vdi-src-';
 
 /** 把 `{ tag, ref }` 编码为带 `SOURCE_CLASS_PREFIX` 前缀的 class 名安全 token。 */
 export function encodeSourceClass(tag: string, ref: string): string {
-  const payload = tag + ":" + ref;
+  const payload = tag + ':' + ref;
   return SOURCE_CLASS_PREFIX + payload;
 }
 
@@ -47,6 +47,6 @@ export function decodeSourceClass(token: string): {
 } | null {
   if (!token.startsWith(SOURCE_CLASS_PREFIX)) return null;
   const payload = token.slice(SOURCE_CLASS_PREFIX.length);
-  const [tag, ...rest] = payload.split(":");
-  return { tag, ref: rest.join(":") };
+  const [tag, ...rest] = payload.split(':');
+  return { tag, ref: rest.join(':') };
 }

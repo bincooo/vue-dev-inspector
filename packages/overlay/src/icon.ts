@@ -13,7 +13,7 @@
  *
  * 设计原则：dev-only 工具，不阻塞主流程；fetch 失败不抛错，回退占位即可。
  */
-import { state } from "./state";
+import { state } from './state';
 
 /** 形如 `i-prefix:name` 的 iconify 短串；无空白，前后非空。 */
 const ICONIFY_RE = /^i-([a-z0-9][a-z0-9-]*):([a-z0-9-]+)$/i;
@@ -32,7 +32,7 @@ function parseIconifySpec(icon: string): { prefix: string; name: string } {
  */
 function getCachedIcon(icon: string): string | null {
   const hit = state.iconCache[icon];
-  return typeof hit === "string" ? hit : null;
+  return typeof hit === 'string' ? hit : null;
 }
 
 /**
@@ -41,9 +41,9 @@ function getCachedIcon(icon: string): string | null {
 function paintSvg(container: HTMLElement, svg: string): void {
   container.innerHTML = svg;
   const svgEl = container.firstElementChild;
-  if (svgEl && svgEl.tagName.toLowerCase() === "svg") {
-    (svgEl as SVGElement).setAttribute("width", "1em");
-    (svgEl as SVGElement).setAttribute("height", "1em");
+  if (svgEl && svgEl.tagName.toLowerCase() === 'svg') {
+    (svgEl as SVGElement).setAttribute('width', '1em');
+    (svgEl as SVGElement).setAttribute('height', '1em');
   }
 }
 
@@ -59,7 +59,7 @@ export function renderIcon(
   icon: string | undefined,
   defaultText: string,
 ): void {
-  container.innerHTML = "";
+  container.innerHTML = '';
 
   // 缺省 → 默认占位
   if (!icon) {
@@ -68,7 +68,7 @@ export function renderIcon(
   }
 
   // 内联 SVG —— 用粗略正则判定首字符为 `<`
-  if (icon.trim().startsWith("<svg")) {
+  if (icon.trim().startsWith('<svg')) {
     try {
       paintSvg(container, icon);
     } catch {
@@ -107,11 +107,11 @@ export function renderIcon(
 function fetchIconify(icon: string): Promise<string | null> {
   if (state.iconCache[icon]) return Promise.resolve(state.iconCache[icon]);
   const { prefix, name } = parseIconifySpec(icon);
-  return fetch("https://api.iconify.design/" + prefix + "/" + name + ".svg")
+  return fetch('https://api.iconify.design/' + prefix + '/' + name + '.svg')
     .then((resp) => (resp.ok ? resp.text() : null))
     .then((svg) => {
       // 失败不写缓存，允许下一次重新尝试
-      if (svg && svg.includes("<svg")) {
+      if (svg && svg.includes('<svg')) {
         state.iconCache[icon] = svg;
         return svg;
       }

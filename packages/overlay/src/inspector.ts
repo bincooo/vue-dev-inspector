@@ -11,7 +11,7 @@
  *   redrawDropIndicator   拖拽中按 dropTarget/dropDirection 重绘放置指示器
  *   startDrag / endDrag   drag mode 进出
  */
-import { state, actionButtons, setSelectedElement } from "./state";
+import { state, actionButtons, setSelectedElement } from './state';
 import {
   parsePosition,
   apiRequest,
@@ -23,11 +23,11 @@ import {
   logInfo,
   apiError,
   errMsg,
-} from "./utils";
-import { openDrawer } from "./panel/comp-drawer";
-import { deleteElementViaApi } from "./menu";
-import { emitInspect } from "./extensibility";
-import { renderIcon } from "./icon";
+} from './utils';
+import { openDrawer } from './panel/comp-drawer';
+import { deleteElementViaApi } from './menu';
+import { emitInspect } from './extensibility';
+import { renderIcon } from './icon';
 
 export function isUni(): boolean {
   return !!(window as { uni?: unknown }).uni;
@@ -36,41 +36,41 @@ export function isUni(): boolean {
 /** 创建所有 UI 浮层并挂到 DOM */
 export function createUI(): void {
   state.hoverOverlay = createElement<HTMLDivElement>(
-    "div",
-    "__vdi-hover-overlay",
+    'div',
+    '__vdi-hover-overlay',
   );
   state.selectOverlay = createElement<HTMLDivElement>(
-    "div",
-    "__vdi-select-overlay",
+    'div',
+    '__vdi-select-overlay',
   );
-  state.tagTip = createElement<HTMLDivElement>("div", "__vdi-tag-tip");
+  state.tagTip = createElement<HTMLDivElement>('div', '__vdi-tag-tip');
   state.contextMenu = createElement<HTMLDivElement>(
-    "div",
-    "__vdi-context-menu",
+    'div',
+    '__vdi-context-menu',
   );
   state.deleteButton = createActionBtn(
-    "__vdi-action-btn __vdi-delete-btn",
-    "×",
-    "#dc2626",
-    "#ef4444",
-    "删除组件",
+    '__vdi-action-btn __vdi-delete-btn',
+    '×',
+    '#dc2626',
+    '#ef4444',
+    '删除组件',
   );
   state.copyButton = createActionBtn(
-    "__vdi-action-btn __vdi-copy-btn",
-    "⧉",
-    "#2563eb",
-    "#3b82f6",
-    "复制组件",
+    '__vdi-action-btn __vdi-copy-btn',
+    '⧉',
+    '#2563eb',
+    '#3b82f6',
+    '复制组件',
   );
-  state.insertBeforeButton = makeInsertButton(() => openDrawer("before"));
-  state.insertBeforeButton.title = "在同级上方插入组件";
-  state.insertAfterButton = makeInsertButton(() => openDrawer("after"));
-  state.insertAfterButton.title = "在同级下方插入组件";
+  state.insertBeforeButton = makeInsertButton(() => openDrawer('before'));
+  state.insertBeforeButton.title = '在同级上方插入组件';
+  state.insertAfterButton = makeInsertButton(() => openDrawer('after'));
+  state.insertAfterButton.title = '在同级下方插入组件';
   state.dropIndicator = createElement<HTMLDivElement>(
-    "div",
-    "__vdi-drop-indicator",
+    'div',
+    '__vdi-drop-indicator',
   );
-  state.dropIndicator.style.display = "none";
+  state.dropIndicator.style.display = 'none';
 
   for (const el of [
     state.hoverOverlay,
@@ -95,7 +95,7 @@ function createActionBtn(
   baseColor: string,
   title?: string,
 ): HTMLDivElement {
-  const btn = createElement("div", className, text);
+  const btn = createElement('div', className, text);
   if (title) {
     btn.title = title;
   }
@@ -106,7 +106,7 @@ function createActionBtn(
 
 /** 构造一个 + 同级插入按钮 */
 function makeInsertButton(onClick: () => void): HTMLDivElement {
-  const btn = createElement("div", "__vdi-insert-btn", "+");
+  const btn = createElement('div', '__vdi-insert-btn', '+');
   btn.onclick = function (e) {
     e.preventDefault();
     e.stopPropagation();
@@ -119,8 +119,8 @@ function makeInsertButton(onClick: () => void): HTMLDivElement {
 /** 复制元素 */
 export function duplicateElement(element: HTMLElement): void {
   const pos = parsePosition(element.getAttribute(state.attrName)!)!;
-  apiRequest("/duplicate-element", {
-    method: "POST",
+  apiRequest('/duplicate-element', {
+    method: 'POST',
     body: JSON.stringify({
       file: formatPosition(pos),
       line: +pos.line,
@@ -128,10 +128,10 @@ export function duplicateElement(element: HTMLElement): void {
     }),
   })
     .then((response) => {
-      if (response && response.success) logInfo("元素已复制");
+      if (response && response.success) logInfo('元素已复制');
     })
     .catch((e: unknown) => {
-      apiError("复制失败", errMsg(e));
+      apiError('复制失败', errMsg(e));
     });
 }
 
@@ -143,7 +143,7 @@ export function deleteElement(element: HTMLElement): void {
 /** 选中框旁的 4 个动作按钮同步显隐。 */
 function setActionButtonsVisible(visible: boolean): void {
   for (const btn of actionButtons()) {
-    if (btn) btn.style.display = visible ? "flex" : "none";
+    if (btn) btn.style.display = visible ? 'flex' : 'none';
   }
 }
 
@@ -153,7 +153,7 @@ export function positionActionButtons(): void {
     setActionButtonsVisible(false);
     return;
   }
-  if (!state.selectOverlay || state.selectOverlay.style.display === "none") {
+  if (!state.selectOverlay || state.selectOverlay.style.display === 'none') {
     setActionButtonsVisible(false);
     return;
   }
@@ -165,31 +165,31 @@ export function positionActionButtons(): void {
 
   const half = 7;
 
-  del.style.display = "flex";
-  del.style.left = r.right - 18 + "px";
-  del.style.top = r.bottom - 18 + "px";
-  cp.style.display = "flex";
-  cp.style.left = r.right - 36 + "px";
-  cp.style.top = r.bottom - 18 + "px";
-  before.style.display = "flex";
-  before.style.left = r.left + r.width / 2 - half + "px";
-  before.style.top = r.top - half + "px";
-  after.style.display = "flex";
-  after.style.left = r.left + r.width / 2 - half + "px";
-  after.style.top = r.bottom - half + "px";
+  del.style.display = 'flex';
+  del.style.left = r.right - 18 + 'px';
+  del.style.top = r.bottom - 18 + 'px';
+  cp.style.display = 'flex';
+  cp.style.left = r.right - 36 + 'px';
+  cp.style.top = r.bottom - 18 + 'px';
+  before.style.display = 'flex';
+  before.style.left = r.left + r.width / 2 - half + 'px';
+  before.style.top = r.top - half + 'px';
+  after.style.display = 'flex';
+  after.style.left = r.left + r.width / 2 - half + 'px';
+  after.style.top = r.bottom - half + 'px';
   // 工具按钮：与复制按钮同行，沿用 18px 步长向左排列
   state.toolButtonsEls.forEach((btn, i) => {
-    btn.style.display = "flex";
-    btn.style.left = r.right - 36 - (i + 1) * 18 + "px";
-    btn.style.top = r.bottom - 18 + "px";
+    btn.style.display = 'flex';
+    btn.style.left = r.right - 36 - (i + 1) * 18 + 'px';
+    btn.style.top = r.bottom - 18 + 'px';
   });
 }
 
 // ─── 自定义工具按钮（注册式） ────────────────────────────────
 
 /** 与 __vdi-copy-btn 一致的默认配色，保持视觉风格统一。 */
-const DEFAULT_TOOL_BASE = "#3b82f6";
-const DEFAULT_TOOL_HOVER = "#2563eb";
+const DEFAULT_TOOL_BASE = '#3b82f6';
+const DEFAULT_TOOL_HOVER = '#2563eb';
 
 /** 把当前所有 toolButtons 渲染为与复制/删除按钮同行的 action-btn。空集合直接返回。 */
 export function renderToolButtons(selectedEl: HTMLElement): void {
@@ -198,16 +198,16 @@ export function renderToolButtons(selectedEl: HTMLElement): void {
 
   for (const def of state.toolButtons.values()) {
     const btn = createElement<HTMLDivElement>(
-      "div",
-      "__vdi-action-btn __vdi-tool-btn",
+      'div',
+      '__vdi-action-btn __vdi-tool-btn',
     );
     // icon 支持 emoji / 短文本 / iconify(`i-prefix:name`) / 内联 SVG，
     // 与抽屉一致走 renderIcon；iconify 未命中缓存或 fetch 失败时用 label
     // 首字符占位（label 恒为字符串，空串/空白回退 "•"）。
-    const iconFallback = (def.label && def.label.trim().charAt(0)) || "•";
+    const iconFallback = (def.label && def.label.trim().charAt(0)) || '•';
     renderIcon(btn, def.icon, iconFallback);
     btn.title = def.label;
-    btn.setAttribute("data-tool-btn-id", def.id);
+    btn.setAttribute('data-tool-btn-id', def.id);
     btn.onmouseenter = () =>
       (btn.style.background = def.hoverColor ?? DEFAULT_TOOL_HOVER);
     btn.onmouseleave = () =>
@@ -217,16 +217,16 @@ export function renderToolButtons(selectedEl: HTMLElement): void {
       const raw = selectedEl.getAttribute(state.attrName);
       const parsed = raw ? parsePosition(raw) : null;
       def.onClick({
-        kind: "select",
+        kind: 'select',
         at: Date.now(),
         target: selectedEl,
         source: parsed
           ? {
-            rootIndex: parsed.rootIndex,
-            file: parsed.file,
-            line: Number(parsed.line),
-            col: Number(parsed.col),
-          }
+              rootIndex: parsed.rootIndex,
+              file: parsed.file,
+              line: Number(parsed.line),
+              col: Number(parsed.col),
+            }
           : null,
       });
     };
@@ -249,21 +249,21 @@ export function clearToolButtons(): void {
 export function hover(element: HTMLElement): void {
   if (!element || !state.hoverOverlay) return;
   if (element === state.selectedElement) {
-    state.hoverOverlay.style.display = "none";
+    state.hoverOverlay.style.display = 'none';
   } else {
     positionOverlay(state.hoverOverlay, element, 1);
   }
   state.tagTip!.textContent = getElementTagName(element);
-  state.tagTip!.style.display = "block";
+  state.tagTip!.style.display = 'block';
   const rect = getLayoutBox(element)!.getBoundingClientRect();
-  state.tagTip!.style.left = Math.max(0, rect.left - 1) + "px";
-  state.tagTip!.style.top = Math.max(0, rect.top - (isUni() ? 24 : 24)) + "px";
+  state.tagTip!.style.left = Math.max(0, rect.left - 1) + 'px';
+  state.tagTip!.style.top = Math.max(0, rect.top - (isUni() ? 24 : 24)) + 'px';
 }
 
 /** 收起悬停态 */
 export function hide(): void {
-  state.hoverOverlay!.style.display = "none";
-  state.tagTip!.style.display = "none";
+  state.hoverOverlay!.style.display = 'none';
+  state.tagTip!.style.display = 'none';
   state.hoveredElement = null;
 }
 
@@ -274,7 +274,7 @@ export function redrawSelection(): void {
     positionOverlay(state.selectOverlay, state.selectedElement, 1);
     positionActionButtons();
   } else {
-    state.selectOverlay.style.display = "none";
+    state.selectOverlay.style.display = 'none';
     setActionButtonsVisible(false);
     setSelectedElement(null);
   }
@@ -286,12 +286,12 @@ export function toggle(force?: boolean): void {
   if (!state.inspecting) {
     hide();
     setSelectedElement(null);
-    state.selectOverlay!.style.display = "none";
+    state.selectOverlay!.style.display = 'none';
     setActionButtonsVisible(false);
     if (state.dragging) endDrag();
   }
   if (state.gearButton)
-    state.gearButton.style.display = state.inspecting ? "none" : "flex";
+    state.gearButton.style.display = state.inspecting ? 'none' : 'flex';
 
   if (state.inspecting) {
     emitInspect();
@@ -308,22 +308,22 @@ export function redrawDropIndicator(): void {
   const target = state.dropTarget;
   const dir = state.dropDirection;
   if (!target || !dir) {
-    if (state.dropIndicator) state.dropIndicator.style.display = "none";
+    if (state.dropIndicator) state.dropIndicator.style.display = 'none';
     return;
   }
   const rect = getLayoutBox(target)!.getBoundingClientRect();
   const indicator = state.dropIndicator!;
-  indicator.className = "__vdi-drop-indicator __vdi-drop-indicator--" + dir;
-  indicator.style.display = "block";
-  indicator.style.left = rect.left - 2 + "px";
-  indicator.style.width = rect.width + 4 + "px";
-  if (dir === "before" || dir === "after") {
+  indicator.className = '__vdi-drop-indicator __vdi-drop-indicator--' + dir;
+  indicator.style.display = 'block';
+  indicator.style.left = rect.left - 2 + 'px';
+  indicator.style.width = rect.width + 4 + 'px';
+  if (dir === 'before' || dir === 'after') {
     indicator.style.top =
-      (dir === "before" ? rect.top : rect.bottom) - 1 + "px";
-    indicator.style.height = "2px";
+      (dir === 'before' ? rect.top : rect.bottom) - 1 + 'px';
+    indicator.style.height = '2px';
   } else {
-    indicator.style.top = rect.top - 2 + "px";
-    indicator.style.height = rect.height + 4 + "px";
+    indicator.style.top = rect.top - 2 + 'px';
+    indicator.style.height = rect.height + 4 + 'px';
   }
 }
 
@@ -333,15 +333,15 @@ export function endDrag(): void {
   state.dragSource = null;
   state.dropTarget = null;
   state.dropDirection = null;
-  if (state.dropIndicator) state.dropIndicator.style.display = "none";
-  document.body.classList.remove("__vdi-dragging");
-  if (state.selectOverlay) state.selectOverlay.style.opacity = "1";
+  if (state.dropIndicator) state.dropIndicator.style.display = 'none';
+  document.body.classList.remove('__vdi-dragging');
+  if (state.selectOverlay) state.selectOverlay.style.opacity = '1';
 }
 
 /** 进入 drag mode：调暗原 select overlay，源由调用方传入 */
 export function startDrag(source: HTMLElement): void {
   state.dragging = true;
   state.dragSource = source;
-  document.body.classList.add("__vdi-dragging");
-  if (state.selectOverlay) state.selectOverlay.style.opacity = "0.35";
+  document.body.classList.add('__vdi-dragging');
+  if (state.selectOverlay) state.selectOverlay.style.opacity = '0.35';
 }

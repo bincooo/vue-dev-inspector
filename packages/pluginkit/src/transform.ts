@@ -2,10 +2,10 @@ import type {
   NodeTransform,
   ElementNode,
   AttributeNode,
-} from "@vue/compiler-core";
-import { NodeTypes, ElementTypes } from "@vue/compiler-core";
-import type MagicString from "magic-string";
-import { encodeSourceClass } from "@vue-dev-inspector/shared";
+} from '@vue/compiler-core';
+import { NodeTypes, ElementTypes } from '@vue/compiler-core';
+import type MagicString from 'magic-string';
+import { encodeSourceClass } from '@vue-dev-inspector/shared';
 
 /**
  * 把用户配置的条目编译成一张匹配器表：精确串走 Set 直查，含 `*` 的 glob 走 RegExp。
@@ -22,13 +22,13 @@ class ComponentMatcher {
     this.exacts = new Set();
     this.globs = [];
     for (const p of patterns) {
-      if (p.includes("*")) {
+      if (p.includes('*')) {
         // 转义除 `*` 外的正则元字符；`*` -> `.*`，锚定整段
         this.globs.push(
           new RegExp(
-            "^" +
-              p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") +
-              "$",
+            '^' +
+              p.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') +
+              '$',
           ),
         );
       } else {
@@ -47,14 +47,14 @@ class ComponentMatcher {
 
 /** 不注入属性的 Vue 内置/特殊标签 */
 const SKIP_TAGS = new Set([
-  "template",
-  "slot",
-  "component",
-  "transition",
-  "transition-group",
-  "keep-alive",
-  "teleport",
-  "suspense",
+  'template',
+  'slot',
+  'component',
+  'transition',
+  'transition-group',
+  'keep-alive',
+  'teleport',
+  'suspense',
 ]);
 
 /**
@@ -73,14 +73,14 @@ function findOpenTagEnd(
 ): number {
   for (let i = 0; i < source.length; i++) {
     const c = source[i];
-    if (c === '"' || c === "'" || c === "`") {
+    if (c === '"' || c === "'" || c === '`') {
       // 跳过整个引号串；不支持引号转义（HTML 属性里也没有这回事）。
       const quote = c;
       i++;
       while (i < source.length && source[i] !== quote) i++;
     } else if (
-      (isSelfClosing && c === "/" && source[i + 1] === ">") ||
-      (!isSelfClosing && c === ">")
+      (isSelfClosing && c === '/' && source[i + 1] === '>') ||
+      (!isSelfClosing && c === '>')
     ) {
       return i;
     }
@@ -112,7 +112,7 @@ function injectClassToken(
 ): void {
   const classProp = el.props.find(
     (p): p is AttributeNode =>
-      p.type === NodeTypes.ATTRIBUTE && p.name === "class" && p.value != null,
+      p.type === NodeTypes.ATTRIBUTE && p.name === 'class' && p.value != null,
   );
   if (classProp) {
     const v = classProp.value!;
@@ -120,7 +120,7 @@ function injectClassToken(
     // 详见 compiler-core parseAttribute 的 onattribend：双/单引号走 else 分支
     // 用 `getLoc(start - 1, end + 1)` 包含引号；无引号才用纯内容区间。
     if (v.loc.source.startsWith('"') || v.loc.source.startsWith("'")) {
-      s.appendLeft(templateStart + v.loc.end.offset - 1, " " + token);
+      s.appendLeft(templateStart + v.loc.end.offset - 1, ' ' + token);
     } else {
       // 无引号值无法承载含空格的多 token，整体改写成带引号形式
       s.overwrite(
@@ -255,7 +255,7 @@ export function createInspectorTransform(
         start,
         `<span ${attrName}="${ref}" data-inspector-tag="${el.tag}" data-inspector-wrap style="display:contents">`,
       );
-      s.appendRight(end, "</span>");
+      s.appendRight(end, '</span>');
       return;
     }
 
@@ -265,7 +265,7 @@ export function createInspectorTransform(
     const tagAttr =
       el.tagType === ElementTypes.COMPONENT
         ? ` data-inspector-tag="${el.tag}"`
-        : "";
+        : '';
     s.appendLeft(insertPos, ` ${attrName}="${ref}"${tagAttr}`);
   };
 }

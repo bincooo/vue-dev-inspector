@@ -20,9 +20,9 @@ pnpm add -D @vue-dev-inspector/core
 
 ```ts
 // vite.config.ts
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-import vueDevInspector from "@vue-dev-inspector/core";
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import vueDevInspector from '@vue-dev-inspector/core';
 
 export default defineConfig({
   plugins: [vueDevInspector(), vue()],

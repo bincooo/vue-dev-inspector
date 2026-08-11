@@ -8,18 +8,18 @@
  * error 红 / success 绿 / info 蓝。
  */
 
-export type ToastKind = "error" | "success" | "info";
+export type ToastKind = 'error' | 'success' | 'info';
 
-const TOAST_ID = "__vdi-toast-container__";
+const TOAST_ID = '__vdi-toast-container__';
 const DISMISS_MS = 3500;
 const FADE_MS = 200;
 
 function ensureContainer(): HTMLElement {
   let el = document.getElementById(TOAST_ID) as HTMLElement | null;
   if (el) return el;
-  el = document.createElement("div");
+  el = document.createElement('div');
   el.id = TOAST_ID;
-  el.className = "__vdi-toast-container";
+  el.className = '__vdi-toast-container';
   document.body.appendChild(el);
   return el;
 }
@@ -36,31 +36,31 @@ function ensureContainer(): HTMLElement {
 export function showToast(
   title: string,
   content: string,
-  kind: ToastKind = "error",
+  kind: ToastKind = 'error',
 ): void {
-  if (typeof document === "undefined") return;
+  if (typeof document === 'undefined') return;
   const container = ensureContainer();
-  const toast = document.createElement("div");
-  toast.className = "__vdi-toast __vdi-toast-" + kind;
+  const toast = document.createElement('div');
+  toast.className = '__vdi-toast __vdi-toast-' + kind;
 
-  const titleEl = document.createElement("div");
-  titleEl.className = "__vdi-toast-title";
+  const titleEl = document.createElement('div');
+  titleEl.className = '__vdi-toast-title';
   titleEl.textContent = title;
   toast.appendChild(titleEl);
 
   if (content) {
-    const contentEl = document.createElement("div");
-    contentEl.className = "__vdi-toast-content";
+    const contentEl = document.createElement('div');
+    contentEl.className = '__vdi-toast-content';
     contentEl.textContent = content;
     toast.appendChild(contentEl);
   }
 
   container.appendChild(toast);
   // 入场：下一帧加 visible 类触发过渡
-  requestAnimationFrame(() => toast.classList.add("__vdi-toast-visible"));
+  requestAnimationFrame(() => toast.classList.add('__vdi-toast-visible'));
   const timer = window.setTimeout(() => dismiss(toast), DISMISS_MS);
   // 点击立即关闭（清 timer 避免重复 dismiss）
-  toast.addEventListener("click", () => {
+  toast.addEventListener('click', () => {
     window.clearTimeout(timer);
     dismiss(toast);
   });
@@ -68,7 +68,7 @@ export function showToast(
 
 function dismiss(toast: HTMLElement): void {
   if (!toast.parentNode) return;
-  toast.classList.remove("__vdi-toast-visible");
+  toast.classList.remove('__vdi-toast-visible');
   window.setTimeout(() => {
     if (toast.parentNode) toast.parentNode.removeChild(toast);
   }, FADE_MS);

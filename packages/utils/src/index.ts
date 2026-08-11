@@ -1,2 +1,2 @@
-export * from "./paths";
-export * from "./cdn";
+export * from './paths';
+export * from './cdn';

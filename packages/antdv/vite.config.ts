@@ -11,18 +11,18 @@
  *
  * 不开 vite-plugin-singlefile：本入口没有 CSS 资源，输出仅一个 JS。
  */
-import { defineConfig } from "vite";
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   build: {
     lib: {
-      entry: "src/expand.ts",
-      formats: ["iife"],
+      entry: 'src/expand.ts',
+      formats: ['iife'],
       // IIFE 格式必须给一个全局变量名；本产物不挂全局，仅为通过 Vite 配置校验。
-      name: "VdiAntdvExpand",
-      fileName: () => "expand.iife.js",
+      name: 'VdiAntdvExpand',
+      fileName: () => 'expand.iife.js',
     },
-    outDir: "dist",
+    outDir: 'dist',
     minify: false,
     emptyOutDir: false,
     rollupOptions: {

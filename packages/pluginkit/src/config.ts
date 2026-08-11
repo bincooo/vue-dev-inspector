@@ -3,7 +3,7 @@
  *
  * 这组纯函数在 core 与 uni 中逐字重复，统一到此。两者行为完全一致，无平台差异。
  */
-import { API_PREFIX, EDITOR_PROTOCOLS } from "@vue-dev-inspector/shared";
+import { API_PREFIX, EDITOR_PROTOCOLS } from '@vue-dev-inspector/shared';
 
 /**
  * DevInspector 选项的"已合并"形状（`Required<Omit<…, "projectRoots"|"expandCdn">>`）。
@@ -12,7 +12,7 @@ import { API_PREFIX, EDITOR_PROTOCOLS } from "@vue-dev-inspector/shared";
  */
 export interface ResolvedInspectorOptions {
   attrName: string;
-  editor: "vscode" | "webstorm" | "atom" | "sublime";
+  editor: 'vscode' | 'webstorm' | 'atom' | 'sublime';
   shortcut: {
     altKey?: boolean;
     shiftKey?: boolean;
@@ -40,9 +40,9 @@ export function buildCfgJson(
     protocol: EDITOR_PROTOCOLS[options.editor] || EDITOR_PROTOCOLS.vscode,
     editor: options.editor,
     apiPrefix: API_PREFIX,
-    tagAttr: "data-inspector-tag",
+    tagAttr: 'data-inspector-tag',
     /** @deprecated v2 起使用 projectRoots；保留为 projectRoots[0] 兼容 overlay 旧代码 */
-    projectRoot: projectRoots[0] ?? "",
+    projectRoot: projectRoots[0] ?? '',
     projectRoots,
     shortcut: options.shortcut,
     toggleBtn: options.toggleBtn,
@@ -50,7 +50,7 @@ export function buildCfgJson(
   };
   // 防御：snippet 字符串里若出现 "</script>" 会切断外层 HTML 的 <script> 块，
   // 全部转义成 <\/script>。JSON.stringify 已处理普通字符转义，仅需补这一刀。
-  return JSON.stringify(cfg).replace(/<\/(script)/gi, "<\\/$1");
+  return JSON.stringify(cfg).replace(/<\/(script)/gi, '<\\/$1');
 }
 
 /**
@@ -70,9 +70,9 @@ export function buildExpandScripts(
   componentConfig: { expand?: string }[],
 ): string {
   const bodies = (componentConfig ?? [])
-    .map((e) => e.expand ?? "")
+    .map((e) => e.expand ?? '')
     .filter((s) => s.length > 0);
-  if (bodies.length === 0) return "";
+  if (bodies.length === 0) return '';
   return (
     bodies
       .map((b) => {
@@ -81,6 +81,6 @@ export function buildExpandScripts(
         }
         return `<script type="module">\n${b}\n</script>`;
       })
-      .join("\n") + "\n"
+      .join('\n') + '\n'
   );
 }

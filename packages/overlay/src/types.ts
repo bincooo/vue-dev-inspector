@@ -5,9 +5,9 @@
  * window.__DEV_INSPECTOR_CFG__ 全局变量，
  * overlay IIFE 启动时读取。
  */
-import type { ComponentConfigEntry } from "@vue-dev-inspector/shared";
+import type { ComponentConfigEntry } from '@vue-dev-inspector/shared';
 // 从 shared 重导出，保持 overlay 内 `import type { ... } from "./types"` 的单一入口。
-export type { ChildTextData } from "@vue-dev-inspector/shared";
+export type { ChildTextData } from '@vue-dev-inspector/shared';
 
 export interface ClientCfg {
   attrName: string;
@@ -55,7 +55,7 @@ export interface PropEntry {
  * <template> 编辑留作后续；多 <style scoped> 与 <script> + <script setup>
  * 共存的场景同样留作 v2（参见 plan 末尾的「已知限制」）。
  */
-export type CodeBlockKind = "script" | "style";
+export type CodeBlockKind = 'script' | 'style';
 
 /**
  * 单个 SFC 块的当前内容与字符偏移区间。

@@ -4,12 +4,12 @@
  * 各 setter 实现在 setters/ 目录下的独立文件中，本文件聚合为注册表
  * 并导出 getSetters / inferDefaultSetter 供 panel/control 消费。
  */
-import type { ComponentAttr } from "@vue-dev-inspector/shared";
-import type { PropEntry } from "../types";
-import { textSetter } from "./text-setter";
-import { codeSetter } from "./code-setter";
-import { selectSetter } from "./select-setter";
-import { boolSetter } from "./bool-setter";
+import type { ComponentAttr } from '@vue-dev-inspector/shared';
+import type { PropEntry } from '../types';
+import { textSetter } from './text-setter';
+import { codeSetter } from './code-setter';
+import { selectSetter } from './select-setter';
+import { boolSetter } from './bool-setter';
 
 /** setter 工厂：根据 entry + attr 构造值控件，绑定 entry.value。 */
 export interface SetterDef {
@@ -43,12 +43,12 @@ export function getSetters(
   const options = attr?.options ?? [];
   const isBoolOptions =
     options.length === 2 &&
-    options.includes("true") &&
-    options.includes("false");
-  const isBoolValue = entry.value === "true" || entry.value === "false";
-  const list = ["TextSetter", "CodeSetter"];
-  if (options.length) list.push("SelectSetter");
-  if (isBoolOptions || isBoolValue) list.push("BoolSetter");
+    options.includes('true') &&
+    options.includes('false');
+  const isBoolValue = entry.value === 'true' || entry.value === 'false';
+  const list = ['TextSetter', 'CodeSetter'];
+  if (options.length) list.push('SelectSetter');
+  if (isBoolOptions || isBoolValue) list.push('BoolSetter');
   return list;
 }
 
@@ -67,21 +67,21 @@ export function inferDefaultSetter(
 ): string {
   const name = entry.key;
   if (
-    name.startsWith(":") ||
-    name.startsWith("@") ||
-    name.startsWith("v-model")
+    name.startsWith(':') ||
+    name.startsWith('@') ||
+    name.startsWith('v-model')
   )
-    return "CodeSetter";
-  if (entry.value === "true" || entry.value === "false") return "BoolSetter";
+    return 'CodeSetter';
+  if (entry.value === 'true' || entry.value === 'false') return 'BoolSetter';
   if (attr?.options?.length) {
     if (
       attr.options.length == 2 &&
       attr.options.includes('true') &&
       attr.options.includes('false')
     ) {
-      return "BoolSetter";
+      return 'BoolSetter';
     }
-    return "SelectSetter";
+    return 'SelectSetter';
   }
-  return "TextSetter";
+  return 'TextSetter';
 }

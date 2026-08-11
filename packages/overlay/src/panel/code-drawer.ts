@@ -18,7 +18,7 @@
  *     保存成功折叠时 dispose（多数时间折叠，不常驻第三个编辑器）。
  *   - Monaco 自带滚动同步 / 语法高亮 / Tab 缩进，无需手动叠层。
  */
-import { state } from "../state";
+import { state } from '../state';
 import {
   apiRequest,
   createElement,
@@ -28,10 +28,10 @@ import {
   errMsg,
   stripCommonIndent,
   applyIndent,
-} from "../utils";
-import type { CodeBlockData, GetBlocksResponse, ChildTextData } from "../types";
-import type { MonacoAPI, MonacoEditor, MonacoModel } from "../monaco";
-import { loadMonaco, monacoLanguageFor } from "../monaco";
+} from '../utils';
+import type { CodeBlockData, GetBlocksResponse, ChildTextData } from '../types';
+import type { MonacoAPI, MonacoEditor, MonacoModel } from '../monaco';
+import { loadMonaco, monacoLanguageFor } from '../monaco';
 
 /** 抽屉滑出/滑入动画时长（与组件抽屉一致）。 */
 const SLIDE_MS = 200;
@@ -41,13 +41,13 @@ const MIN_WIDTH = 320;
 const MIN_BLOCK_RATIO = 0.15;
 const MAX_BLOCK_RATIO = 0.85;
 /** 状态条默认提示。 */
-const STATUS_LOADING = "加载中…";
+const STATUS_LOADING = '加载中…';
 
 /** 编辑器等宽字体栈（与原 highlight 层一致，跨平台命中同一宽度）。 */
 const MONO_FONT =
   '"JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
 /** Monaco 加载失败时的兜底提示。 */
-const MONACO_LOAD_FAIL = "Monaco 加载失败（检查网络）";
+const MONACO_LOAD_FAIL = 'Monaco 加载失败（检查网络）';
 
 let codeBackdrop: HTMLDivElement | null = null;
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -58,7 +58,7 @@ let activePanels: BlockPanel[] = [];
 export function closeCodeDrawer(): void {
   if (!state.codeDrawer) return;
   if (closeTimer) clearTimeout(closeTimer);
-  state.codeDrawer.style.transform = "translateX(100%)";
+  state.codeDrawer.style.transform = 'translateX(100%)';
   const drawer = state.codeDrawer;
   state.codeDrawer = null;
   state.codeDrawerContext = null;
@@ -78,7 +78,7 @@ export function closeCodeDrawer(): void {
 
 /** 打开抽屉（已打开则关闭后重开，确保从服务端重新拉取最新内容）。 */
 export function openCodeDrawer(element: HTMLElement): void {
-  state.contextMenu!.style.display = "none";
+  state.contextMenu!.style.display = 'none';
   if (state.codeDrawer) closeCodeDrawer();
 
   const pos = parsePosition(element.getAttribute(state.attrName)!)!;
@@ -90,7 +90,7 @@ export function openCodeDrawer(element: HTMLElement): void {
   };
 
   // 遮罩
-  const backdrop = createElement("div", "__vdi-backdrop");
+  const backdrop = createElement('div', '__vdi-backdrop');
   backdrop.onclick = (e) => {
     if (e.target === backdrop) closeCodeDrawer();
   };
@@ -98,62 +98,62 @@ export function openCodeDrawer(element: HTMLElement): void {
   codeBackdrop = backdrop;
 
   // 抽屉容器
-  const drawer = createElement("div", "__vdi-code-drawer");
-  drawer.style.width = state.codeDrawerWidth + "px";
+  const drawer = createElement('div', '__vdi-code-drawer');
+  drawer.style.width = state.codeDrawerWidth + 'px';
   drawer.onclick = (e) => e.stopPropagation();
   document.body.appendChild(drawer);
   state.codeDrawer = drawer;
   requestAnimationFrame(() => {
-    drawer.style.transform = "translateX(0)";
+    drawer.style.transform = 'translateX(0)';
   });
 
   // 右边缘拖动条
-  const resizer = createElement("div", "__vdi-code-drawer-resizer");
+  const resizer = createElement('div', '__vdi-code-drawer-resizer');
   drawer.appendChild(resizer);
   installResize(resizer, drawer);
 
   // 头部
-  const title = createElement("div", "__vdi-code-drawer-title", "✏️ 编辑代码");
+  const title = createElement('div', '__vdi-code-drawer-title', '✏️ 编辑代码');
   const subtitle = createElement(
-    "div",
-    "__vdi-code-drawer-subtitle",
+    'div',
+    '__vdi-code-drawer-subtitle',
     formatPosition(pos),
   );
   const closeBtn = createElement<HTMLButtonElement>(
-    "button",
-    "__vdi-close-btn",
-    "✕",
+    'button',
+    '__vdi-close-btn',
+    '✕',
   );
   closeBtn.onclick = closeCodeDrawer;
-  const header = createElement("div", "__vdi-code-drawer-header");
-  const left = createElement("div");
+  const header = createElement('div', '__vdi-code-drawer-header');
+  const left = createElement('div');
   left.append(title, subtitle);
   header.append(left, closeBtn);
   drawer.appendChild(header);
 
   // 主体：split layout（Script 占上，CSS 占下；中间 6px splitter）
-  const body = createElement("div", "__vdi-code-drawer-body");
+  const body = createElement('div', '__vdi-code-drawer-body');
   drawer.appendChild(body);
 
   // 底部状态
-  const footer = createElement("div", "__vdi-code-drawer-footer");
-  const status = createElement("span", "__vdi-code-status", STATUS_LOADING);
+  const footer = createElement('div', '__vdi-code-drawer-footer');
+  const status = createElement('span', '__vdi-code-status', STATUS_LOADING);
   footer.appendChild(status);
   drawer.appendChild(footer);
 
-  const scriptPanel = buildBlockPanel("Script", "script");
-  const splitter = createElement("div", "__vdi-code-splitter");
-  const stylePanel = buildBlockPanel("CSS", "style");
+  const scriptPanel = buildBlockPanel('Script', 'script');
+  const splitter = createElement('div', '__vdi-code-splitter');
+  const stylePanel = buildBlockPanel('CSS', 'style');
   // 第三个区域：子节点文本（懒加载，初始折叠成窄条，不参与 script/style 的 2 路 splitter）；
   // childtext 编辑框固定 300px 高度。
   const CHILDTEXT_HEIGHT = 300;
-  const childPanel = buildBlockPanel("子节点", "childtext", CHILDTEXT_HEIGHT);
+  const childPanel = buildBlockPanel('子节点', 'childtext', CHILDTEXT_HEIGHT);
 
   // 布局：body 下分两块--
   //   ① __vdi-code-split-wrap（flex:1 1 0）吃满剩余高度，内含 script + splitter + style；
   //   ② childPanel（flex:0 0 auto）按自身内容高度（折叠窄条 / 展开后 editorWrap 300px）。
   // 这样 childtext 固定 300px 后，多余空白全部匀给上方 script/style 分屏。
-  const splitWrap = createElement("div", "__vdi-code-split-wrap");
+  const splitWrap = createElement('div', '__vdi-code-split-wrap');
   splitWrap.append(scriptPanel.root, splitter, stylePanel.root);
   body.append(splitWrap, childPanel.root);
   applySplitRatio(
@@ -166,21 +166,21 @@ export function openCodeDrawer(element: HTMLElement): void {
   activePanels = [scriptPanel, stylePanel, childPanel];
 
   // 拉取
-  apiRequest<GetBlocksResponse>("/get-block", {
-    method: "POST",
+  apiRequest<GetBlocksResponse>('/get-block', {
+    method: 'POST',
     body: JSON.stringify({
       file: formatPosition(state.codeDrawerContext!),
     }),
   })
     .then((response) => {
       if (!response || (response as { error?: string }).error) {
-        const msg = (response as { error?: string }).error || "加载失败";
+        const msg = (response as { error?: string }).error || '加载失败';
         status.textContent = msg;
-        apiError("加载代码块失败", msg);
+        apiError('加载代码块失败', msg);
         return;
       }
-      applyBlock(scriptPanel, response.script, "script");
-      applyBlock(stylePanel, response.style, "style");
+      applyBlock(scriptPanel, response.script, 'script');
+      applyBlock(stylePanel, response.style, 'style');
       // 缺块也保留 ref（面板始终显示）；childText 面板常驻，ref 直接存。
       state.codeDrawerBlocks = {
         script: scriptPanel.ref,
@@ -188,12 +188,12 @@ export function openCodeDrawer(element: HTMLElement): void {
         childText: childPanel.ref,
       };
       // 缺块时 applyBlock 已在面板内提示「保存将新建」，状态栏统一引导文案。
-      status.textContent = "编辑后点击对应保存按钮回写源码（HMR 自动刷新）";
+      status.textContent = '编辑后点击对应保存按钮回写源码（HMR 自动刷新）';
     })
     .catch((e: unknown) => {
       const msg = errMsg(e);
       status.textContent = msg;
-      apiError("加载代码块失败", msg);
+      apiError('加载代码块失败', msg);
     });
 }
 
@@ -236,69 +236,69 @@ interface BlockPanel {
  */
 function buildBlockPanel(
   label: string,
-  kind: "script" | "style" | "childtext",
+  kind: 'script' | 'style' | 'childtext',
   height?: number,
 ): BlockPanel {
-  const root = createElement("div", "__vdi-code-block");
-  const titleEl = createElement("div", "__vdi-code-block-title", label);
+  const root = createElement('div', '__vdi-code-block');
+  const titleEl = createElement('div', '__vdi-code-block-title', label);
 
   // Monaco 挂载容器；空 div 即可，monaco.editor.create 会把自身 DOM 挂进来。
-  const editorWrap = createElement("div", "__vdi-code-editor");
+  const editorWrap = createElement('div', '__vdi-code-editor');
   if (height && height > 0) {
     // 覆盖 CSS 的 `flex: 1 1 auto`：flex 子项下 height 会被 flex-grow 拉伸，
     // 必须同时把 flex-basis 设为 auto、grow 设为 0，让 height 生效。
-    editorWrap.style.flex = "0 0 auto";
+    editorWrap.style.flex = '0 0 auto';
     editorWrap.style.height = `${height}px`;
   }
 
   const hintEl = createElement(
-    "div",
-    "__vdi-code-block-hint",
-    "点击「编辑」加载子节点源码",
+    'div',
+    '__vdi-code-block-hint',
+    '点击「编辑」加载子节点源码',
   );
 
   // style 面板：scoped 复选框（新建块时勾选用）。
   let scopedCheckbox: HTMLInputElement | null = null;
-  if (kind === "style") {
-    scopedCheckbox = document.createElement("input");
-    scopedCheckbox.type = "checkbox";
+  if (kind === 'style') {
+    scopedCheckbox = document.createElement('input');
+    scopedCheckbox.type = 'checkbox';
     scopedCheckbox.checked = true;
-    scopedCheckbox.className = "__vdi-code-scoped-input";
+    scopedCheckbox.className = '__vdi-code-scoped-input';
     const scopedLabel = createElement<HTMLLabelElement>(
-      "label",
-      "__vdi-code-scoped",
+      'label',
+      '__vdi-code-scoped',
     );
-    scopedLabel.append(scopedCheckbox, document.createTextNode(" scoped"));
+    scopedLabel.append(scopedCheckbox, document.createTextNode(' scoped'));
     // 默认隐藏：块已存在时不显示（由 applyBlock 控制可见性）。
-    scopedLabel.style.display = "none";
+    scopedLabel.style.display = 'none';
     hintEl.after(scopedLabel);
   }
 
   const saveBtn = createElement<HTMLButtonElement>(
-    "button",
-    "__vdi-save-btn __vdi-code-save-btn",
-    "💾 保存",
+    'button',
+    '__vdi-save-btn __vdi-code-save-btn',
+    '💾 保存',
   );
 
   // childtext 面板：懒加载「📝 编辑」按钮 + 「✕ 取消」按钮 + 初始折叠态。
   let editBtn: HTMLButtonElement | null = null;
   let cancelBtn: HTMLButtonElement | null = null;
-  if (kind === "childtext") {
+  if (kind === 'childtext') {
     editBtn = createElement<HTMLButtonElement>(
-      "button",
-      "__vdi-save-btn __vdi-code-edit-btn",
-      "📝 编辑",
+      'button',
+      '__vdi-save-btn __vdi-code-edit-btn',
+      '📝 编辑',
     );
     cancelBtn = createElement<HTMLButtonElement>(
-      "button",
-      "__vdi-save-btn __vdi-code-cancel-btn",
-      "✕ 取消",
+      'button',
+      '__vdi-save-btn __vdi-code-cancel-btn',
+      '✕ 取消',
     );
     // 取消按钮在 saveBtn 左侧；初始折叠态随 saveBtn 一起隐藏。
-    cancelBtn.style.display = "none";
-    editorWrap.style.display = "none";
-    saveBtn.style.display = "none";
-    root.style.flex = "0 0 auto";
+    cancelBtn.style.display = 'none';
+    editorWrap.style.display = 'none';
+    saveBtn.style.display = 'none';
+    root.style.flex = '0 0 auto';
   }
 
   // 取消按钮：放弃编辑，折叠回只显示「📝 编辑」的窄条（与保存成功后的折叠一致）。
@@ -308,13 +308,13 @@ function buildBlockPanel(
 
   // 保存按钮：script/style 走 submitBlock（style 透传 scoped）；childtext 走 submitChildText。
   saveBtn.onclick = () => {
-    const edited = panel.editor?.getValue() ?? "";
-    if (kind === "childtext") {
+    const edited = panel.editor?.getValue() ?? '';
+    if (kind === 'childtext') {
       // 把编辑期剥离的前置缩进按行还原回去，保证写回 AST 的源码缩进与原文件一致。
       const content = applyIndent(edited, panel.indent);
       void submitChildText(content, saveBtn, panel);
     } else {
-      const scoped = kind === "style" ? scopedCheckbox?.checked : undefined;
+      const scoped = kind === 'style' ? scopedCheckbox?.checked : undefined;
       void submitBlock(kind, edited, saveBtn, scoped);
     }
   };
@@ -326,8 +326,8 @@ function buildBlockPanel(
     };
   }
 
-  const actions = createElement("div", "__vdi-code-block-actions");
-  const warp = createElement("div");
+  const actions = createElement('div', '__vdi-code-block-actions');
+  const warp = createElement('div');
   warp.append(...[cancelBtn, saveBtn].filter((i) => !!i));
   actions.append(hintEl, warp);
 
@@ -347,7 +347,7 @@ function buildBlockPanel(
     scopedCheckbox,
     editBtn,
     cancelBtn,
-    indent: "",
+    indent: '',
   };
   return panel;
 }
@@ -363,7 +363,7 @@ function buildBlockPanel(
  */
 async function ensureEditor(
   panel: BlockPanel,
-  kind: "script" | "style" | "childtext",
+  kind: 'script' | 'style' | 'childtext',
   content: string,
   monaco: MonacoAPI,
 ): Promise<void> {
@@ -376,7 +376,7 @@ async function ensureEditor(
   const editor = monaco.editor.create(panel.editorWrap, {
     model,
     automaticLayout: true,
-    theme: "vs-dark",
+    theme: 'vs-dark',
     fontSize: 12,
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
@@ -401,23 +401,23 @@ function disposeEditor(panel: BlockPanel): void {
 function applyBlock(
   panel: BlockPanel,
   block: CodeBlockData | undefined,
-  kind: "script" | "style",
+  kind: 'script' | 'style',
 ): void {
-  panel.root.style.display = "";
-  const content = block?.content ?? "";
+  panel.root.style.display = '';
+  const content = block?.content ?? '';
   if (!block) {
     panel.hintEl.textContent =
-      kind === "script"
+      kind === 'script'
         ? '无 <script> 块，保存将新建 <script setup lang="ts">'
-        : "无 <style> 块，保存将新建";
-    if (kind === "style" && panel.scopedCheckbox) {
-      panel.scopedCheckbox.parentElement!.style.display = "";
+        : '无 <style> 块，保存将新建';
+    if (kind === 'style' && panel.scopedCheckbox) {
+      panel.scopedCheckbox.parentElement!.style.display = '';
     }
   } else {
     panel.hintEl.textContent =
-      kind === "script" ? "对应 <script> 块" : "对应 <style> 块";
-    if (kind === "style" && panel.scopedCheckbox) {
-      panel.scopedCheckbox.parentElement!.style.display = "none";
+      kind === 'script' ? '对应 <script> 块' : '对应 <style> 块';
+    if (kind === 'style' && panel.scopedCheckbox) {
+      panel.scopedCheckbox.parentElement!.style.display = 'none';
     }
   }
   // 懒加载 Monaco 编辑器并写入内容；CDN 不可达时兜底提示。
@@ -425,7 +425,7 @@ function applyBlock(
     .then((monaco) => ensureEditor(panel, kind, content, monaco))
     .catch(() => {
       const status =
-        state.codeDrawer?.querySelector<HTMLSpanElement>(".__vdi-code-status");
+        state.codeDrawer?.querySelector<HTMLSpanElement>('.__vdi-code-status');
       panel.hintEl.textContent = MONACO_LOAD_FAIL;
       if (status) status.textContent = MONACO_LOAD_FAIL;
     });
@@ -440,7 +440,7 @@ function applyBlock(
  * `scoped` 仅对 style 新建块生效：块已存在时服务端按原 attrs 保留，忽略该字段。
  */
 async function submitBlock(
-  kind: "script" | "style",
+  kind: 'script' | 'style',
   content: string,
   btn: HTMLButtonElement,
   scoped?: boolean,
@@ -448,21 +448,21 @@ async function submitBlock(
   const ctx = state.codeDrawerContext;
   if (!ctx) return;
   const status =
-    state.codeDrawer?.querySelector<HTMLSpanElement>(".__vdi-code-status");
+    state.codeDrawer?.querySelector<HTMLSpanElement>('.__vdi-code-status');
   const original = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "保存中…";
+  btn.textContent = '保存中…';
   try {
     const payload: Record<string, unknown> = {
       file: formatPosition(ctx),
       kind,
       content,
     };
-    if (kind === "style" && scoped !== undefined) payload.scoped = scoped;
+    if (kind === 'style' && scoped !== undefined) payload.scoped = scoped;
     const response = await apiRequest<{ success?: boolean; error?: string }>(
-      "/update-block",
+      '/update-block',
       {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify(payload),
       },
     );
@@ -470,18 +470,18 @@ async function submitBlock(
       if (status) status.textContent = `${labelOf(kind)} 已保存（HMR 刷新中）`;
     } else {
       if (status)
-        status.textContent = (response && response.error) || "保存失败";
+        status.textContent = (response && response.error) || '保存失败';
     }
   } catch {
-    if (status) status.textContent = "网络错误";
+    if (status) status.textContent = '网络错误';
   } finally {
     btn.disabled = false;
     btn.textContent = original;
   }
 }
 
-function labelOf(kind: "script" | "style"): string {
-  return kind === "script" ? "Script" : "CSS";
+function labelOf(kind: 'script' | 'style'): string {
+  return kind === 'script' ? 'Script' : 'CSS';
 }
 
 /**
@@ -496,15 +496,15 @@ async function loadChildText(panel: BlockPanel): Promise<void> {
   const ctx = state.codeDrawerContext;
   if (!ctx) return;
   const status =
-    state.codeDrawer?.querySelector<HTMLSpanElement>(".__vdi-code-status");
+    state.codeDrawer?.querySelector<HTMLSpanElement>('.__vdi-code-status');
   const editBtn = panel.editBtn;
   if (!editBtn) return;
   const original = editBtn.textContent;
   editBtn.disabled = true;
-  editBtn.textContent = "加载中…";
+  editBtn.textContent = '加载中…';
   try {
-    const res = await apiRequest("/get-child-text", {
-      method: "POST",
+    const res = await apiRequest('/get-child-text', {
+      method: 'POST',
       body: JSON.stringify({
         file: formatPosition(ctx),
         line: ctx.line,
@@ -516,32 +516,32 @@ async function loadChildText(panel: BlockPanel): Promise<void> {
     const data = res as unknown as ChildTextData;
     // 剥离公共前置缩进：模板里子节点源码每行都带相同前导空白（缩进对齐），
     // 编辑时去掉让用户从顶格改；保存时按行还原（见 submitChildText 前的 reindent）。
-    const { text, indent } = stripCommonIndent(data?.content ?? "");
+    const { text, indent } = stripCommonIndent(data?.content ?? '');
     panel.indent = indent;
     // 展开：显示编辑器与保存/取消按钮，收起编辑按钮。
     // childtext 直接挂在 body 下（不在 split-wrap 内），用 `0 0 auto` 让它
     // 按自身内容高度（title + editorWrap 300px + actions）占位，多余空间
     // 全给上方 split-wrap（script/style）。
-    panel.editorWrap.style.display = "";
-    panel.saveBtn.style.display = "";
-    if (panel.cancelBtn) panel.cancelBtn.style.display = "";
-    editBtn.style.display = "none";
-    panel.root.style.flex = "0 0 auto";
+    panel.editorWrap.style.display = '';
+    panel.saveBtn.style.display = '';
+    if (panel.cancelBtn) panel.cancelBtn.style.display = '';
+    editBtn.style.display = 'none';
+    panel.root.style.flex = '0 0 auto';
     panel.hintEl.textContent = data?.content
-      ? "对应元素子节点源码，保存后整体替换"
-      : "该元素无子节点源码（可输入后保存新增）";
+      ? '对应元素子节点源码，保存后整体替换'
+      : '该元素无子节点源码（可输入后保存新增）';
     // 懒加载 Monaco 编辑器并写入内容；display:none→可见后 layout 一次兜底。
     const monaco = await loadMonaco();
-    await ensureEditor(panel, "childtext", text, monaco);
+    await ensureEditor(panel, 'childtext', text, monaco);
     requestAnimationFrame(() => panel.editor?.layout());
-    if (status) status.textContent = "子节点源码已加载";
+    if (status) status.textContent = '子节点源码已加载';
   } catch (e) {
     const msg = e instanceof Error ? e.message : MONACO_LOAD_FAIL;
     if (status) {
       status.textContent = msg;
       panel.hintEl.textContent = MONACO_LOAD_FAIL;
     }
-    apiError("加载子节点失败", msg);
+    apiError('加载子节点失败', msg);
   } finally {
     editBtn.disabled = false;
     editBtn.textContent = original;
@@ -566,15 +566,15 @@ async function submitChildText(
   const ctx = state.codeDrawerContext;
   if (!ctx) return;
   const status =
-    state.codeDrawer?.querySelector<HTMLSpanElement>(".__vdi-code-status");
+    state.codeDrawer?.querySelector<HTMLSpanElement>('.__vdi-code-status');
   const original = btn.textContent;
   btn.disabled = true;
-  btn.textContent = "保存中…";
+  btn.textContent = '保存中…';
   try {
     const response = await apiRequest<{ success?: boolean; error?: string }>(
-      "/update-child-text",
+      '/update-child-text',
       {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({
           file: formatPosition(ctx),
           line: ctx.line,
@@ -584,15 +584,15 @@ async function submitChildText(
       },
     );
     if (response && response.success) {
-      if (status) status.textContent = "子节点源码已保存（HMR 刷新中）";
+      if (status) status.textContent = '子节点源码已保存（HMR 刷新中）';
       collapseChildText(panel);
     } else {
       if (status)
-        status.textContent = (response && response.error) || "保存失败";
+        status.textContent = (response && response.error) || '保存失败';
     }
   } catch (e) {
     if (status)
-      status.textContent = e instanceof Error ? e.message : "网络错误";
+      status.textContent = e instanceof Error ? e.message : '网络错误';
   } finally {
     btn.disabled = false;
     btn.textContent = original;
@@ -607,14 +607,14 @@ async function submitChildText(
  * 或「✕ 取消」按钮在放弃编辑时调用。
  */
 function collapseChildText(panel: BlockPanel): void {
-  panel.editorWrap.style.display = "none";
-  panel.saveBtn.style.display = "none";
-  if (panel.cancelBtn) panel.cancelBtn.style.display = "none";
-  if (panel.editBtn) panel.editBtn.style.display = "";
-  panel.root.style.flex = "0 0 auto";
-  panel.root.style.minHeight = "";
+  panel.editorWrap.style.display = 'none';
+  panel.saveBtn.style.display = 'none';
+  if (panel.cancelBtn) panel.cancelBtn.style.display = 'none';
+  if (panel.editBtn) panel.editBtn.style.display = '';
+  panel.root.style.flex = '0 0 auto';
+  panel.root.style.minHeight = '';
   // 复位缩进缓存，避免下次复用面板时残留上次结果。
-  panel.indent = "";
+  panel.indent = '';
   // childtext 多数时间折叠；释放编辑器，下次展开由 ensureEditor 重建。
   disposeEditor(panel);
 }
@@ -636,7 +636,7 @@ function applySplitRatio(
   scriptPanel.style.flex = `${r} 1 0`;
   stylePanel.style.flex = `${1 - r} 1 0`;
   // splitter 固定占位，不参与 grow
-  const splitter = body.querySelector<HTMLDivElement>(".__vdi-code-splitter");
+  const splitter = body.querySelector<HTMLDivElement>('.__vdi-code-splitter');
   if (splitter) splitter.style.flex = `0 0 ${splitterHeight}px`;
 }
 
@@ -665,18 +665,18 @@ function installSplitter(
   const onUp = () => {
     if (!dragging) return;
     dragging = false;
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseup", onUp);
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
   };
-  splitter.addEventListener("mousedown", (e) => {
+  splitter.addEventListener('mousedown', (e) => {
     e.preventDefault();
     e.stopPropagation();
     bodyHeight = body.getBoundingClientRect().height || 1;
     startY = e.clientY;
     startRatio = state.codeDrawerSplit;
     dragging = true;
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   });
 }
 
@@ -698,26 +698,26 @@ function installResize(resizer: HTMLDivElement, drawer: HTMLDivElement): void {
     const dx = e.clientX - startX;
     const maxWidth = Math.floor(window.innerWidth * 0.9);
     const nextWidth = Math.max(MIN_WIDTH, Math.min(maxWidth, startWidth - dx));
-    drawer.style.width = nextWidth + "px";
+    drawer.style.width = nextWidth + 'px';
   };
 
   const onUp = () => {
     if (!dragging) return;
     dragging = false;
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseup", onUp);
-    const w = parseInt(drawer.style.width || "0", 10);
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    const w = parseInt(drawer.style.width || '0', 10);
     if (!isNaN(w) && w > 0) state.codeDrawerWidth = w;
   };
 
-  resizer.addEventListener("mousedown", (e) => {
+  resizer.addEventListener('mousedown', (e) => {
     e.preventDefault();
     e.stopPropagation();
     dragging = true;
     startX = e.clientX;
     startWidth =
-      parseInt(drawer.style.width || "0", 10) || state.codeDrawerWidth;
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
+      parseInt(drawer.style.width || '0', 10) || state.codeDrawerWidth;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   });
 }

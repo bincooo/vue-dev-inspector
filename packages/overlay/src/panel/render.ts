@@ -3,20 +3,20 @@
  *
  * 从原 prop-panel.ts 抽取，由 panel/index.ts 的 openPanel / rerenderPropList 调用。
  */
-import { state } from "../state";
-import { createElement } from "../utils";
-import type { ComponentAttr } from "@vue-dev-inspector/shared";
-import type { PropEntry } from "../types";
+import { state } from '../state';
+import { createElement } from '../utils';
+import type { ComponentAttr } from '@vue-dev-inspector/shared';
+import type { PropEntry } from '../types';
 import {
   createValueControl,
   cleanupValueControl,
   makeSetterSwitcher,
   getEntrySetter,
-} from "./control";
+} from './control';
 
 /** 在 componentEntries 中查找当前元素指定属性名的 ComponentAttr 元数据 */
 function findAttrByName(name: string): ComponentAttr | null {
-  const tag = (state.panelData.tag || "").toLowerCase();
+  const tag = (state.panelData.tag || '').toLowerCase();
   if (!tag) return null;
   for (const entry of state.componentEntries) {
     for (const group of entry.groups) {
@@ -36,14 +36,14 @@ function makePropRow(
   list: HTMLDivElement,
   onRemove: () => void,
 ): HTMLDivElement {
-  const row = createElement("div", "__vdi-prop-row");
+  const row = createElement('div', '__vdi-prop-row');
   const keyInput = createElement<HTMLInputElement>(
-    "input",
-    "__vdi-prop-input __vdi-prop-key",
+    'input',
+    '__vdi-prop-input __vdi-prop-key',
   );
   keyInput.value = entry.key;
-  keyInput.placeholder = "属性名";
-  const equalsSign = createElement("span", "__vdi-prop-eq", "=");
+  keyInput.placeholder = '属性名';
+  const equalsSign = createElement('span', '__vdi-prop-eq', '=');
 
   let valueControl = createValueControl(entry, findAttrByName(entry.key));
   function rebuild() {
@@ -63,9 +63,9 @@ function makePropRow(
   };
 
   const removeButton = createElement<HTMLButtonElement>(
-    "button",
-    "__vdi-prop-remove",
-    "✕",
+    'button',
+    '__vdi-prop-remove',
+    '✕',
   );
   removeButton.onclick = onRemove;
   row.append(keyInput, equalsSign, modeBtn, valueControl, removeButton);
@@ -75,10 +75,10 @@ function makePropRow(
 
 /** 渲染属性行 */
 export function renderList(list: HTMLDivElement): void {
-  list.innerHTML = "";
+  list.innerHTML = '';
   if (!state.panelData.entries.length) {
     list.appendChild(
-      createElement("div", "__vdi-prop-empty-hint", "暂无属性，点击下方添加"),
+      createElement('div', '__vdi-prop-empty-hint', '暂无属性，点击下方添加'),
     );
   } else {
     state.panelData.entries.forEach((entry, index) => {
@@ -90,13 +90,13 @@ export function renderList(list: HTMLDivElement): void {
   }
 
   const newKeyInput = createElement<HTMLInputElement>(
-    "input",
-    "__vdi-prop-input __vdi-new-input",
+    'input',
+    '__vdi-prop-input __vdi-new-input',
   );
-  newKeyInput.placeholder = "新属性名";
-  const equalsSign = createElement("span", "__vdi-prop-eq", "=");
+  newKeyInput.placeholder = '新属性名';
+  const equalsSign = createElement('span', '__vdi-prop-eq', '=');
   // 用一个 draft entry 复用 createValueControl / makeSetterSwitcher 机制
-  const draft: PropEntry = { key: "", value: "" };
+  const draft: PropEntry = { key: '', value: '' };
   let newValueControl = createValueControl(draft, null);
   function rebuildDraft() {
     const fresh = createValueControl(draft, findAttrByName(draft.key));
@@ -107,9 +107,9 @@ export function renderList(list: HTMLDivElement): void {
   let modeBtn = makeSetterSwitcher(draft, null, rebuildDraft);
   const onEnter = (e: KeyboardEvent) => {
     // CodeSetter 下 Enter 换行，不触发添加
-    if (getEntrySetter(draft, findAttrByName(draft.key)) === "CodeSetter")
+    if (getEntrySetter(draft, findAttrByName(draft.key)) === 'CodeSetter')
       return;
-    if (e.key === "Enter") doAdd();
+    if (e.key === 'Enter') doAdd();
   };
   // 属性名输入时，根据 key 的 setter 重建值控件 + 切换按钮
   newKeyInput.oninput = () => {
@@ -121,11 +121,11 @@ export function renderList(list: HTMLDivElement): void {
     rebuildDraft();
   };
   const addButton = createElement<HTMLButtonElement>(
-    "button",
-    "__vdi-add-btn",
-    "＋ 添加",
+    'button',
+    '__vdi-add-btn',
+    '＋ 添加',
   );
-  const addRow = createElement("div", "__vdi-prop-add-row");
+  const addRow = createElement('div', '__vdi-prop-add-row');
 
   const doAdd = () => {
     if (!newKeyInput.value.trim()) return;
@@ -134,9 +134,9 @@ export function renderList(list: HTMLDivElement): void {
       value: draft.value,
     });
     // 重置 draft（保留对象引用以保持 setter 选择）
-    draft.key = "";
-    draft.value = "";
-    newKeyInput.value = "";
+    draft.key = '';
+    draft.value = '';
+    newKeyInput.value = '';
     renderList(list);
   };
   addButton.onclick = doAdd;

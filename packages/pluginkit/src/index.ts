@@ -8,7 +8,7 @@
  * uni 必须走 createRequire + priming 预热）；需要 `parse` 的工具由调用方注入
  * `SfcParser`。tsup 构建把 `@vue/compiler-sfc` 标记 external，保证不打包。
  */
-export { createInspectorTransform } from "./transform";
+export { createInspectorTransform } from './transform';
 
 export {
   offsetToLine,
@@ -17,10 +17,10 @@ export {
   buildDiskLineMap,
   loadOverlayScript,
   type SfcParser,
-} from "./template";
+} from './template';
 
 export {
   buildCfgJson,
   buildExpandScripts,
   type ResolvedInspectorOptions,
-} from "./config";
+} from './config';

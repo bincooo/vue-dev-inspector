@@ -20,10 +20,10 @@
  * 类型：仅声明我们用到的 Monaco API 子集（结构化接口），不引入 5MB 的
  * monaco-editor devDep，避免误打包进 IIFE。
  */
-import { injectOnce } from "./cdn";
+import { injectOnce } from './cdn';
 
 /** Monaco 版本（jsDelivr 已验证可达；如需升级改这一处即可）。 */
-const MONACO_VERSION = "0.52.2";
+const MONACO_VERSION = '0.52.2';
 /** AMD loader 入口。 */
 const LOADER_URL = `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min/vs/loader.js`;
 /** AMD 模块基址（require.config 的 vs 路径 + worker importScripts 共用）。 */
@@ -94,7 +94,9 @@ function getWorkerUrl(): string {
   if (!workerBlobUrl) {
     const blob = new Blob(
       [`importScripts('${VS_BASE}/base/worker/workerMain.js');`],
-      { type: "application/javascript" },
+      {
+        type: 'application/javascript',
+      },
     );
     workerBlobUrl = URL.createObjectURL(blob);
   }
@@ -104,7 +106,7 @@ function getWorkerUrl(): string {
 /** 实际加载逻辑（见文件头注释的 5 步链路）。 */
 async function doLoadMonaco(): Promise<MonacoAPI> {
   // 1. 注入 AMD loader.js -> window.require / window.define 就绪
-  await injectOnce("script", { src: LOADER_URL });
+  await injectOnce('script', { src: LOADER_URL });
   const amdRequire = (window as unknown as { require: AmdRequire }).require;
 
   // 2. 一次性配置 vs 路径
@@ -124,7 +126,7 @@ async function doLoadMonaco(): Promise<MonacoAPI> {
   await new Promise<void>((resolve, reject) => {
     let done = false;
     try {
-      amdRequire(["vs/editor/editor.main"], () => {
+      amdRequire(['vs/editor/editor.main'], () => {
         done = true;
         resolve();
       });
@@ -133,14 +135,14 @@ async function doLoadMonaco(): Promise<MonacoAPI> {
       return;
     }
     setTimeout(() => {
-      if (!done) reject(new Error("Monaco editor.main 加载超时（检查网络）"));
+      if (!done) reject(new Error('Monaco editor.main 加载超时（检查网络）'));
     }, LOAD_TIMEOUT_MS);
   });
 
   // 5. 取 monaco 全局并设浅色主题
   const monaco = (window as unknown as { monaco?: MonacoAPI }).monaco;
-  if (!monaco) throw new Error("Monaco 加载失败：window.monaco 缺失");
-  monaco.editor.setTheme("vs");
+  if (!monaco) throw new Error('Monaco 加载失败：window.monaco 缺失');
+  monaco.editor.setTheme('vs');
   return monaco;
 }
 
@@ -165,9 +167,9 @@ export function loadMonaco(): Promise<MonacoAPI> {
  * childtext（子节点源码，HTML/Vue 模板片段）-> html
  */
 export function monacoLanguageFor(
-  kind: "script" | "style" | "childtext",
+  kind: 'script' | 'style' | 'childtext',
 ): string {
-  if (kind === "script") return "typescript";
-  if (kind === "style") return "css";
-  return "html";
+  if (kind === 'script') return 'typescript';
+  if (kind === 'style') return 'css';
+  return 'html';
 }

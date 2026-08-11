@@ -5,10 +5,10 @@
  * 切换 setter / 关闭面板时通过 __vdiCleanup 释放编辑器资源。
  * 行内编辑器右上角齿轮按钮可弹出大尺寸浮动编辑窗口（共享 model）。
  */
-import { createElement, stripCommonIndent, applyIndent } from "../utils";
-import { loadMonaco } from "../monaco";
-import type { MonacoAPI, MonacoEditor, MonacoModel } from "../monaco";
-import type { SetterDef } from "./index";
+import { createElement, stripCommonIndent, applyIndent } from '../utils';
+import { loadMonaco } from '../monaco';
+import type { MonacoAPI, MonacoEditor, MonacoModel } from '../monaco';
+import type { SetterDef } from './index';
 
 /** 浮动窗口是否已打开（防止重复弹出） */
 let popoutOpen = false;
@@ -18,7 +18,7 @@ function openPopout(monaco: MonacoAPI, model: MonacoModel): void {
   if (popoutOpen) return;
   popoutOpen = true;
 
-  const mask = createElement("div", "__vdi-code-popout-mask");
+  const mask = createElement('div', '__vdi-code-popout-mask');
   mask.onmousedown = (e) => {
     e.stopPropagation();
     if (e.target === mask) close();
@@ -33,30 +33,30 @@ function openPopout(monaco: MonacoAPI, model: MonacoModel): void {
       e.stopImmediatePropagation();
     }
   };
-  window.addEventListener("focusin", focusGuard, true);
+  window.addEventListener('focusin', focusGuard, true);
 
   // eslint-disable-next-line prefer-const -- 前向声明，close 闭包需在 editor 赋值前引用
   let editor: MonacoEditor;
 
   const close = () => {
     editor.dispose();
-    window.removeEventListener("focusin", focusGuard, true);
+    window.removeEventListener('focusin', focusGuard, true);
     mask.remove();
     popoutOpen = false;
   };
 
-  const popout = createElement("div", "__vdi-code-popout");
-  const header = createElement("div", "__vdi-code-popout-header");
-  const title = createElement("span", undefined, "代码编辑");
+  const popout = createElement('div', '__vdi-code-popout');
+  const header = createElement('div', '__vdi-code-popout-header');
+  const title = createElement('span', undefined, '代码编辑');
   const closeBtn = createElement<HTMLButtonElement>(
-    "button",
-    "__vdi-code-popout-close",
-    "✕",
+    'button',
+    '__vdi-code-popout-close',
+    '✕',
   );
   closeBtn.onclick = close;
   header.append(title, closeBtn);
 
-  const body = createElement("div", "__vdi-code-popout-body");
+  const body = createElement('div', '__vdi-code-popout-body');
   popout.append(header, body);
   mask.appendChild(popout);
   document.body.appendChild(mask);
@@ -64,44 +64,44 @@ function openPopout(monaco: MonacoAPI, model: MonacoModel): void {
   editor = monaco.editor.create(body, {
     model,
     automaticLayout: true,
-    theme: "vs-dark",
+    theme: 'vs-dark',
     fontSize: 14,
     minimap: { enabled: true },
     scrollBeyondLastLine: false,
     fontFamily: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
-    lineNumbers: "on",
+    lineNumbers: 'on',
   });
   requestAnimationFrame(() => editor.focus());
 }
 
 export const codeSetter: SetterDef = {
-  icon: "{ }",
-  label: "代码",
+  icon: '{ }',
+  label: '代码',
   build(entry) {
-    const container = createElement("div", "__vdi-prop-code-wrap");
+    const container = createElement('div', '__vdi-prop-code-wrap');
     const loading = createElement(
-      "div",
-      "__vdi-prop-code-loading",
-      "加载编辑器…",
+      'div',
+      '__vdi-prop-code-loading',
+      '加载编辑器…',
     );
     container.appendChild(loading);
     const disposed = false;
     // 预处理：剥离公共前置缩进，编辑时顶格展示；保存时还原。
-    const { text, indent } = stripCommonIndent(entry.value ?? "");
+    const { text, indent } = stripCommonIndent(entry.value ?? '');
     loadMonaco()
       .then((monaco) => {
         if (disposed) return;
-        const model = monaco.editor.createModel(text, "javascript");
+        const model = monaco.editor.createModel(text, 'javascript');
         model.updateOptions({ tabSize: 2 });
         const editor = monaco.editor.create(container, {
           model,
           automaticLayout: true,
-          theme: "vs-dark",
+          theme: 'vs-dark',
           fontSize: 12,
           minimap: { enabled: false },
           scrollBeyondLastLine: false,
           fontFamily: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
-          lineNumbers: "off",
+          lineNumbers: 'off',
         });
         model.onDidChangeContent(() => {
           entry.value = applyIndent(editor.getValue(), indent);
@@ -114,11 +114,11 @@ export const codeSetter: SetterDef = {
 
         // 右上角齿轮按钮 -- 点击弹出大窗口编辑
         const expandBtn = createElement<HTMLButtonElement>(
-          "button",
-          "__vdi-prop-code-expand",
-          "⚙",
+          'button',
+          '__vdi-prop-code-expand',
+          '⚙',
         );
-        expandBtn.title = "大窗口编辑";
+        expandBtn.title = '大窗口编辑';
         expandBtn.onclick = (e) => {
           e.stopPropagation();
           const storedModel = (
@@ -127,7 +127,6 @@ export const codeSetter: SetterDef = {
           if (storedModel) openPopout(monaco, storedModel);
         };
         container.appendChild(expandBtn);
-
         (container as unknown as { __vdiCleanup: () => void }).__vdiCleanup =
           () => {
             editor.dispose();
@@ -135,7 +134,7 @@ export const codeSetter: SetterDef = {
           };
       })
       .catch(() => {
-        loading.textContent = "编辑器加载失败";
+        loading.textContent = '编辑器加载失败';
       });
     return container;
   },

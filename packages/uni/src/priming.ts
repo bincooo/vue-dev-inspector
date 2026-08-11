@@ -1,4 +1,4 @@
-import { createRequire } from "node:module";
+import { createRequire } from 'node:module';
 
 /**
  * uni-app H5 编译链预载 —— 必须在任何 @vue/compiler-sfc import 之前执行。
@@ -10,5 +10,5 @@ import { createRequire } from "node:module";
  * 才能拿到正确的 genCacheKey。
  */
 const _require = createRequire(import.meta.url);
-_require("@vue/shared");
-_require("@vue/compiler-sfc");
+_require('@vue/shared');
+_require('@vue/compiler-sfc');

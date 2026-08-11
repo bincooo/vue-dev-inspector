@@ -13,9 +13,9 @@
  * `SfcParser` 注入。pluginkit 的 tsup 构建把 `@vue/compiler-sfc` 标记为 external，
  * 保证不把它打进 bundle--无论 core 还是 uni，运行时用的都是各自解析到的版本。
  */
-import type { SFCParseResult } from "@vue/compiler-sfc";
-import { loadScript } from "@vue-dev-inspector/utils";
-import fs from "node:fs";
+import type { SFCParseResult } from '@vue/compiler-sfc';
+import { loadScript } from '@vue-dev-inspector/utils';
+import fs from 'node:fs';
 
 /** 调用方注入的 `@vue/compiler-sfc` parse 函数形状。 */
 export type SfcParser = (
@@ -34,7 +34,7 @@ export type SfcParser = (
 export function offsetToLine(code: string, offset: number): number {
   let line = 1;
   for (let i = 0; i < offset && i < code.length; i++) {
-    if (code[i] === "\n") line++;
+    if (code[i] === '\n') line++;
   }
   return line;
 }
@@ -59,7 +59,7 @@ export function getDiskTemplateLine(
   diskPath: string,
 ): number {
   try {
-    const diskCode = fs.readFileSync(diskPath, "utf8");
+    const diskCode = fs.readFileSync(diskPath, 'utf8');
     const { descriptor, errors } = parse(diskCode, { filename: diskPath });
     if (errors.length || !descriptor.template) return -1;
     return offsetToLine(diskCode, descriptor.template.loc.start.offset);
@@ -80,7 +80,7 @@ export function getDiskTemplate(
   diskPath: string,
 ): { line: number; content: string } | null {
   try {
-    const diskCode = fs.readFileSync(diskPath, "utf8");
+    const diskCode = fs.readFileSync(diskPath, 'utf8');
     const { descriptor, errors } = parse(diskCode, { filename: diskPath });
     if (errors.length || !descriptor.template) return null;
     return {
@@ -110,8 +110,8 @@ export function buildDiskLineMap(
   memContent: string,
   diskContent: string,
 ): number[] {
-  const mem = memContent.split("\n");
-  const disk = diskContent.split("\n");
+  const mem = memContent.split('\n');
+  const disk = diskContent.split('\n');
   const map = new Array<number>(mem.length).fill(-1);
   let di = 0;
   for (let mi = 0; mi < mem.length; mi++) {
@@ -140,8 +140,8 @@ let _overlayScript: string | null = null;
 export function loadOverlayScript(): string {
   if (_overlayScript == null) {
     _overlayScript = loadScript(
-      "./overlay.iife.js",
-      "../../overlay/dist/overlay.iife.js",
+      './overlay.iife.js',
+      '../../overlay/dist/overlay.iife.js',
     );
   }
   return _overlayScript;

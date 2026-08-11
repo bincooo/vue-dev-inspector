@@ -5,15 +5,15 @@
  * let 导出不是 live binding，所以用一个可变对象代替。
  */
 
-import type { ClientCfg, PropEntry } from "./types";
+import type { ClientCfg, PropEntry } from './types';
 import type {
   ActionButtonDef,
   EventCallback,
   InspectEvent,
   SelectEvent,
-} from "@vue-dev-inspector/shared";
-import { emitSelect } from "./extensibility";
-import { renderToolButtons, clearToolButtons } from "./inspector";
+} from '@vue-dev-inspector/shared';
+import { emitSelect } from './extensibility';
+import { renderToolButtons, clearToolButtons } from './inspector';
 
 declare global {
   var __DEV_INSPECTOR_CFG__: ClientCfg;
@@ -22,7 +22,7 @@ declare global {
 export const clientConfig: ClientCfg = window.__DEV_INSPECTOR_CFG__;
 
 /** 拖拽放置方向（占目标元素盒的 Y 三分位） */
-export type DropDirection = "before" | "inside" | "after";
+export type DropDirection = 'before' | 'inside' | 'after';
 
 /** 全局可变状态 — 各模块通过 state.xxx 读写 */
 
@@ -39,7 +39,7 @@ export const state = {
   attrName: clientConfig.attrName,
   protocol: clientConfig.protocol,
   /** 多根目录列表 — monorepo 跨子工程编辑的标识 */
-  projectRoots: clientConfig.projectRoots ?? ["."],
+  projectRoots: clientConfig.projectRoots ?? ['.'],
   apiPrefix: clientConfig.apiPrefix,
   tagAttr: clientConfig.tagAttr,
   editor: clientConfig.editor,
@@ -116,10 +116,10 @@ export const state = {
   attrDrawer: null as HTMLDivElement | null,
   panelData: {
     rootIndex: 0,
-    file: "",
+    file: '',
     line: 0,
     col: 0,
-    tag: "",
+    tag: '',
     entries: [] as PropEntry[],
   },
 
@@ -148,7 +148,7 @@ export function actionButtons(): (HTMLDivElement | null)[] {
  * CSS 用 `body.__vdi-ctrl .__vdi-draggable` 收窄可拖拽光标：
  * 必须同时满足 ①审查开着、②按住 Ctrl、③当前已选中 → 才有 move 光标。
  */
-export const DRAGGABLE_CLASS = "__vdi-draggable";
+export const DRAGGABLE_CLASS = '__vdi-draggable';
 
 /** selectedElement 写入助手：旧节点先卸 class，避免停电/取消选中后残留。 */
 export function setSelectedElement(next: HTMLElement | null): void {

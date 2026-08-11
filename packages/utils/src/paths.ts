@@ -1,7 +1,7 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import fs from "node:fs";
-import { buildCdnUrl } from "./cdn";
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
+import { buildCdnUrl } from './cdn';
 /**
  * 跨平台 POSIX 风格的相对路径转换（用于注入 `data-source-file` 等场景）。
  *
@@ -9,7 +9,7 @@ import { buildCdnUrl } from "./cdn";
  * 反斜杠会被当作普通字符而不是路径分隔符，所以统一换成 `/`。
  */
 export function toPosixRelative(root: string, absolutePath: string): string {
-  return path.relative(root, absolutePath).split(path.sep).join("/");
+  return path.relative(root, absolutePath).split(path.sep).join('/');
 }
 
 /**
@@ -35,7 +35,7 @@ export function findProjectRoot(
 export function resolveProjectRootIndex(roots: string[], id: string): number {
   for (let i = 0; i < roots.length; i++) {
     const root = roots[i];
-    const sep = root.endsWith(path.sep) ? "" : path.sep;
+    const sep = root.endsWith(path.sep) ? '' : path.sep;
     if (id === root || id.startsWith(root + sep)) return i;
   }
   return -1;
@@ -74,7 +74,7 @@ export function loadScriptSpecifier(
   ...args: string[]
 ): string {
   if (args.length === 0) {
-    throw new Error("[vdi] loadScript: 至少需要一个参数");
+    throw new Error('[vdi] loadScript: 至少需要一个参数');
   }
 
   // 形式 3：cdn scheme（必须在 pkg: 之前匹配，避免 cdn: 前缀被当成包名）
@@ -93,7 +93,7 @@ export function loadScriptSpecifier(
       lastErr = err;
     }
     throw new Error(
-      `[vdi] cdn 所有候选路径均失败: ${candidates.join(", ")}: ${(lastErr as Error)?.message ?? "unknown"}`,
+      `[vdi] cdn 所有候选路径均失败: ${candidates.join(', ')}: ${(lastErr as Error)?.message ?? 'unknown'}`,
     );
   }
 
@@ -103,7 +103,7 @@ export function loadScriptSpecifier(
   if (args.length > 0 && resolve) {
     try {
       // 用 ESM 解析解到包 entry（dist/index.js 或 main 字段），
-      const entry = resolve(".");
+      const entry = resolve('.');
       const pkg = fileURLToPath(entry);
       baseDir = path.dirname(pkg);
     } catch (err) {
@@ -116,10 +116,10 @@ export function loadScriptSpecifier(
   for (const cd of candidates) {
     try {
       const p = path.isAbsolute(cd) ? cd : path.resolve(here, cd);
-      return fs.readFileSync(p, "utf-8");
+      return fs.readFileSync(p, 'utf-8');
     } catch {
       // intentionally ignored
     }
   }
-  throw new Error(`[vdi] 未找到构建产物（候选：${candidates.join(", ")}）`);
+  throw new Error(`[vdi] 未找到构建产物（候选：${candidates.join(', ')}）`);
 }

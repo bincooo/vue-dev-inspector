@@ -51,14 +51,14 @@ export interface ImportEdit {
 
 const isIdentStart = (ch: string | undefined): boolean =>
   !!ch &&
-  ((ch >= "a" && ch <= "z") ||
-    (ch >= "A" && ch <= "Z") ||
-    ch === "_" ||
-    ch === "$");
+  ((ch >= 'a' && ch <= 'z') ||
+    (ch >= 'A' && ch <= 'Z') ||
+    ch === '_' ||
+    ch === '$');
 const isIdentPart = (ch: string | undefined): boolean =>
-  isIdentStart(ch) || (!!ch && ch >= "0" && ch <= "9");
+  isIdentStart(ch) || (!!ch && ch >= '0' && ch <= '9');
 const isWhitespace = (ch: string | undefined): boolean =>
-  ch === " " || ch === "\t" || ch === "\n" || ch === "\r";
+  ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r';
 
 // ─── 跳过 trivia / 字符串 / 模板 ────────────────────────────
 
@@ -71,14 +71,14 @@ function skipTrivia(src: string, i: number): number {
       i++;
       continue;
     }
-    if (ch === "/" && src[i + 1] === "/") {
+    if (ch === '/' && src[i + 1] === '/') {
       i += 2;
-      while (i < n && src[i] !== "\n") i++;
+      while (i < n && src[i] !== '\n') i++;
       continue;
     }
-    if (ch === "/" && src[i + 1] === "*") {
+    if (ch === '/' && src[i + 1] === '*') {
       i += 2;
-      while (i < n && !(src[i] === "*" && src[i + 1] === "/")) i++;
+      while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++;
       i += 2;
       continue;
     }
@@ -90,7 +90,7 @@ function skipTrivia(src: string, i: number): number {
 /** 从 i 起跳过同行空格与制表符（不跨行），用于定位紧随的可选分号。 */
 function skipInlineSpaces(src: string, i: number): number {
   const n = src.length;
-  while (i < n && (src[i] === " " || src[i] === "\t")) i++;
+  while (i < n && (src[i] === ' ' || src[i] === '\t')) i++;
   return i;
 }
 
@@ -101,7 +101,7 @@ function skipString(src: string, i: number): number {
   let j = i + 1;
   while (j < n) {
     const ch = src[j];
-    if (ch === "\\") {
+    if (ch === '\\') {
       j += 2;
       continue;
     }
@@ -117,12 +117,12 @@ function skipTemplate(src: string, i: number): number {
   let j = i + 1;
   while (j < n) {
     const ch = src[j];
-    if (ch === "\\") {
+    if (ch === '\\') {
       j += 2;
       continue;
     }
-    if (ch === "`") return j + 1;
-    if (ch === "$" && src[j + 1] === "{") {
+    if (ch === '`') return j + 1;
+    if (ch === '$' && src[j + 1] === '{') {
       j = skipTemplateExpr(src, j + 2);
       continue;
     }
@@ -138,12 +138,12 @@ function skipTemplateExpr(src: string, i: number): number {
   let j = i;
   while (j < n && depth > 0) {
     const ch = src[j];
-    if (ch === "{") {
+    if (ch === '{') {
       depth++;
       j++;
       continue;
     }
-    if (ch === "}") {
+    if (ch === '}') {
       depth--;
       j++;
       continue;
@@ -152,18 +152,18 @@ function skipTemplateExpr(src: string, i: number): number {
       j = skipString(src, j);
       continue;
     }
-    if (ch === "`") {
+    if (ch === '`') {
       j = skipTemplate(src, j);
       continue;
     }
-    if (ch === "/" && src[j + 1] === "/") {
+    if (ch === '/' && src[j + 1] === '/') {
       j += 2;
-      while (j < n && src[j] !== "\n") j++;
+      while (j < n && src[j] !== '\n') j++;
       continue;
     }
-    if (ch === "/" && src[j + 1] === "*") {
+    if (ch === '/' && src[j + 1] === '*') {
       j += 2;
-      while (j < n && !(src[j] === "*" && src[j + 1] === "/")) j++;
+      while (j < n && !(src[j] === '*' && src[j + 1] === '/')) j++;
       j += 2;
       continue;
     }
@@ -177,9 +177,9 @@ function skipTemplateExpr(src: string, i: number): number {
 /** 从 i 起读取一个标识符，返回 [名字, 之后 offset]。首字符非 ident 则返回 ["", i]。 */
 function readIdent(src: string, i: number): [string, number] {
   const n = src.length;
-  if (!isIdentStart(src[i])) return ["", i];
+  if (!isIdentStart(src[i])) return ['', i];
   let j = i;
-  let out = "";
+  let out = '';
   while (j < n && isIdentPart(src[j])) {
     out += src[j];
     j++;
@@ -192,11 +192,11 @@ function readStringToken(src: string, i: number): [string, number] {
   const quote = src[i];
   const n = src.length;
   let j = i + 1;
-  let out = "";
+  let out = '';
   while (j < n) {
     const ch = src[j];
-    if (ch === "\\") {
-      out += src[j + 1] ?? "";
+    if (ch === '\\') {
+      out += src[j + 1] ?? '';
       j += 2;
       continue;
     }
@@ -209,7 +209,7 @@ function readStringToken(src: string, i: number): [string, number] {
 
 /** 若 i 起是 `as` 关键字（词边界），返回 [true, 跳过 as 之后 offset]；否则 [false, i]。 */
 function consumeAs(src: string, i: number): [boolean, number] {
-  if (src.startsWith("as", i) && !isIdentPart(src[i + 2])) return [true, i + 2];
+  if (src.startsWith('as', i) && !isIdentPart(src[i + 2])) return [true, i + 2];
   return [false, i];
 }
 
@@ -229,7 +229,7 @@ function parseOneBinding(
 ): number {
   let p = skipTrivia(src, i);
   const ch = src[p];
-  if (ch === "*") {
+  if (ch === '*') {
     // import * as Name
     p = skipTrivia(src, p + 1);
     const [gotAs, afterAs] = consumeAs(src, p);
@@ -238,11 +238,11 @@ function parseOneBinding(
     bindings.namespaceName = name;
     return after;
   }
-  if (ch === "{") {
+  if (ch === '{') {
     p++;
     for (;;) {
       p = skipTrivia(src, p);
-      if (src[p] === "}") {
+      if (src[p] === '}') {
         onNamedClose(p);
         return p + 1;
       }
@@ -258,11 +258,11 @@ function parseOneBinding(
       }
       if (imported) bindings.named.push({ imported, local });
       p = skipTrivia(src, q);
-      if (src[p] === ",") {
+      if (src[p] === ',') {
         p++;
         continue;
       }
-      if (src[p] === "}") {
+      if (src[p] === '}') {
         onNamedClose(p);
         return p + 1;
       }
@@ -287,7 +287,7 @@ function parseImportClause(
   let p = parseOneBinding(src, i, bindings, onNamedClose);
   for (;;) {
     p = skipTrivia(src, p);
-    if (src[p] !== ",") break;
+    if (src[p] !== ',') break;
     p++; // 跳过逗号
     p = parseOneBinding(src, p, bindings, onNamedClose);
   }
@@ -307,14 +307,14 @@ function parseImportAt(
   let p = start + 6; // 跳过 "import"
   p = skipTrivia(src, p);
   // import(...) 动态导入 / import.meta -> 非静态
-  if (src[p] === "(" || src[p] === ".") return null;
+  if (src[p] === '(' || src[p] === '.') return null;
   // import type { ... } / import type * as ns
-  if (src.startsWith("type", p) && !isIdentPart(src[p + 4])) {
+  if (src.startsWith('type', p) && !isIdentPart(src[p + 4])) {
     const afterType = skipTrivia(src, p + 4);
-    if (src[afterType] === "{" || src[afterType] === "*") p = afterType;
+    if (src[afterType] === '{' || src[afterType] === '*') p = afterType;
   }
 
-  const bindings: ImportBindings = { module: "", named: [] };
+  const bindings: ImportBindings = { module: '', named: [] };
   let namedCloseBrace: number | undefined;
 
   if (src[p] === '"' || src[p] === "'") {
@@ -327,7 +327,7 @@ function parseImportAt(
       namedCloseBrace = brace;
     });
     p = skipTrivia(src, p);
-    if (!src.startsWith("from", p) || isIdentPart(src[p + 4])) return null;
+    if (!src.startsWith('from', p) || isIdentPart(src[p + 4])) return null;
     p += 4;
     p = skipTrivia(src, p);
     if (src[p] !== '"' && src[p] !== "'") return null;
@@ -339,7 +339,7 @@ function parseImportAt(
   // 语句结束：仅消费同行紧随的可选分号（不跨行，避免吞下一语句的 ASI 分号）
   let end = p;
   const afterSpaces = skipInlineSpaces(src, p);
-  if (src[afterSpaces] === ";") end = afterSpaces + 1;
+  if (src[afterSpaces] === ';') end = afterSpaces + 1;
 
   return {
     imp: { ...bindings, start, end, namedCloseBrace },
@@ -366,15 +366,15 @@ function scanScriptImports(src: string): ScriptImport[] {
       i = skipString(src, i);
       continue;
     }
-    if (ch === "`") {
+    if (ch === '`') {
       i = skipTemplate(src, i);
       continue;
     }
     if (
-      ch === "i" &&
-      src.startsWith("import", i) &&
+      ch === 'i' &&
+      src.startsWith('import', i) &&
       !isIdentPart(src[i + 6]) &&
-      (i === 0 || (!isIdentPart(src[i - 1]) && src[i - 1] !== "."))
+      (i === 0 || (!isIdentPart(src[i - 1]) && src[i - 1] !== '.'))
     ) {
       const r = parseImportAt(src, i);
       if (r) {
@@ -399,9 +399,9 @@ function renderImport(b: ImportBindings): string {
   if (b.defaultName) parts.push(b.defaultName);
   if (b.namespaceName) parts.push(`* as ${b.namespaceName}`);
   if (b.named.length)
-    parts.push(`{ ${b.named.map(renderBinding).join(", ")} }`);
+    parts.push(`{ ${b.named.map(renderBinding).join(', ')} }`);
   if (parts.length === 0) return `import "${b.module}"`;
-  return `import ${parts.join(", ")} from "${b.module}"`;
+  return `import ${parts.join(', ')} from "${b.module}"`;
 }
 
 /** 规划「在 import 区追加一条语句」的编辑（offset 相对 scriptContent）。 */
@@ -412,14 +412,14 @@ function planAppend(
 ): ImportEdit {
   if (lastEnd !== null) {
     // 现有 import 之后另起一行
-    return { at: lastEnd, insert: "\n" + stmt };
+    return { at: lastEnd, insert: '\n' + stmt };
   }
-  if (content.startsWith("\n")) {
+  if (content.startsWith('\n')) {
     // 内容以换行开头：插在换行之后，让 import 独占 `<script ...>` 后的首行
-    return { at: 1, insert: stmt + "\n" };
+    return { at: 1, insert: stmt + '\n' };
   }
   // 内容不以换行开头：前后补换行，避免与开标签或后续代码粘连
-  return { at: 0, insert: "\n" + stmt + "\n" };
+  return { at: 0, insert: '\n' + stmt + '\n' };
 }
 
 // ─── 公共接口 ───────────────────────────────────────────────
@@ -427,7 +427,7 @@ function planAppend(
 /** 解析一条 import 语句字符串（来自 ComponentItem.imports）。非法 / 非静态返回 null。 */
 export function parseImportStatement(stmt: string): ImportBindings | null {
   const s = stmt.trimStart();
-  if (!s.startsWith("import")) return null;
+  if (!s.startsWith('import')) return null;
   const r = parseImportAt(s, 0);
   if (!r) return null;
   return {
@@ -443,7 +443,7 @@ export function joinImportStatements(importStmts: string[]): string {
   return importStmts
     .map((s) => s.trim())
     .filter((s) => s.length > 0 && parseImportStatement(s) !== null)
-    .join("\n");
+    .join('\n');
 }
 
 /**
@@ -526,7 +526,7 @@ export function planImports(
       edits.push({
         at: close,
         remove: wsStart < close ? [wsStart, close] : undefined,
-        insert: ", " + missingNamed.map(renderBinding).join(", ") + " ",
+        insert: ', ' + missingNamed.map(renderBinding).join(', ') + ' ',
       });
       withClause.named.push(...missingNamed);
       continue;

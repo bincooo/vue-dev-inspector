@@ -7,34 +7,34 @@
  *   'before'          插入选中元素同级上方
  *   'after'           插入选中元素同级下方
  */
-import { state, type DropDirection } from "../state";
+import { state, type DropDirection } from '../state';
 import {
   parsePosition,
   apiRequest,
   createElement,
   formatPosition,
-} from "../utils";
-import { renderIcon } from "../icon";
+} from '../utils';
+import { renderIcon } from '../icon';
 import type {
   ComponentConfigEntry,
   ComponentGroup,
-} from "@vue-dev-inspector/shared";
+} from '@vue-dev-inspector/shared';
 
 /** 抽屉遮罩（点击非面板区域关闭） */
 let drawerBackdrop: HTMLDivElement | null = null;
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
 
 const HINT_BY_DIRECTION: Record<DropDirection, string> = {
-  inside: "插入到选中元素的内部",
-  before: "插入到选中元素的同级上方",
-  after: "插入到选中元素的同级下方",
+  inside: '插入到选中元素的内部',
+  before: '插入到选中元素的同级上方',
+  after: '插入到选中元素的同级下方',
 };
 
 /** 关闭抽屉（先动画滑出，200ms 后移除 DOM；同时移除遮罩） */
 export function closeDrawer(): void {
   if (!state.componentDrawer) return;
   if (closeTimer) clearTimeout(closeTimer);
-  state.componentDrawer.style.transform = "translateX(100%)";
+  state.componentDrawer.style.transform = 'translateX(100%)';
   const drawer = state.componentDrawer;
   state.componentDrawer = null;
   if (drawerBackdrop) {
@@ -48,8 +48,8 @@ export function closeDrawer(): void {
 }
 
 /** 打开抽屉（已打开则关闭） */
-export function openDrawer(direction: DropDirection = "inside"): void {
-  state.contextMenu!.style.display = "none";
+export function openDrawer(direction: DropDirection = 'inside'): void {
+  state.contextMenu!.style.display = 'none';
   if (state.componentDrawer) {
     closeDrawer();
     return;
@@ -60,7 +60,7 @@ export function openDrawer(direction: DropDirection = "inside"): void {
 /** 构造抽屉。direction 决定「点击组件」时的插入语义 */
 function buildDrawer(direction: DropDirection, hint: string): void {
   // 遮罩：覆盖全屏、位于抽屉之下；点击非面板区域（即遮罩本身）关闭抽屉
-  const backdrop = createElement("div", "__vdi-backdrop");
+  const backdrop = createElement('div', '__vdi-backdrop');
   backdrop.onclick = (e) => {
     // 仅响应点击遮罩本身（点抽屉内部由抽屉的 stopPropagation 处理）
     if (e.target === backdrop) closeDrawer();
@@ -68,13 +68,13 @@ function buildDrawer(direction: DropDirection, hint: string): void {
   document.body.appendChild(backdrop);
   drawerBackdrop = backdrop;
 
-  const drawer = createElement("div", "__vdi-drawer");
+  const drawer = createElement('div', '__vdi-drawer');
   // 点击抽屉内部不冒泡到遮罩的关闭逻辑
   drawer.onclick = (e) => e.stopPropagation();
   document.body.appendChild(drawer);
   state.componentDrawer = drawer;
   requestAnimationFrame(() => {
-    drawer.style.transform = "translateX(0)";
+    drawer.style.transform = 'translateX(0)';
   });
 
   // 当前激活的物料库（支持多 entry 切换）；
@@ -91,31 +91,31 @@ function buildDrawer(direction: DropDirection, hint: string): void {
   // 跨满整列，sibling 之间在 grid 中按 DOM 顺序自动占据行 / 列；
   // 如果 header / search / list 先于 tabs 出现，tabs 会被挤到下一行，
   // 不再「跨列」，整个两栏布局失效。
-  const tabs = createElement("div", "__vdi-drawer-tabs");
+  const tabs = createElement('div', '__vdi-drawer-tabs');
   drawer.appendChild(tabs);
 
   // 当前激活的 groups（首次打开取默认 activeIndex 的 groups）
   const activeGroups: ComponentGroup[] = entries[activeIndex].groups;
 
   entries.forEach(function (entry, index) {
-    const tab = createElement("div", "__vdi-drawer-tab");
-    if (index === activeIndex) tab.classList.add("__vdi-drawer-tab--active");
+    const tab = createElement('div', '__vdi-drawer-tab');
+    if (index === activeIndex) tab.classList.add('__vdi-drawer-tab--active');
     // 渲染左侧 icon（HTMLDivElement 容器），缺省回退到 name 首字符
-    const iconBox = createElement("span", "__vdi-drawer-tab-icon");
-    renderIcon(iconBox, entry.icon, (entry.name || "?").substring(0, 1));
+    const iconBox = createElement('span', '__vdi-drawer-tab-icon');
+    renderIcon(iconBox, entry.icon, (entry.name || '?').substring(0, 1));
     const nameLabel = createElement(
-      "span",
-      "__vdi-drawer-tab-name",
+      'span',
+      '__vdi-drawer-tab-name',
       entry.name,
     );
     tab.title = entry.name;
     tab.append(iconBox, nameLabel);
     tab.onmouseenter = () => {
-      if (index !== activeIndex) tab.classList.add("__vdi-drawer-tab--hover");
+      if (index !== activeIndex) tab.classList.add('__vdi-drawer-tab--hover');
     };
     tab.onmouseleave = () => {
       if (index !== activeIndex)
-        tab.classList.remove("__vdi-drawer-tab--hover");
+        tab.classList.remove('__vdi-drawer-tab--hover');
     };
     tab.onclick = function () {
       if (index === activeIndex) return;
@@ -124,56 +124,56 @@ function buildDrawer(direction: DropDirection, hint: string): void {
       // 刷新其它 tab 的 active 样式
       [...tabs.children].forEach(function (el, i) {
         (el as HTMLElement).classList.toggle(
-          "__vdi-drawer-tab--active",
+          '__vdi-drawer-tab--active',
           i === activeIndex,
         );
-        (el as HTMLElement).classList.remove("__vdi-drawer-tab--hover");
+        (el as HTMLElement).classList.remove('__vdi-drawer-tab--hover');
       });
       // 重设当前 activeGroups 并清空搜索框后重渲染
       activeGroups.length = 0;
       entry.groups.forEach((g) => activeGroups.push(g));
-      searchInput.value = "";
-      render("");
+      searchInput.value = '';
+      render('');
     };
     tabs.appendChild(tab);
   });
 
   // 右侧主体容器 ——
   // 头部
-  const drawerTitle = createElement("div", "__vdi-drawer-title", "🧩 组件面板");
-  const hintWrap = createElement("div", "__vdi-drawer-hint", hint);
+  const drawerTitle = createElement('div', '__vdi-drawer-title', '🧩 组件面板');
+  const hintWrap = createElement('div', '__vdi-drawer-hint', hint);
   const closeButton = createElement<HTMLButtonElement>(
-    "button",
-    "__vdi-close-btn",
-    "✕",
+    'button',
+    '__vdi-close-btn',
+    '✕',
   );
   closeButton.onclick = closeDrawer;
-  const titleWrap = createElement("div");
+  const titleWrap = createElement('div');
   titleWrap.append(drawerTitle, hintWrap);
 
-  const header = createElement("div", "__vdi-drawer-header");
+  const header = createElement('div', '__vdi-drawer-header');
   header.append(titleWrap, closeButton);
   drawer.appendChild(header);
 
   // 搜索
   const searchInput = createElement(
-    "input",
-    "__vdi-drawer-search-input",
+    'input',
+    '__vdi-drawer-search-input',
   ) as HTMLInputElement;
-  searchInput.placeholder = "搜索组件…";
-  const searchWrap = createElement("div", "__vdi-drawer-search");
+  searchInput.placeholder = '搜索组件…';
+  const searchWrap = createElement('div', '__vdi-drawer-search');
   searchWrap.appendChild(searchInput);
   drawer.appendChild(searchWrap);
 
   // 列表
-  const list = createElement("div", "__vdi-drawer-list");
+  const list = createElement('div', '__vdi-drawer-list');
   drawer.appendChild(list);
 
-  const footer = createElement("div", "__vdi-drawer-footer");
+  const footer = createElement('div', '__vdi-drawer-footer');
 
   // 渲染：遍历当前激活 entry 的 groups，搜索作用于 groups 内 items
   function render(filter: string) {
-    list.innerHTML = "";
+    list.innerHTML = '';
     let any = false;
     activeGroups.forEach((group) => {
       const matched = group.items.filter(
@@ -185,25 +185,25 @@ function buildDrawer(direction: DropDirection, hint: string): void {
       if (!matched.length) return;
       any = true;
       const groupTitle = createElement(
-        "div",
-        "__vdi-drawer-group",
+        'div',
+        '__vdi-drawer-group',
         group.group,
       );
       list.appendChild(groupTitle);
       matched.forEach((item) => {
-        const row = createElement("div", "__vdi-drawer-item");
+        const row = createElement('div', '__vdi-drawer-item');
 
-        const icon = createElement("div", "__vdi-drawer-item-icon");
+        const icon = createElement('div', '__vdi-drawer-item-icon');
         renderIcon(icon, item.icon, item.tag.substring(0, 2));
-        const textWrap = createElement("div", "__vdi-drawer-item-text");
+        const textWrap = createElement('div', '__vdi-drawer-item-text');
         const titleLabel = createElement(
-          "div",
-          "__vdi-drawer-item-label",
+          'div',
+          '__vdi-drawer-item-label',
           item.label,
         );
         const tagLabel = createElement(
-          "div",
-          "__vdi-drawer-item-tag",
+          'div',
+          '__vdi-drawer-item-tag',
           item.tag,
         );
         textWrap.append(titleLabel, tagLabel);
@@ -211,14 +211,14 @@ function buildDrawer(direction: DropDirection, hint: string): void {
 
         row.onclick = () => {
           if (!state.selectedElement) {
-            footer.textContent = "请先选中一个元素再插入";
+            footer.textContent = '请先选中一个元素再插入';
             return;
           }
           const pos = parsePosition(
             state.selectedElement.getAttribute(state.attrName)!,
           )!;
-          apiRequest("/insert-component", {
-            method: "POST",
+          apiRequest('/insert-component', {
+            method: 'POST',
             body: JSON.stringify({
               file: formatPosition(pos),
               line: +pos.line,
@@ -234,12 +234,12 @@ function buildDrawer(direction: DropDirection, hint: string): void {
           })
             .then((response) => {
               if (response && response.success) {
-                footer.textContent = "已插入 " + item.tag + "（HMR 刷新中）";
+                footer.textContent = '已插入 ' + item.tag + '（HMR 刷新中）';
               } else
-                footer.textContent = (response && response.error) || "插入失败";
+                footer.textContent = (response && response.error) || '插入失败';
             })
             .catch((e: unknown) => {
-              footer.textContent = e instanceof Error ? e.message : "插入失败";
+              footer.textContent = e instanceof Error ? e.message : '插入失败';
             });
         };
         list.appendChild(row);
@@ -247,11 +247,11 @@ function buildDrawer(direction: DropDirection, hint: string): void {
     });
     if (!any)
       list.appendChild(
-        createElement("div", "__vdi-drawer-empty", "无匹配组件"),
+        createElement('div', '__vdi-drawer-empty', '无匹配组件'),
       );
   }
 
-  render("");
+  render('');
   searchInput.oninput = () => {
     render(searchInput.value.trim().toLowerCase());
   };

@@ -1,5 +1,5 @@
-import type { ComponentConfig } from "@vue-dev-inspector/shared";
-import type { CdnBuilder } from "@vue-dev-inspector/utils";
+import type { ComponentConfig } from '@vue-dev-inspector/shared';
+import type { CdnBuilder } from '@vue-dev-inspector/utils';
 
 /**
  * DevInspector 配置选项（从 `@vue-dev-inspector/core` 内联，移除 core 依赖）。
@@ -43,7 +43,7 @@ export interface DevInspectorOptions {
    */
   portalComponents?: string[];
   /** 编辑器类型 @default 'vscode' */
-  editor?: "vscode" | "webstorm" | "atom" | "sublime";
+  editor?: 'vscode' | 'webstorm' | 'atom' | 'sublime';
   /** 快捷键 @default { altKey: true, shiftKey: true, code: 'KeyI' } */
   shortcut?: {
     altKey?: boolean;
@@ -80,7 +80,7 @@ export interface DevInspectorOptions {
    * 默认与 `@vitejs/plugin-vue` 官方示例一致：开启 typescript。
    * @default ['typescript']
    */
-  expressionPlugins?: Array<"typescript" | "jsx">;
+  expressionPlugins?: Array<'typescript' | 'jsx'>;
   /**
    * CDN URL 构造器 —— 用于 `loadScript('cdn:<pkg>:<version>', ...)` 模式。
    *
@@ -96,15 +96,15 @@ export interface DevInspectorOptions {
 }
 
 export const DEFAULT_OPTIONS: Required<
-  Omit<DevInspectorOptions, "projectRoots" | "expandCdn">
+  Omit<DevInspectorOptions, 'projectRoots' | 'expandCdn'>
 > = {
   enabled: true,
   exclude: [/node_modules/, /\.d\.ts$/],
-  attrName: "data-source-file",
+  attrName: 'data-source-file',
   wrapComponents: [],
   portalComponents: [],
-  editor: "vscode",
-  shortcut: { altKey: true, shiftKey: true, code: "KeyI" },
+  editor: 'vscode',
+  shortcut: { altKey: true, shiftKey: true, code: 'KeyI' },
   toggleBtn: true,
   componentConfig: [],
   expressionPlugins: [],
