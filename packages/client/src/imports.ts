@@ -7,12 +7,15 @@
  *
  * 手写扫描器（与 editor.ts 既有风格一致），跳过字符串 / 模板串 / 注释，
  * 识别静态 import（跳过 import() 与 import.meta），解析默认 / 命名空间 / 具名绑定。
+ * 同时追踪 TypeScript 的 type 修饰符：clause-level `import type` 与 binding-level
+ * `import { type X }`。去重 / 合并按 type/value 语义区分——同名 type 与 value 绑定
+ * 各自保留，互不满足；值导入不并入 type-only 子句，type 绑定不并入纯值子句。
  *
  * 合并策略（同模块）：
- *   - 具名导入缺失        -> 并入现有具名子句 `{ A, B }` 的 `}` 之前
+ *   - 具名导入缺失        -> 并入语义兼容的现有具名子句 `{ A, B }` 的 `}` 之前
  *   - 默认 / 命名空间缺失或无具名子句 -> 追加一条仅含缺失绑定的新语句
  *   - 模块未导入          -> 追加整条原始语句
- *   - 全部已存在          -> 跳过（幂等）
+ *   - 全部已存在          -> 跳过（幂等，type/value 同名分别判定）
  */
 
 /** 一条 import 语句解析后的绑定描述（与位置无关）。 */
@@ -23,8 +26,23 @@ export interface ImportBindings {
   defaultName?: string;
   /** 命名空间导入的本地名：`import * as X from 'm'` */
   namespaceName?: string;
-  /** 具名导入：`{ A }` / `{ A as B }` */
-  named: Array<{ imported: string; local: string }>;
+  /** 具名导入：`{ A }` / `{ A as B }` / `{ type A }` */
+  named: NamedImport[];
+  /**
+   * clause-level type 修饰符：`import type ... from 'm'` 为 true。
+   * 整条语句按类型导入处理，具名内不再重复标 binding-level type。
+   */
+  isTypeOnly?: boolean;
+}
+
+/** 一条具名绑定。 */
+export interface NamedImport {
+  /** 导入名（as 之前） */
+  imported: string;
+  /** 本地名（as 之后，无 alias 时同 imported） */
+  local: string;
+  /** binding-level type 修饰符：`import { type X }` 为 true */
+  isTypeOnly?: boolean;
 }
 
 /** 扫描 script 源码时定位到的一条 import（含源码区间）。 */
@@ -213,11 +231,19 @@ function consumeAs(src: string, i: number): [boolean, number] {
   return [false, i];
 }
 
+/** 若 i 起是 `type` 关键字（词边界），返回 [true, 跳过 type 之后 offset]；否则 [false, i]。 */
+function consumeType(src: string, i: number): [boolean, number] {
+  if (src.startsWith('type', i) && !isIdentPart(src[i + 4]))
+    return [true, i + 4];
+  return [false, i];
+}
+
 // ─── 解析 import 子句 ───────────────────────────────────────
 
 /**
  * 解析 import 子句（`import` 与 `from` 之间）的一个绑定项，写入 bindings。
  * 一个「项」是：命名空间 `* as ns` / 具名 `{ A, B as C }` / 默认 `X`。
+ * 具名子句内支持 binding-level `type X`（置该绑定 isTypeOnly）。
  * onNamedClose 在遇到具名子句 `}` 时回调其 offset（供后续并入新具名）。
  * 返回该项之后的 offset。
  */
@@ -246,6 +272,13 @@ function parseOneBinding(
         onNamedClose(p);
         return p + 1;
       }
+      // binding-level type：`{ type X }` / `{ type X as Y }`
+      let isTypeOnly = false;
+      const [gotType, afterType] = consumeType(src, p);
+      if (gotType) {
+        isTypeOnly = true;
+        p = skipTrivia(src, afterType);
+      }
       const [imported, a1] = readIdent(src, p);
       let local = imported;
       let q = skipTrivia(src, a1);
@@ -256,7 +289,12 @@ function parseOneBinding(
         local = alias;
         q = a2;
       }
-      if (imported) bindings.named.push({ imported, local });
+      if (imported)
+        bindings.named.push({
+          imported,
+          local,
+          ...(isTypeOnly ? { isTypeOnly: true } : {}),
+        });
       p = skipTrivia(src, q);
       if (src[p] === ',') {
         p++;
@@ -297,8 +335,8 @@ function parseImportClause(
 /**
  * 从 `import` 关键字起解析一条静态 import 语句。
  * 返回 `{ imp, next }`；非静态 import（`import(` / `import.meta`）返回 null。
- * `import type { ... }` / `import type * as ns` 的 `type` 修饰符被吞掉按普通子句解析
- * （不单独追踪 type 语义；组件导入均为值导入，按名去重已足够）。
+ * 识别 clause-level `import type`（置 isTypeOnly，不再吞修饰符）。
+ * `import type "mod"`（副作用 type）非合法，按现状返回 null。
  */
 function parseImportAt(
   src: string,
@@ -308,13 +346,22 @@ function parseImportAt(
   p = skipTrivia(src, p);
   // import(...) 动态导入 / import.meta -> 非静态
   if (src[p] === '(' || src[p] === '.') return null;
-  // import type { ... } / import type * as ns
+  // import type { ... } / import type * as ns / import type D
+  let isTypeOnly = false;
   if (src.startsWith('type', p) && !isIdentPart(src[p + 4])) {
     const afterType = skipTrivia(src, p + 4);
-    if (src[afterType] === '{' || src[afterType] === '*') p = afterType;
+    // type 须后跟具名子句 / 命名空间 / 默认名；紧跟字符串（import type "mod"）非法
+    if (
+      src[afterType] === '{' ||
+      src[afterType] === '*' ||
+      isIdentStart(src[afterType])
+    ) {
+      isTypeOnly = true;
+      p = afterType;
+    }
   }
 
-  const bindings: ImportBindings = { module: '', named: [] };
+  const bindings: ImportBindings = { module: '', named: [], isTypeOnly };
   let namedCloseBrace: number | undefined;
 
   if (src[p] === '"' || src[p] === "'") {
@@ -388,9 +435,12 @@ function scanScriptImports(src: string): ScriptImport[] {
   return out;
 }
 
-/** 渲染单个具名绑定：`A` 或 `A as B`。 */
-function renderBinding(b: { imported: string; local: string }): string {
-  return b.imported === b.local ? b.imported : `${b.imported} as ${b.local}`;
+/** 渲染单个具名绑定：`A` / `type A` / `A as B` / `type A as B`。 */
+function renderBinding(b: NamedImport): string {
+  const prefix = b.isTypeOnly ? 'type ' : '';
+  return b.imported === b.local
+    ? `${prefix}${b.imported}`
+    : `${prefix}${b.imported} as ${b.local}`;
 }
 
 /** 渲染一条 import 语句（仅含给定绑定）。无任何绑定时按副作用导入。 */
@@ -400,8 +450,9 @@ function renderImport(b: ImportBindings): string {
   if (b.namespaceName) parts.push(`* as ${b.namespaceName}`);
   if (b.named.length)
     parts.push(`{ ${b.named.map(renderBinding).join(', ')} }`);
-  if (parts.length === 0) return `import "${b.module}"`;
-  return `import ${parts.join(', ')} from "${b.module}"`;
+  const head = b.isTypeOnly ? 'import type' : 'import';
+  if (parts.length === 0) return `${head} "${b.module}"`;
+  return `${head} ${parts.join(', ')} from "${b.module}"`;
 }
 
 /** 规划「在 import 区追加一条语句」的编辑（offset 相对 scriptContent）。 */
@@ -435,6 +486,7 @@ export function parseImportStatement(stmt: string): ImportBindings | null {
     defaultName: r.imp.defaultName,
     namespaceName: r.imp.namespaceName,
     named: r.imp.named,
+    isTypeOnly: r.imp.isTypeOnly,
   };
 }
 
@@ -452,6 +504,11 @@ export function joinImportStatements(importStmts: string[]): string {
  * 返回的 `ImportEdit.at` / `ImportEdit.remove` 均为相对 scriptContent 的 offset，
  * 由调用方（editor.ts `ensureImports`）翻译成 SFC 全文 offset 后用 MagicString 应用。
  * 无需改动时返回空数组。
+ *
+ * type/value 语义：
+ *   - 去重键 = (module, imported, typeFlag)，同名 type 与 value 绑定各自保留、互不满足
+ *   - 值绑定只并入「非 clause-level type」的现有具名子句（纯值 / binding-level 混排）
+ *   - type 绑定只并入「clause-level type 子句或 binding-level 混排子句」，纯值子句拒收
  */
 export function planImports(
   scriptContent: string,
@@ -474,20 +531,38 @@ export function planImports(
     const matches = [...existing, ...appended].filter(
       (e) => e.module === parsed.module,
     );
+    // 去重键编码 typeFlag：值绑定与同名 type 绑定分别判定，互不满足。
+    // 有效 type = clause-level isTypeOnly（整条 type）或 binding-level isTypeOnly
+    // （clause-level type 的具名虽不单带 binding 标记，整条已属 type）
+    const flag = (clauseType: boolean | undefined, nb: NamedImport) =>
+      (clauseType ?? false) || (nb.isTypeOnly ?? false) ? 't' : 'v';
     const alreadyNamed = new Set(
-      matches.flatMap((e) => e.named.map((nb) => nb.imported)),
+      matches.flatMap((e) =>
+        e.named.map((nb) => `${nb.imported}\0${flag(e.isTypeOnly, nb)}`),
+      ),
     );
     const missingNamed = parsed.named.filter(
-      (nb) => !alreadyNamed.has(nb.imported),
+      (nb) =>
+        !alreadyNamed.has(`${nb.imported}\0${flag(parsed.isTypeOnly, nb)}`),
     );
+    // clause-level type 的默认 / 命名空间也要按 type 语义比对
+    const parsedType = parsed.isTypeOnly ?? false;
     const missingDefault =
       parsed.defaultName &&
-      !matches.some((e) => e.defaultName === parsed.defaultName)
+      !matches.some(
+        (e) =>
+          e.defaultName === parsed.defaultName &&
+          (e.isTypeOnly ?? false) === parsedType,
+      )
         ? parsed.defaultName
         : undefined;
     const missingNamespace =
       parsed.namespaceName &&
-      !matches.some((e) => e.namespaceName === parsed.namespaceName)
+      !matches.some(
+        (e) =>
+          e.namespaceName === parsed.namespaceName &&
+          (e.isTypeOnly ?? false) === parsedType,
+      )
         ? parsed.namespaceName
         : undefined;
 
@@ -502,17 +577,31 @@ export function planImports(
         defaultName: parsed.defaultName,
         namespaceName: parsed.namespaceName,
         named: [...parsed.named],
+        isTypeOnly: parsed.isTypeOnly,
       });
       continue;
     }
 
-    // 模块已导入：仅缺具名 且 现有存在非空具名子句 -> 并入 `}` 之前
-    const withClause = existing.find(
-      (e) =>
-        e.module === parsed.module &&
-        e.namedCloseBrace !== undefined &&
-        e.named.length > 0,
-    );
+    // 模块已导入：仅缺具名 且 现有存在「语义可并入」的具名子句 -> 并入 `}` 之前
+    const withClause = existing.find((e) => {
+      if (e.module !== parsed.module) return false;
+      if (e.namedCloseBrace === undefined || e.named.length === 0) return false;
+      const existingType = e.isTypeOnly ?? false;
+      // 欲并入绑定的有效 type：clause-level isTypeOnly 覆盖整条，否则看 binding 级
+      const hasMissingValue = missingNamed.some(
+        (nb) => !flag(parsed.isTypeOnly, nb).startsWith('t'),
+      );
+      const hasMissingType = missingNamed.some((nb) =>
+        flag(parsed.isTypeOnly, nb).startsWith('t'),
+      );
+      // 值绑定：目标子句须非 clause-level type（纯值 / binding-level 混排均可）
+      if (hasMissingValue && existingType) return false; // 值不进 type 子句
+      // type 绑定：目标须是 clause-level type 子句或 binding-level 混排子句（纯值子句拒收）
+      if (hasMissingType && !existingType) {
+        return e.named.some((nb) => nb.isTypeOnly);
+      }
+      return true;
+    });
     if (
       missingNamed.length &&
       !missingDefault &&
@@ -538,6 +627,7 @@ export function planImports(
       defaultName: missingDefault,
       namespaceName: missingNamespace,
       named: missingNamed,
+      isTypeOnly: parsed.isTypeOnly,
     });
     edits.push(planAppend(scriptContent, lastEnd, partial));
     appended.push({
@@ -545,6 +635,7 @@ export function planImports(
       defaultName: missingDefault,
       namespaceName: missingNamespace,
       named: missingNamed,
+      isTypeOnly: parsed.isTypeOnly,
     });
   }
 

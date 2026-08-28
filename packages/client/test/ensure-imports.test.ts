@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ensureImports } from '../src/editor';
-import { parseImportStatement } from '../src/imports';
+import { parseImportStatement, joinImportStatements } from '../src/imports';
 
 describe('parseImportStatement', () => {
   it('parses named imports', () => {
@@ -50,10 +50,28 @@ describe('parseImportStatement', () => {
     expect(r?.defaultName).toBeUndefined();
   });
 
-  it('parses import type { ... }', () => {
+  it('parses import type { ... } as clause-level type-only', () => {
     const r = parseImportStatement('import type { Foo } from "mod"');
     expect(r?.module).toBe('mod');
+    expect(r?.isTypeOnly).toBe(true);
     expect(r?.named).toEqual([{ imported: 'Foo', local: 'Foo' }]);
+  });
+
+  it('parses binding-level type { type X }', () => {
+    const r = parseImportStatement('import { type Foo, Bar } from "mod"');
+    expect(r?.module).toBe('mod');
+    expect(r?.isTypeOnly).toBe(false);
+    expect(r?.named).toEqual([
+      { imported: 'Foo', local: 'Foo', isTypeOnly: true },
+      { imported: 'Bar', local: 'Bar' },
+    ]);
+  });
+
+  it('parses import type D (default type-only)', () => {
+    const r = parseImportStatement('import type D from "mod"');
+    expect(r?.module).toBe('mod');
+    expect(r?.isTypeOnly).toBe(true);
+    expect(r?.defaultName).toBe('D');
   });
 
   it('returns null for non-import / dynamic import', () => {
@@ -173,5 +191,53 @@ describe('ensureImports', () => {
     ]);
     expect((out.match(/<script/g) || []).length).toBe(1);
     expect(out).toContain('import { Button } from "antdv-next"');
+  });
+
+  // ---- type / value 语义 ----
+  it('keeps both when existing type-only and desired value share name', () => {
+    const sfc = wrap('import type { Foo } from "mod"\nconst a = 1');
+    const out = ensureImports(sfc, 'F.vue', ['import { Foo } from "mod"']);
+    // 两条共存：原 type-only 保留，值导入追加
+    expect(out).toContain('import type { Foo } from "mod"');
+    expect(out).toContain('import { Foo } from "mod"');
+  });
+
+  it('keeps both when existing value and desired type-only share name', () => {
+    const sfc = wrap('import { Foo } from "mod"\nconst a = 1');
+    const out = ensureImports(sfc, 'F.vue', ['import type { Foo } from "mod"']);
+    expect(out).toContain('import { Foo } from "mod"');
+    expect(out).toContain('import type { Foo } from "mod"');
+  });
+
+  it('does not merge value import into clause-level type clause', () => {
+    const sfc = wrap('import type { A } from "mod"\nconst a = 1');
+    const out = ensureImports(sfc, 'F.vue', ['import { B } from "mod"']);
+    // type 子句原样不变，B 另起一行
+    expect(out).toContain('import type { A } from "mod"');
+    expect(out).toContain('import { B } from "mod"');
+    expect(out).not.toContain('import type { A, B }');
+  });
+
+  it('merges binding-level type into existing mixed clause', () => {
+    const sfc = wrap('import { type A, B } from "mod"');
+    const out = ensureImports(sfc, 'F.vue', ['import { type C } from "mod"']);
+    expect(out).toContain('import { type A, B, type C } from "mod"');
+    // 不新增独立语句
+    expect((out.match(/from "mod"/g) || []).length).toBe(1);
+  });
+
+  it('does not merge binding-level type into pure value clause', () => {
+    const sfc = wrap('import { A } from "mod"\nconst a = 1');
+    const out = ensureImports(sfc, 'F.vue', ['import { type B } from "mod"']);
+    expect(out).toContain('import { A } from "mod"');
+    expect(out).toContain('import { type B } from "mod"');
+    expect((out.match(/from "mod"/g) || []).length).toBe(2);
+  });
+});
+
+describe('joinImportStatements', () => {
+  it('keeps binding-level type statement (no longer dropped)', () => {
+    const out = joinImportStatements(['import { type X } from "mod"']);
+    expect(out).toBe('import { type X } from "mod"');
   });
 });

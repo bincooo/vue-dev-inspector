@@ -138,7 +138,7 @@ export function vueDevInspector(opts: DevInspectorOptions = {}): Plugin {
         `<script type="module">\n${overlayScript}\n</script>\n` +
         expandInjection;
       return html
-        .replace('<body>', "<body class='pc'>")
+        .replace('<body>', "<body class='vdi pc'>")
         .replace('</body>', injection + '\n</body>');
     },
   };

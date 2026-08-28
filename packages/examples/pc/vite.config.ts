@@ -48,9 +48,8 @@ export default defineConfig({
       toggleBtn: true,
 
       // 组件面板拓展 ——
-      // 通过 plugin 形式注入；将来支持 element-plus / 自定义组件目录，
       // 只需新增对应包并在此处 append 工厂调用。
-      componentConfig: [antdv()],
+      componentConfig: [antdv(true)],
 
       projectRoots: ['.'],
     }),

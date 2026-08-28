@@ -164,7 +164,7 @@ export function uniDevInspector(opts: UniDevInspectorOptions = {}): Plugin {
       // phone shell 注入（在 overlay 脚本之前，先铺好壳避免遮挡）
       if (shell.enabled)
         html = html
-          .replace('<body>', "<body class='uni'>")
+          .replace('<body>', "<body class='vdi uni'>")
           .replace('</body>', buildPhoneShellScript(shell) + '\n</body>');
 
       const overlayScript = loadOverlayScript();

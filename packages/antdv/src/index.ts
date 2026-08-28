@@ -8,7 +8,9 @@
  * icon 字段使用 iconify 短串约定：`i-{prefix}:{name}`，由 overlay 运行时
  * fetch api.iconify.design 解析。fetch 失败回退到 tag 前缀字符占位。
  *
- * antdv 组件通过 `app.use(Antd)` 全局注册，`a-*` 标签无需声明 imports。
+ * antdv 组件通过 `app.use(Antd)` 全局注册，`a-*` 标签无需声明 imports；
+ * 走按需引入（`import { X } from "antdv-next"`）的项目传 capitalLetters: true，
+ * 条目输出 PascalCase tag 并附带对应 import 声明。
  */
 import type {
   ComponentAttr,
@@ -91,10 +93,13 @@ const placeholderAttr = (defaultValue = '请输入'): ComponentAttr => ({
 /**
  * 返回 Ant Design Vue 组件目录。
  *
- * 接受一个可选对象留作未来扩展（例如 `prefix`、`enabledGroups`），
- * 当前实现按完整目录返回，参数预留避免破坏性升级。
+ * @param capitalLetters true 时条目输出 PascalCase tag / snippet 并附带
+ *   `import { X } from "antdv-next";` 声明（按需引入项目用）；缺省 false
+ *   输出 `a-*` kebab-case 且不带 imports（app.use(Antd) 全局注册项目用）。
  */
-export default function (): ComponentConfigEntry {
+export default function (
+  capitalLetters: boolean = false,
+): ComponentConfigEntry {
   return {
     name: 'antdv',
     /** 物料库自身图标 -- 呈现在抽屉左侧 tab 上 */
@@ -116,10 +121,15 @@ export default function (): ComponentConfigEntry {
         group: 'antdv/通用',
         items: [
           {
-            tag: 'a-button',
+            tag: capitalLetters ? 'Button' : 'a-button',
+            imports: capitalLetters
+              ? ['import { Button } from "antdv-next";']
+              : undefined,
             label: 'Button 按钮',
             icon: 'i-vaadin:button',
-            snippet: '<a-button type="primary">按钮</a-button>',
+            snippet: capitalLetters
+              ? '<Button type="primary">按钮</Button>'
+              : '<a-button type="primary">按钮</a-button>',
             attrs: [
               textAttr('type', '类型', {
                 defaultValue: 'primary',
@@ -138,10 +148,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-tag',
+            tag: capitalLetters ? 'Tag' : 'a-tag',
+            imports: capitalLetters
+              ? ['import { Tag } from "antdv-next";']
+              : undefined,
             label: 'Tag 标签',
             icon: 'i-ant-design:tag-outlined',
-            snippet: '<a-tag color="blue">标签</a-tag>',
+            snippet: capitalLetters
+              ? '<Tag color="blue">标签</Tag>'
+              : '<a-tag color="blue">标签</a-tag>',
             attrs: [
               textAttr('color', '颜色', {
                 defaultValue: 'blue',
@@ -162,10 +177,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-typography-text',
+            tag: capitalLetters ? 'TypographyText' : 'a-typography-text',
+            imports: capitalLetters
+              ? ['import { TypographyText } from "antdv-next";']
+              : undefined,
             label: 'TypographyText 文本',
             icon: 'i-ant-design:font-colors-outlined',
-            snippet: '<a-typography-text>文本内容</a-typography-text>',
+            snippet: capitalLetters
+              ? '<TypographyText>文本内容</TypographyText>'
+              : '<a-typography-text>文本内容</a-typography-text>',
             attrs: [
               textAttr('type', '类型', {
                 options: ['secondary', 'success', 'warning', 'danger'],
@@ -180,10 +200,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-typography-title',
+            tag: capitalLetters ? 'TypographyTitle' : 'a-typography-title',
+            imports: capitalLetters
+              ? ['import { TypographyTitle } from "antdv-next";']
+              : undefined,
             label: 'TypographyTitle 标题',
             icon: 'i-ant-design:format-painter-outlined',
-            snippet: '<a-typography-title :level="3">标题</a-typography-title>',
+            snippet: capitalLetters
+              ? '<TypographyTitle :level="3">标题</TypographyTitle>'
+              : '<a-typography-title :level="3">标题</a-typography-title>',
             attrs: [
               textAttr('level', '层级', {
                 defaultValue: '1',
@@ -198,11 +223,17 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-typography-paragraph',
+            tag: capitalLetters
+              ? 'TypographyParagraph'
+              : 'a-typography-paragraph',
+            imports: capitalLetters
+              ? ['import { TypographyParagraph } from "antdv-next";']
+              : undefined,
             label: 'TypographyParagraph 段落',
             icon: 'i-ant-design:align-left-outlined',
-            snippet:
-              '<a-typography-paragraph>段落内容</a-typography-paragraph>',
+            snippet: capitalLetters
+              ? '<TypographyParagraph>段落内容</TypographyParagraph>'
+              : '<a-typography-paragraph>段落内容</a-typography-paragraph>',
             attrs: [
               textAttr('type', '类型', {
                 options: ['secondary', 'success', 'warning', 'danger'],
@@ -214,10 +245,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-flex',
+            tag: capitalLetters ? 'Flex' : 'a-flex',
+            imports: capitalLetters
+              ? ['import { Flex } from "antdv-next";']
+              : undefined,
             label: 'Flex 弹性布局',
             icon: 'i-ant-design:appstore-outlined',
-            snippet: '<a-flex gap="small"><span>项</span></a-flex>',
+            snippet: capitalLetters
+              ? '<Flex gap="small"><span>项</span></Flex>'
+              : '<a-flex gap="small"><span>项</span></a-flex>',
             attrs: [
               textAttr('gap', '间距', {
                 options: ['small', 'middle', 'large'],
@@ -247,10 +283,13 @@ export default function (): ComponentConfigEntry {
         group: 'antdv/布局',
         items: [
           {
-            tag: 'a-divider',
+            tag: capitalLetters ? 'Divider' : 'a-divider',
+            imports: capitalLetters
+              ? ['import { Divider } from "antdv-next";']
+              : undefined,
             label: 'Divider 分割线',
             icon: 'i-pixel:divider',
-            snippet: '<a-divider />',
+            snippet: capitalLetters ? '<Divider />' : '<a-divider />',
             attrs: [
               textAttr('type', '类型', {
                 defaultValue: 'horizontal',
@@ -270,10 +309,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-space',
+            tag: capitalLetters ? 'Space' : 'a-space',
+            imports: capitalLetters
+              ? ['import { Space } from "antdv-next";']
+              : undefined,
             label: 'Space 间距',
             icon: 'i-ant-design:column-height-outlined',
-            snippet: '<a-space><span>项</span></a-space>',
+            snippet: capitalLetters
+              ? '<Space><span>项</span></Space>'
+              : '<a-space><span>项</span></a-space>',
             attrs: [
               textAttr('direction', '方向', {
                 defaultValue: 'horizontal',
@@ -289,17 +333,27 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-layout',
+            tag: capitalLetters ? 'Layout' : 'a-layout',
+            imports: capitalLetters
+              ? ['import { Layout, LayoutSider } from "antdv-next";']
+              : undefined,
             label: 'Layout 布局',
             icon: 'i-ant-design:layout-outlined',
-            snippet: '<a-layout><a-layout-sider /><a-layout /></a-layout>',
+            snippet: capitalLetters
+              ? '<Layout><LayoutSider /><Layout /></Layout>'
+              : '<a-layout><a-layout-sider /><a-layout /></a-layout>',
             attrs: [boolAttr('has-sider', '包含侧边栏')],
           },
           {
-            tag: 'a-layout-sider',
+            tag: capitalLetters ? 'LayoutSider' : 'a-layout-sider',
+            imports: capitalLetters
+              ? ['import { LayoutSider } from "antdv-next";']
+              : undefined,
             label: 'LayoutSider 侧边栏',
             icon: 'i-ant-design:menu-fold-outlined',
-            snippet: '<a-layout-sider collapsible />',
+            snippet: capitalLetters
+              ? '<LayoutSider collapsible />'
+              : '<a-layout-sider collapsible />',
             attrs: [
               boolAttr('collapsed', '折叠'),
               boolAttr('collapsible', '可折叠'),
@@ -311,10 +365,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-row',
+            tag: capitalLetters ? 'Row' : 'a-row',
+            imports: capitalLetters
+              ? ['import { Row, Col } from "antdv-next";']
+              : undefined,
             label: 'Row 行',
             icon: 'i-ant-design:table-outlined',
-            snippet: '<a-row :gutter="16"><a-col :span="12" /></a-row>',
+            snippet: capitalLetters
+              ? '<Row :gutter="8"><Col :span="11">COL1</Col><Col :span="11">COL2</Col></Row>'
+              : '<a-row :gutter="8"><a-col :span="11">COL1</a-col><a-col :span="11">COL2</a-col></a-row>',
             attrs: [
               textAttr('gutter', '间距'),
               textAttr('justify', '水平对齐', {
@@ -333,10 +392,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-col',
+            tag: capitalLetters ? 'Col' : 'a-col',
+            imports: capitalLetters
+              ? ['import { Col } from "antdv-next";']
+              : undefined,
             label: 'Col 列',
             icon: 'i-ant-design:border-outer-outlined',
-            snippet: '<a-col :span="12" />',
+            snippet: capitalLetters
+              ? '<Col :span="11">COL1</Col>'
+              : '<a-col :span="11">COL1</a-col>',
             attrs: [
               textAttr('span', '跨度'),
               textAttr('offset', '偏移'),
@@ -345,11 +409,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-affix',
+            tag: capitalLetters ? 'Affix' : 'a-affix',
+            imports: capitalLetters
+              ? ['import { Affix, Button } from "antdv-next";']
+              : undefined,
             label: 'Affix 固钉',
             icon: 'i-ant-design:vertical-align-top-outlined',
-            snippet:
-              '<a-affix :offset-top="10"><a-button>固定</a-button></a-affix>',
+            snippet: capitalLetters
+              ? '<Affix :offset-top="10"><Button>固定</Button></Affix>'
+              : '<a-affix :offset-top="10"><a-button>固定</a-button></a-affix>',
             attrs: [
               textAttr('offset-top', '顶部偏移'),
               textAttr('offset-bottom', '底部偏移'),
@@ -357,11 +425,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-space-compact',
+            tag: capitalLetters ? 'SpaceCompact' : 'a-space-compact',
+            imports: capitalLetters
+              ? ['import { SpaceCompact, Button } from "antdv-next";']
+              : undefined,
             label: 'SpaceCompact 紧凑布局',
             icon: 'i-ant-design:compress-outlined',
-            snippet:
-              '<a-space-compact><a-button>按钮</a-button></a-space-compact>',
+            snippet: capitalLetters
+              ? '<SpaceCompact><Button>按钮</Button></SpaceCompact>'
+              : '<a-space-compact><a-button>按钮</a-button></a-space-compact>',
             attrs: [
               textAttr('direction', '方向', {
                 defaultValue: 'horizontal',
@@ -378,18 +450,27 @@ export default function (): ComponentConfigEntry {
         group: 'antdv/导航',
         items: [
           {
-            tag: 'a-breadcrumb',
+            tag: capitalLetters ? 'Breadcrumb' : 'a-breadcrumb',
+            imports: capitalLetters
+              ? ['import { Breadcrumb, BreadcrumbItem } from "antdv-next";']
+              : undefined,
             label: 'Breadcrumb 面包屑',
             icon: 'i-mdi:breadcrumb',
-            snippet:
-              '<a-breadcrumb><a-breadcrumb-item>首页</a-breadcrumb-item></a-breadcrumb>',
+            snippet: capitalLetters
+              ? '<Breadcrumb><BreadcrumbItem>首页</BreadcrumbItem></Breadcrumb>'
+              : '<a-breadcrumb><a-breadcrumb-item>首页</a-breadcrumb-item></a-breadcrumb>',
             attrs: [textAttr('separator', '分隔符')],
           },
           {
-            tag: 'a-dropdown',
+            tag: capitalLetters ? 'Dropdown' : 'a-dropdown',
+            imports: capitalLetters
+              ? ['import { Dropdown, Button } from "antdv-next";']
+              : undefined,
             label: 'Dropdown 下拉菜单',
             icon: 'i-ant-design:caret-down-outlined',
-            snippet: '<a-dropdown><a-button>菜单</a-button></a-dropdown>',
+            snippet: capitalLetters
+              ? '<Dropdown><Button>菜单</Button></Dropdown>'
+              : '<a-dropdown><a-button>菜单</a-button></a-dropdown>',
             attrs: [
               textAttr('trigger', '触发方式', {
                 options: ['click', 'hover', 'contextmenu'],
@@ -401,10 +482,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-menu',
+            tag: capitalLetters ? 'Menu' : 'a-menu',
+            imports: capitalLetters
+              ? ['import { Menu } from "antdv-next";']
+              : undefined,
             label: 'Menu 菜单',
             icon: 'i-ant-design:menu-outlined',
-            snippet: '<a-menu mode="horizontal" />',
+            snippet: capitalLetters
+              ? '<Menu mode="horizontal" />'
+              : '<a-menu mode="horizontal" />',
             attrs: [
               textAttr('mode', '模式', {
                 options: ['vertical', 'horizontal', 'inline'],
@@ -418,10 +504,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-pagination',
+            tag: capitalLetters ? 'Pagination' : 'a-pagination',
+            imports: capitalLetters
+              ? ['import { Pagination } from "antdv-next";']
+              : undefined,
             label: 'Pagination 分页',
             icon: 'i-ant-design:right-outlined',
-            snippet: '<a-pagination :total="50" />',
+            snippet: capitalLetters
+              ? '<Pagination :total="50" />'
+              : '<a-pagination :total="50" />',
             attrs: [
               textAttr('current', '当前页'),
               textAttr('page-size', '每页条数'),
@@ -433,10 +524,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-steps',
+            tag: capitalLetters ? 'Steps' : 'a-steps',
+            imports: capitalLetters
+              ? ['import { Steps } from "antdv-next";']
+              : undefined,
             label: 'Steps 步骤条',
             icon: 'i-ant-design:ordered-list-outlined',
-            snippet: '<a-steps :current="1" />',
+            snippet: capitalLetters
+              ? '<Steps :current="1" />'
+              : '<a-steps :current="1" />',
             attrs: [
               textAttr('current', '当前步骤'),
               textAttr('direction', '方向', {
@@ -449,10 +545,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-tabs',
+            tag: capitalLetters ? 'Tabs' : 'a-tabs',
+            imports: capitalLetters
+              ? ['import { Tabs, TabPane } from "antdv-next";']
+              : undefined,
             label: 'Tabs 标签页',
             icon: 'i-mdi:tab',
-            snippet: '<a-tabs><a-tab-pane key="1" tab="标签1" /></a-tabs>',
+            snippet: capitalLetters
+              ? '<Tabs><TabPane key="1" tab="标签1" /></Tabs>'
+              : '<a-tabs><a-tab-pane key="1" tab="标签1" /></a-tabs>',
             attrs: [
               textAttr('active-key', '当前激活'),
               textAttr('type', '类型', {
@@ -472,10 +573,15 @@ export default function (): ComponentConfigEntry {
         group: 'antdv/表单',
         items: [
           {
-            tag: 'a-input',
+            tag: capitalLetters ? 'Input' : 'a-input',
+            imports: capitalLetters
+              ? ['import { Input } from "antdv-next";']
+              : undefined,
             label: 'Input 输入框',
             icon: 'i-vaadin:input',
-            snippet: '<a-input placeholder="请输入" />',
+            snippet: capitalLetters
+              ? '<Input placeholder="请输入" />'
+              : '<a-input placeholder="请输入" />',
             attrs: [
               placeholderAttr(),
               sizeAttr(),
@@ -491,10 +597,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-input-password',
+            tag: capitalLetters ? 'InputPassword' : 'a-input-password',
+            imports: capitalLetters
+              ? ['import { InputPassword } from "antdv-next";']
+              : undefined,
             label: 'InputPassword 密码框',
             icon: 'i-ant-design:lock-outlined',
-            snippet: '<a-input-password placeholder="请输入密码" />',
+            snippet: capitalLetters
+              ? '<InputPassword placeholder="请输入密码" />'
+              : '<a-input-password placeholder="请输入密码" />',
             attrs: [
               placeholderAttr('请输入密码'),
               boolAttr('visibility-toggle', '显示切换按钮', 'true'),
@@ -504,10 +615,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-select',
+            tag: capitalLetters ? 'Select' : 'a-select',
+            imports: capitalLetters
+              ? ['import { Select } from "antdv-next";']
+              : undefined,
             label: 'Select 选择器',
             icon: 'i-ant-design:select-outlined',
-            snippet: '<a-select placeholder="请选择" style="width:100%" />',
+            snippet: capitalLetters
+              ? '<Select placeholder="请选择" style="width:100%" />'
+              : '<a-select placeholder="请选择" style="width:100%" />',
             attrs: [
               placeholderAttr('请选择'),
               sizeAttr(),
@@ -523,10 +639,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-date-picker',
+            tag: capitalLetters ? 'DatePicker' : 'a-date-picker',
+            imports: capitalLetters
+              ? ['import { DatePicker } from "antdv-next";']
+              : undefined,
             label: 'DatePicker 日期',
             icon: 'i-ant-design:calendar-outlined',
-            snippet: '<a-date-picker style="width:100%" />',
+            snippet: capitalLetters
+              ? '<DatePicker style="width:100%" />'
+              : '<a-date-picker style="width:100%" />',
             attrs: [
               sizeAttr(),
               disabledAttr(),
@@ -538,10 +659,13 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-switch',
+            tag: capitalLetters ? 'Switch' : 'a-switch',
+            imports: capitalLetters
+              ? ['import { Switch } from "antdv-next";']
+              : undefined,
             label: 'Switch 开关',
             icon: 'i-ant-design:switcher-outlined',
-            snippet: '<a-switch />',
+            snippet: capitalLetters ? '<Switch />' : '<a-switch />',
             attrs: [
               disabledAttr(),
               boolAttr('loading', '加载中'),
@@ -550,10 +674,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-checkbox',
+            tag: capitalLetters ? 'Checkbox' : 'a-checkbox',
+            imports: capitalLetters
+              ? ['import { Checkbox } from "antdv-next";']
+              : undefined,
             label: 'Checkbox 复选',
             icon: 'i-ant-design:check-square-outlined',
-            snippet: '<a-checkbox>复选框</a-checkbox>',
+            snippet: capitalLetters
+              ? '<Checkbox>复选框</Checkbox>'
+              : '<a-checkbox>复选框</a-checkbox>',
             attrs: [
               disabledAttr(),
               modelAttr('v-model:checked'),
@@ -561,10 +690,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-radio',
+            tag: capitalLetters ? 'Radio' : 'a-radio',
+            imports: capitalLetters
+              ? ['import { Radio } from "antdv-next";']
+              : undefined,
             label: 'Radio 单选',
             icon: 'i-ci:radio-fill',
-            snippet: '<a-radio value="a">选项</a-radio>',
+            snippet: capitalLetters
+              ? '<Radio value="a">选项</Radio>'
+              : '<a-radio value="a">选项</a-radio>',
             attrs: [
               textAttr('value', '值', { defaultValue: 'a' }),
               disabledAttr(),
@@ -572,11 +706,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-radio-group',
+            tag: capitalLetters ? 'RadioGroup' : 'a-radio-group',
+            imports: capitalLetters
+              ? ['import { RadioGroup, Radio } from "antdv-next";']
+              : undefined,
             label: 'RadioGroup 单选组',
             icon: 'i-ant-design:radio-button-checked',
-            snippet:
-              '<a-radio-group><a-radio value="a">A</a-radio></a-radio-group>',
+            snippet: capitalLetters
+              ? '<RadioGroup><Radio value="a">A</Radio></RadioGroup>'
+              : '<a-radio-group><a-radio value="a">A</a-radio></a-radio-group>',
             attrs: [
               modelAttr('v-model:value'),
               disabledAttr(),
@@ -591,11 +729,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-checkbox-group',
+            tag: capitalLetters ? 'CheckboxGroup' : 'a-checkbox-group',
+            imports: capitalLetters
+              ? ['import { CheckboxGroup, Checkbox } from "antdv-next";']
+              : undefined,
             label: 'CheckboxGroup 复选组',
             icon: 'i-ant-design:check-circle-outlined',
-            snippet:
-              '<a-checkbox-group><a-checkbox value="a">A</a-checkbox></a-checkbox-group>',
+            snippet: capitalLetters
+              ? '<CheckboxGroup><Checkbox value="a">A</Checkbox></CheckboxGroup>'
+              : '<a-checkbox-group><a-checkbox value="a">A</a-checkbox></a-checkbox-group>',
             attrs: [
               modelAttr('v-model:value'),
               disabledAttr(),
@@ -603,10 +745,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-auto-complete',
+            tag: capitalLetters ? 'AutoComplete' : 'a-auto-complete',
+            imports: capitalLetters
+              ? ['import { AutoComplete } from "antdv-next";']
+              : undefined,
             label: 'AutoComplete 自动完成',
             icon: 'i-ant-design:enter-outlined',
-            snippet: '<a-auto-complete placeholder="请输入" />',
+            snippet: capitalLetters
+              ? '<AutoComplete placeholder="请输入" />'
+              : '<a-auto-complete placeholder="请输入" />',
             attrs: [
               placeholderAttr(),
               disabledAttr(),
@@ -617,10 +764,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-cascader',
+            tag: capitalLetters ? 'Cascader' : 'a-cascader',
+            imports: capitalLetters
+              ? ['import { Cascader } from "antdv-next";']
+              : undefined,
             label: 'Cascader 级联选择',
             icon: 'i-ant-design:bars-outlined',
-            snippet: '<a-cascader placeholder="请选择" style="width:100%" />',
+            snippet: capitalLetters
+              ? '<Cascader placeholder="请选择" style="width:100%" />'
+              : '<a-cascader placeholder="请选择" style="width:100%" />',
             attrs: [
               placeholderAttr('请选择'),
               disabledAttr(),
@@ -631,10 +783,13 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-color-picker',
+            tag: capitalLetters ? 'ColorPicker' : 'a-color-picker',
+            imports: capitalLetters
+              ? ['import { ColorPicker } from "antdv-next";']
+              : undefined,
             label: 'ColorPicker 颜色选择器',
             icon: 'i-ant-design:bg-colors-outlined',
-            snippet: '<a-color-picker />',
+            snippet: capitalLetters ? '<ColorPicker />' : '<a-color-picker />',
             attrs: [
               disabledAttr(),
               allowClearAttr(),
@@ -643,10 +798,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-range-picker',
+            tag: capitalLetters ? 'DateRangePicker' : 'a-range-picker',
+            imports: capitalLetters
+              ? ['import { DateRangePicker } from "antdv-next";']
+              : undefined,
             label: 'RangePicker 日期范围',
             icon: 'i-ant-design:calendar-two-tone-outlined',
-            snippet: '<a-range-picker style="width:100%" />',
+            snippet: capitalLetters
+              ? '<DateRangePicker style="width:100%" />'
+              : '<a-range-picker style="width:100%" />',
             attrs: [
               sizeAttr(),
               disabledAttr(),
@@ -657,10 +817,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-text-area',
+            tag: capitalLetters ? 'TextArea' : 'a-text-area',
+            imports: capitalLetters
+              ? ['import { TextArea } from "antdv-next";']
+              : undefined,
             label: 'TextArea 文本域',
             icon: 'i-ant-design:align-left-outlined',
-            snippet: '<a-text-area placeholder="请输入" :rows="4" />',
+            snippet: capitalLetters
+              ? '<TextArea placeholder="请输入" :rows="4" />'
+              : '<a-text-area placeholder="请输入" :rows="4" />',
             attrs: [
               placeholderAttr(),
               disabledAttr(),
@@ -673,10 +838,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-input-search',
+            tag: capitalLetters ? 'InputSearch' : 'a-input-search',
+            imports: capitalLetters
+              ? ['import { InputSearch } from "antdv-next";']
+              : undefined,
             label: 'InputSearch 搜索框',
             icon: 'i-ant-design:search-outlined',
-            snippet: '<a-input-search placeholder="搜索" enter-button />',
+            snippet: capitalLetters
+              ? '<InputSearch placeholder="搜索" enter-button />'
+              : '<a-input-search placeholder="搜索" enter-button />',
             attrs: [
               placeholderAttr('搜索'),
               sizeAttr(),
@@ -688,10 +858,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-input-number',
+            tag: capitalLetters ? 'InputNumber' : 'a-input-number',
+            imports: capitalLetters
+              ? ['import { InputNumber } from "antdv-next";']
+              : undefined,
             label: 'InputNumber 数字输入',
             icon: 'i-ant-design:field-number-outlined',
-            snippet: '<a-input-number :min="0" :max="10" />',
+            snippet: capitalLetters
+              ? '<InputNumber :min="0" :max="10" />'
+              : '<a-input-number :min="0" :max="10" />',
             attrs: [
               placeholderAttr(),
               sizeAttr(),
@@ -704,10 +879,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-mentions',
+            tag: capitalLetters ? 'Mentions' : 'a-mentions',
+            imports: capitalLetters
+              ? ['import { Mentions } from "antdv-next";']
+              : undefined,
             label: 'Mentions 提及',
             icon: 'i-ant-design:at-outlined',
-            snippet: '<a-mentions placeholder="请输入 @" />',
+            snippet: capitalLetters
+              ? '<Mentions placeholder="请输入 @" />'
+              : '<a-mentions placeholder="请输入 @" />',
             attrs: [
               placeholderAttr('请输入 @'),
               disabledAttr(),
@@ -717,10 +897,13 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-rate',
+            tag: capitalLetters ? 'Rate' : 'a-rate',
+            imports: capitalLetters
+              ? ['import { Rate } from "antdv-next";']
+              : undefined,
             label: 'Rate 评分',
             icon: 'i-ant-design:star-outlined',
-            snippet: '<a-rate />',
+            snippet: capitalLetters ? '<Rate />' : '<a-rate />',
             attrs: [
               textAttr('count', '星星总数'),
               boolAttr('allow-half', '允许半选'),
@@ -730,10 +913,13 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-slider',
+            tag: capitalLetters ? 'Slider' : 'a-slider',
+            imports: capitalLetters
+              ? ['import { Slider } from "antdv-next";']
+              : undefined,
             label: 'Slider 滑动输入',
             icon: 'i-ant-design:sliders-outlined',
-            snippet: '<a-slider />',
+            snippet: capitalLetters ? '<Slider />' : '<a-slider />',
             attrs: [
               textAttr('min', '最小值'),
               textAttr('max', '最大值'),
@@ -745,10 +931,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-time-picker',
+            tag: capitalLetters ? 'TimePicker' : 'a-time-picker',
+            imports: capitalLetters
+              ? ['import { TimePicker } from "antdv-next";']
+              : undefined,
             label: 'TimePicker 时间',
             icon: 'i-ant-design:clock-circle-outlined',
-            snippet: '<a-time-picker style="width:100%" />',
+            snippet: capitalLetters
+              ? '<TimePicker style="width:100%" />'
+              : '<a-time-picker style="width:100%" />',
             attrs: [
               sizeAttr(),
               disabledAttr(),
@@ -759,10 +950,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-transfer',
+            tag: capitalLetters ? 'Transfer' : 'a-transfer',
+            imports: capitalLetters
+              ? ['import { Transfer } from "antdv-next";']
+              : undefined,
             label: 'Transfer 穿梭框',
             icon: 'i-ant-design:swap-outlined',
-            snippet: '<a-transfer :data-source="[]" />',
+            snippet: capitalLetters
+              ? '<Transfer :data-source="[]" />'
+              : '<a-transfer :data-source="[]" />',
             attrs: [
               disabledAttr(),
               boolAttr('show-search', '可搜索'),
@@ -771,11 +967,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-tree-select',
+            tag: capitalLetters ? 'TreeSelect' : 'a-tree-select',
+            imports: capitalLetters
+              ? ['import { TreeSelect } from "antdv-next";']
+              : undefined,
             label: 'TreeSelect 树选择',
             icon: 'i-ant-design:tree-structure-outlined',
-            snippet:
-              '<a-tree-select placeholder="请选择" style="width:100%" />',
+            snippet: capitalLetters
+              ? '<TreeSelect placeholder="请选择" style="width:100%" />'
+              : '<a-tree-select placeholder="请选择" style="width:100%" />',
             attrs: [
               placeholderAttr('请选择'),
               disabledAttr(),
@@ -788,11 +988,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-upload',
+            tag: capitalLetters ? 'Upload' : 'a-upload',
+            imports: capitalLetters
+              ? ['import { Upload, Button } from "antdv-next";']
+              : undefined,
             label: 'Upload 上传',
             icon: 'i-ant-design:upload-outlined',
-            snippet:
-              '<a-upload action="https://api.example.com/upload"><a-button>上传</a-button></a-upload>',
+            snippet: capitalLetters
+              ? '<Upload action="https://api.example.com/upload"><Button>上传</Button></Upload>'
+              : '<a-upload action="https://api.example.com/upload"><a-button>上传</a-button></a-upload>',
             attrs: [
               textAttr('action', '上传地址'),
               boolAttr('multiple', '多选'),
@@ -805,10 +1009,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-form',
+            tag: capitalLetters ? 'Form' : 'a-form',
+            imports: capitalLetters
+              ? ['import { Form } from "antdv-next";']
+              : undefined,
             label: 'Form 表单',
             icon: 'i-ant-design:form-outlined',
-            snippet: '<a-form layout="horizontal" />',
+            snippet: capitalLetters
+              ? '<Form layout="horizontal" />'
+              : '<a-form layout="horizontal" />',
             attrs: [
               textAttr('layout', '布局', {
                 defaultValue: 'horizontal',
@@ -821,11 +1030,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-form-item',
+            tag: capitalLetters ? 'FormItem' : 'a-form-item',
+            imports: capitalLetters
+              ? ['import { FormItem, Input } from "antdv-next";']
+              : undefined,
             label: 'FormItem 表单项',
             icon: 'i-ant-design:border-inner-outlined',
-            snippet:
-              '<a-form-item label="标签" name="field"><a-input /></a-form-item>',
+            snippet: capitalLetters
+              ? '<FormItem label="标签" name="field"><Input /></FormItem>'
+              : '<a-form-item label="标签" name="field"><a-input /></a-form-item>',
             attrs: [
               textAttr('label', '标签'),
               textAttr('name', '字段名'),
@@ -840,10 +1053,15 @@ export default function (): ComponentConfigEntry {
         group: 'antdv/反馈',
         items: [
           {
-            tag: 'a-alert',
+            tag: capitalLetters ? 'Alert' : 'a-alert',
+            imports: capitalLetters
+              ? ['import { Alert } from "antdv-next";']
+              : undefined,
             label: 'Alert 提示',
             icon: 'i-ant-design:alert-outlined',
-            snippet: '<a-alert message="提示信息" type="info" show-icon />',
+            snippet: capitalLetters
+              ? '<Alert message="提示信息" type="info" show-icon />'
+              : '<a-alert message="提示信息" type="info" show-icon />',
             attrs: [
               textAttr('message', '主要内容', { defaultValue: '提示信息' }),
               textAttr('description', '辅助内容'),
@@ -858,10 +1076,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-drawer',
+            tag: capitalLetters ? 'Drawer' : 'a-drawer',
+            imports: capitalLetters
+              ? ['import { Drawer } from "antdv-next";']
+              : undefined,
             label: 'Drawer 抽屉',
             icon: 'i-ant-design:menu-unfold-outlined',
-            snippet: '<a-drawer :open="false" title="标题">内容</a-drawer>',
+            snippet: capitalLetters
+              ? '<Drawer :open="false" title="标题">内容</Drawer>'
+              : '<a-drawer :open="false" title="标题">内容</a-drawer>',
             attrs: [
               textAttr(':open', '是否打开'),
               textAttr('placement', '位置', {
@@ -875,10 +1098,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-modal',
+            tag: capitalLetters ? 'Modal' : 'a-modal',
+            imports: capitalLetters
+              ? ['import { Modal } from "antdv-next";']
+              : undefined,
             label: 'Modal 对话框',
             icon: 'i-ant-design:container-outlined',
-            snippet: '<a-modal :open="false" title="标题">内容</a-modal>',
+            snippet: capitalLetters
+              ? '<Modal :open="false" title="标题">内容</Modal>'
+              : '<a-modal :open="false" title="标题">内容</a-modal>',
             attrs: [
               textAttr(':open', '是否打开'),
               textAttr('title', '标题'),
@@ -890,11 +1118,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-popconfirm',
+            tag: capitalLetters ? 'Popconfirm' : 'a-popconfirm',
+            imports: capitalLetters
+              ? ['import { Popconfirm, Button } from "antdv-next";']
+              : undefined,
             label: 'Popconfirm 气泡确认',
             icon: 'i-ant-design:question-circle-outlined',
-            snippet:
-              '<a-popconfirm title="确认？" @confirm=""><a-button>删除</a-button></a-popconfirm>',
+            snippet: capitalLetters
+              ? '<Popconfirm title="确认？" @confirm=""><Button>删除</Button></Popconfirm>'
+              : '<a-popconfirm title="确认？" @confirm=""><a-button>删除</a-button></a-popconfirm>',
             attrs: [
               textAttr('title', '标题'),
               textAttr('ok-text', '确认按钮文字'),
@@ -905,10 +1137,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-progress',
+            tag: capitalLetters ? 'Progress' : 'a-progress',
+            imports: capitalLetters
+              ? ['import { Progress } from "antdv-next";']
+              : undefined,
             label: 'Progress 进度条',
             icon: 'i-ant-design:progress-outlined',
-            snippet: '<a-progress :percent="50" />',
+            snippet: capitalLetters
+              ? '<Progress :percent="50" />'
+              : '<a-progress :percent="50" />',
             attrs: [
               textAttr('percent', '百分比'),
               textAttr('type', '类型', {
@@ -921,10 +1158,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-result',
+            tag: capitalLetters ? 'Result' : 'a-result',
+            imports: capitalLetters
+              ? ['import { Result } from "antdv-next";']
+              : undefined,
             label: 'Result 结果',
             icon: 'i-ant-design:check-circle-outlined',
-            snippet: '<a-result status="success" title="成功" />',
+            snippet: capitalLetters
+              ? '<Result status="success" title="成功" />'
+              : '<a-result status="success" title="成功" />',
             attrs: [
               textAttr('status', '状态', {
                 defaultValue: 'info',
@@ -943,10 +1185,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-skeleton',
+            tag: capitalLetters ? 'Skeleton' : 'a-skeleton',
+            imports: capitalLetters
+              ? ['import { Skeleton } from "antdv-next";']
+              : undefined,
             label: 'Skeleton 骨架屏',
             icon: 'i-ant-design:loading-outlined',
-            snippet: '<a-skeleton active />',
+            snippet: capitalLetters
+              ? '<Skeleton active />'
+              : '<a-skeleton active />',
             attrs: [
               boolAttr('active', '动画效果'),
               boolAttr('loading', '加载中'),
@@ -956,10 +1203,13 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-spin',
+            tag: capitalLetters ? 'Spin' : 'a-spin',
+            imports: capitalLetters
+              ? ['import { Spin } from "antdv-next";']
+              : undefined,
             label: 'Spin 加载中',
             icon: 'i-ant-design:loading-3-quarters-outlined',
-            snippet: '<a-spin />',
+            snippet: capitalLetters ? '<Spin />' : '<a-spin />',
             attrs: [
               boolAttr('spinning', '旋转中', 'true'),
               sizeAttr(['small', 'default', 'large']),
@@ -974,10 +1224,15 @@ export default function (): ComponentConfigEntry {
         group: 'antdv/数据展示',
         items: [
           {
-            tag: 'a-card',
+            tag: capitalLetters ? 'Card' : 'a-card',
+            imports: capitalLetters
+              ? ['import { Card } from "antdv-next";']
+              : undefined,
             label: 'Card 卡片',
             icon: 'i-ant-design:credit-card-outlined',
-            snippet: '<a-card title="标题"><p>内容</p></a-card>',
+            snippet: capitalLetters
+              ? '<Card title="标题"><p>内容</p></Card>'
+              : '<a-card title="标题"><p>内容</p></a-card>',
             attrs: [
               textAttr('title', '标题', { defaultValue: '标题' }),
               boolAttr('bordered', '边框', 'true'),
@@ -988,10 +1243,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-avatar',
+            tag: capitalLetters ? 'Avatar' : 'a-avatar',
+            imports: capitalLetters
+              ? ['import { Avatar } from "antdv-next";']
+              : undefined,
             label: 'Avatar 头像',
             icon: 'i-ant-design:user-outlined',
-            snippet: '<a-avatar src="https://example.com/avatar.png" />',
+            snippet: capitalLetters
+              ? '<Avatar src="https://example.com/avatar.png" />'
+              : '<a-avatar src="https://example.com/avatar.png" />',
             attrs: [
               textAttr('size', '尺寸', {
                 options: ['large', 'default', 'small'],
@@ -1004,10 +1264,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-badge',
+            tag: capitalLetters ? 'Badge' : 'a-badge',
+            imports: capitalLetters
+              ? ['import { Badge, Button } from "antdv-next";']
+              : undefined,
             label: 'Badge 徽标',
             icon: 'i-ant-design:badge-outlined',
-            snippet: '<a-badge count="9"><a-button>消息</a-button></a-badge>',
+            snippet: capitalLetters
+              ? '<Badge count="9"><Button>消息</Button></Badge>'
+              : '<a-badge count="9"><a-button>消息</a-button></a-badge>',
             attrs: [
               textAttr('count', '数量'),
               boolAttr('dot', '圆点'),
@@ -1025,10 +1290,13 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-calendar',
+            tag: capitalLetters ? 'Calendar' : 'a-calendar',
+            imports: capitalLetters
+              ? ['import { Calendar } from "antdv-next";']
+              : undefined,
             label: 'Calendar 日历',
             icon: 'i-ant-design:calendar-outlined',
-            snippet: '<a-calendar />',
+            snippet: capitalLetters ? '<Calendar />' : '<a-calendar />',
             attrs: [
               textAttr(':value', '当前日期'),
               textAttr('mode', '模式', {
@@ -1039,10 +1307,38 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-carousel',
+            tag: capitalLetters ? 'Carousel' : 'a-carousel',
+            imports: capitalLetters
+              ? ['import { Carousel } from "antdv-next";']
+              : undefined,
             label: 'Carousel 走马灯',
             icon: 'i-ant-design:picture-outlined',
-            snippet: `
+            snippet: capitalLetters
+              ? `
+            <Carousel autoplay>
+              <div>
+                <h3 style="color:#fff; text-align:center;background:#364d79;height:160px;margin:0;line-height:160px">
+                  1
+                </h3>
+              </div>
+              <div>
+                <h3 style="color:#fff; text-align:center;background:#364d79;height:160px;margin:0;line-height:160px">
+                  2
+                </h3>
+              </div>
+              <div>
+                <h3 style="color:#fff; text-align:center;background:#364d79;height:160px;margin:0;line-height:160px">
+                  3
+                </h3>
+              </div>
+              <div>
+                <h3 style="color:#fff; text-align:center;background:#364d79;height:160px;margin:0;line-height:160px">
+                  4
+                </h3>
+              </div>
+            </Carousel>
+            `
+              : `
             <a-carousel autoplay>
               <div>
                 <h3 style="color:#fff; text-align:center;background:#364d79;height:160px;margin:0;line-height:160px">
@@ -1077,11 +1373,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-collapse',
+            tag: capitalLetters ? 'Collapse' : 'a-collapse',
+            imports: capitalLetters
+              ? ['import { Collapse, CollapsePanel } from "antdv-next";']
+              : undefined,
             label: 'Collapse 折叠面板',
             icon: 'i-ant-design:folder-open-outlined',
-            snippet:
-              '<a-collapse><a-collapse-panel key="1" header="标题">内容</a-collapse-panel></a-collapse>',
+            snippet: capitalLetters
+              ? '<Collapse><CollapsePanel key="1" header="标题">内容</CollapsePanel></Collapse>'
+              : '<a-collapse><a-collapse-panel key="1" header="标题">内容</a-collapse-panel></a-collapse>',
             attrs: [
               boolAttr('accordion', '手风琴'),
               boolAttr('bordered', '边框', 'true'),
@@ -1091,10 +1391,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-descriptions',
+            tag: capitalLetters ? 'Descriptions' : 'a-descriptions',
+            imports: capitalLetters
+              ? ['import { Descriptions } from "antdv-next";']
+              : undefined,
             label: 'Descriptions 描述列表',
             icon: 'i-ant-design:profile-outlined',
-            snippet: '<a-descriptions title="标题" :column="2" />',
+            snippet: capitalLetters
+              ? '<Descriptions title="标题" :column="2" />'
+              : '<a-descriptions title="标题" :column="2" />',
             attrs: [
               textAttr('title', '标题'),
               boolAttr('bordered', '边框'),
@@ -1108,20 +1413,30 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-empty',
+            tag: capitalLetters ? 'Empty' : 'a-empty',
+            imports: capitalLetters
+              ? ['import { Empty } from "antdv-next";']
+              : undefined,
             label: 'Empty 空状态',
             icon: 'i-ant-design:inbox-outlined',
-            snippet: '<a-empty description="暂无数据" />',
+            snippet: capitalLetters
+              ? '<Empty description="暂无数据" />'
+              : '<a-empty description="暂无数据" />',
             attrs: [
               textAttr('description', '描述文字'),
               textAttr('image', '图片地址'),
             ],
           },
           {
-            tag: 'a-image',
+            tag: capitalLetters ? 'Image' : 'a-image',
+            imports: capitalLetters
+              ? ['import { Image } from "antdv-next";']
+              : undefined,
             label: 'Image 图片',
             icon: 'i-ant-design:file-image-outlined',
-            snippet: '<a-image src="https://example.com/image.png" />',
+            snippet: capitalLetters
+              ? '<Image src="https://example.com/image.png" />'
+              : '<a-image src="https://example.com/image.png" />',
             attrs: [
               textAttr('src', '图片地址'),
               textAttr('width', '宽度'),
@@ -1131,11 +1446,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-popover',
+            tag: capitalLetters ? 'Popover' : 'a-popover',
+            imports: capitalLetters
+              ? ['import { Popover, Button } from "antdv-next";']
+              : undefined,
             label: 'Popover 气泡卡片',
             icon: 'i-ant-design:message-outlined',
-            snippet:
-              '<a-popover title="标题" content="内容"><a-button>触发</a-button></a-popover>',
+            snippet: capitalLetters
+              ? '<Popover title="标题" content="内容"><Button>触发</Button></Popover>'
+              : '<a-popover title="标题" content="内容"><a-button>触发</a-button></a-popover>',
             attrs: [
               textAttr('title', '标题'),
               textAttr('trigger', '触发方式', {
@@ -1148,10 +1467,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-segmented',
+            tag: capitalLetters ? 'Segmented' : 'a-segmented',
+            imports: capitalLetters
+              ? ['import { Segmented } from "antdv-next";']
+              : undefined,
             label: 'Segmented 分段控制器',
             icon: 'i-ant-design:control-outlined',
-            snippet: "<a-segmented :options=\"['日', '周', '月']\" />",
+            snippet: capitalLetters
+              ? "<Segmented :options=\"['日', '周', '月']\" />"
+              : "<a-segmented :options=\"['日', '周', '月']\" />",
             attrs: [
               modelAttr('v-model:value'),
               disabledAttr(),
@@ -1161,10 +1485,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-statistic',
+            tag: capitalLetters ? 'Statistic' : 'a-statistic',
+            imports: capitalLetters
+              ? ['import { Statistic } from "antdv-next";']
+              : undefined,
             label: 'Statistic 统计数值',
             icon: 'i-ant-design:number-outlined',
-            snippet: '<a-statistic title="标题" :value="1000" />',
+            snippet: capitalLetters
+              ? '<Statistic title="标题" :value="1000" />'
+              : '<a-statistic title="标题" :value="1000" />',
             attrs: [
               textAttr('title', '标题'),
               textAttr('value', '数值'),
@@ -1174,10 +1503,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-table',
+            tag: capitalLetters ? 'Table' : 'a-table',
+            imports: capitalLetters
+              ? ['import { Table } from "antdv-next";']
+              : undefined,
             label: 'Table 表格',
             icon: 'i-ant-design:table-outlined',
-            snippet: '<a-table :columns="[]" :data-source="[]" row-key="id" />',
+            snippet: capitalLetters
+              ? '<Table :columns="[]" :data-source="[]" row-key="id" />'
+              : '<a-table :columns="[]" :data-source="[]" row-key="id" />',
             attrs: [
               textAttr(':columns', '列配置'),
               textAttr(':data-source', '数据源'),
@@ -1190,11 +1524,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-timeline',
+            tag: capitalLetters ? 'Timeline' : 'a-timeline',
+            imports: capitalLetters
+              ? ['import { Timeline, TimelineItem } from "antdv-next";']
+              : undefined,
             label: 'Timeline 时间线',
             icon: 'i-ant-design:history-outlined',
-            snippet:
-              '<a-timeline><a-timeline-item>步骤</a-timeline-item></a-timeline>',
+            snippet: capitalLetters
+              ? '<Timeline><TimelineItem>步骤</TimelineItem></Timeline>'
+              : '<a-timeline><a-timeline-item>步骤</a-timeline-item></a-timeline>',
             attrs: [
               textAttr('mode', '模式', {
                 options: ['left', 'alternate', 'right'],
@@ -1204,10 +1542,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-tooltip',
+            tag: capitalLetters ? 'Tooltip' : 'a-tooltip',
+            imports: capitalLetters
+              ? ['import { Tooltip } from "antdv-next";']
+              : undefined,
             label: 'Tooltip 文字提示',
             icon: 'i-ant-design:info-circle-outlined',
-            snippet: '<a-tooltip title="提示"><span>文字</span></a-tooltip>',
+            snippet: capitalLetters
+              ? '<Tooltip title="提示"><span>文字</span></Tooltip>'
+              : '<a-tooltip title="提示"><span>文字</span></a-tooltip>',
             attrs: [
               textAttr('title', '提示文字'),
               textAttr('trigger', '触发方式', {
@@ -1220,10 +1563,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-tree',
+            tag: capitalLetters ? 'Tree' : 'a-tree',
+            imports: capitalLetters
+              ? ['import { Tree } from "antdv-next";']
+              : undefined,
             label: 'Tree 树形',
             icon: 'i-ant-design:tree-outlined',
-            snippet: '<a-tree :tree-data="[]" />',
+            snippet: capitalLetters
+              ? '<Tree :tree-data="[]" />'
+              : '<a-tree :tree-data="[]" />',
             attrs: [
               textAttr(':tree-data', '树数据'),
               boolAttr('checkable', '可勾选'),
@@ -1234,10 +1582,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-qrcode',
+            tag: capitalLetters ? 'QRCode' : 'a-qrcode',
+            imports: capitalLetters
+              ? ['import { QRCode } from "antdv-next";']
+              : undefined,
             label: 'QRCode 二维码',
             icon: 'i-ant-design:qrcode-outlined',
-            snippet: '<a-qrcode value="https://example.com" />',
+            snippet: capitalLetters
+              ? '<QRCode value="https://example.com" />'
+              : '<a-qrcode value="https://example.com" />',
             attrs: [
               textAttr('value', '二维码内容'),
               textAttr('size', '尺寸'),
@@ -1246,11 +1599,15 @@ export default function (): ComponentConfigEntry {
             ],
           },
           {
-            tag: 'a-watermark',
+            tag: capitalLetters ? 'Watermark' : 'a-watermark',
+            imports: capitalLetters
+              ? ['import { Watermark } from "antdv-next";']
+              : undefined,
             label: 'Watermark 水印',
             icon: 'i-ant-design:watermark-outlined',
-            snippet:
-              '<a-watermark content="水印"><div style="height:200px" /></a-watermark>',
+            snippet: capitalLetters
+              ? '<Watermark content="水印"><div style="height:200px" /></Watermark>'
+              : '<a-watermark content="水印"><div style="height:200px" /></a-watermark>',
             attrs: [
               textAttr('content', '水印内容'),
               textAttr('gap', '间距'),
