@@ -114,6 +114,9 @@ export const state = {
   propPanel: null as HTMLDivElement | null,
   /** 属性选择抽屉（与 prop panel 并存的右侧滑出面板，z-index 高于 prop panel） */
   attrDrawer: null as HTMLDivElement | null,
+  /** CodeSetter 大窗口编辑弹窗的遮罩元素。由 code-setter.ts 的
+   *  openPopout 赋值 / close 置空，供 events.ts 的 focus-guard 统一判定。 */
+  codePopout: null as HTMLDivElement | null,
   panelData: {
     rootIndex: 0,
     file: '',

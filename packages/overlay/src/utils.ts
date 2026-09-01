@@ -156,31 +156,46 @@ function readSourceClassToken(el: HTMLElement): string | null {
 /**
  * 从事件目标向上查找带审查属性的可审查元素。
  *
- * 动态挂载组件（a-modal 等）的 `data-source-file` 会在 Teleport 挂载过程中丢失，
- * 改编码在 class 里。这里向上查找时若遇到带 `__vdi-src-` class token 的元素，
- * 解码后把 `data-source-file` + `data-inspector-tag` 重新写回该元素（幂等 --
- * 写回后后续命中 `getAttribute(attrName)` 快路径，不重复解码），再返回它。
+ * 动态挂载组件（a-modal / a-drawer 等）的 `data-source-file` 会在 Teleport
+ * 挂载过程中丢失，改编码在 class 里。这里向上查找时若遇到带 `__vdi-src-`
+ * class token 的元素，解码后把 `data-source-file` + `data-inspector-tag`
+ * 重新写回该元素（幂等 -- 写回后后续命中 `getAttribute(attrName)` 快路径，
+ * 不重复解码）。
+ *
+ * **portal 优先**：从 target 一路走到根，收集「最近的 data-source-file 节点」
+ * 与「最近的 `__vdi-src-` portal 根」。只要祖先链上存在 portal 根，就返回
+ * portal 根而不是内部子节点 —— 否则点 modal/drawer 里的 `<p>` / `<a-input>`
+ * 会命中内部元素，属性面板改的是段落而不是 `<a-modal>` / `<a-drawer>` 本身
+ * （用户感知为「面板下修改没有生效」）。无 portal 祖先时退回最近的
+ * data-source-file 节点，保持页面普通元素的既有命中语义。
  */
 export function findInspectableElement(
   target: EventTarget | null,
 ): HTMLElement | null {
   let node = target as HTMLElement | null;
+  let nearestAttr: HTMLElement | null = null;
+  let nearestPortal: HTMLElement | null = null;
   while (node && node !== document.documentElement) {
     if (node.nodeType === Node.ELEMENT_NODE) {
-      if (node.getAttribute(state.attrName)) return node;
-      const token = readSourceClassToken(node);
-      if (token) {
-        const decoded = decodeSourceClass(token);
-        if (decoded) {
-          node.setAttribute(state.attrName, decoded.ref);
-          node.setAttribute(state.tagAttr, decoded.tag);
-          return node;
+      if (!nearestAttr && node.getAttribute(state.attrName)) {
+        nearestAttr = node;
+      }
+      if (!nearestPortal) {
+        const token = readSourceClassToken(node);
+        if (token) {
+          const decoded = decodeSourceClass(token);
+          if (decoded) {
+            node.setAttribute(state.attrName, decoded.ref);
+            node.setAttribute(state.tagAttr, decoded.tag);
+            nearestPortal = node;
+          }
         }
       }
+      if (nearestAttr && nearestPortal) break;
     }
     node = node.parentElement;
   }
-  return null;
+  return nearestPortal ?? nearestAttr;
 }
 
 /** 对 `display:contents` 元素取首个子元素作为定位盒。 */

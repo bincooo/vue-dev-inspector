@@ -5,6 +5,7 @@
  * 切换 setter / 关闭面板时通过 __vdiCleanup 释放编辑器资源。
  * 行内编辑器右上角齿轮按钮可弹出大尺寸浮动编辑窗口（共享 model）。
  */
+import { state } from '../state';
 import { createElement, stripCommonIndent, applyIndent } from '../utils';
 import { loadMonaco } from '../monaco';
 import type { MonacoAPI, MonacoEditor, MonacoModel } from '../monaco';
@@ -23,24 +24,16 @@ function openPopout(monaco: MonacoAPI, model: MonacoModel): void {
     e.stopPropagation();
     if (e.target === mask) close();
   };
-
-  /**
-   * Capture 阶段 focusin 拦截，阻断 antdv useLockFocus 的焦点回拉。
-   * 与 events.ts 中 prop panel 的 focusin 拦截同模式（参见 42b1143）。
-   */
-  const focusGuard = (e: FocusEvent) => {
-    if (mask.contains(e.target as Node)) {
-      e.stopImmediatePropagation();
-    }
-  };
-  window.addEventListener('focusin', focusGuard, true);
+  // 挂到 state.codePopout：events.ts 的全局 focus-guard 据此拦截
+  // 浮层子树内的 focusin，阻断 antdv useLockFocus 的焦点回拉
+  state.codePopout = mask;
 
   // eslint-disable-next-line prefer-const -- 前向声明，close 闭包需在 editor 赋值前引用
   let editor: MonacoEditor;
 
   const close = () => {
     editor.dispose();
-    window.removeEventListener('focusin', focusGuard, true);
+    state.codePopout = null;
     mask.remove();
     popoutOpen = false;
   };

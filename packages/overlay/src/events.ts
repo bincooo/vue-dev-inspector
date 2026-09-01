@@ -6,7 +6,8 @@
  *                Ctrl+命中选中元素 → 进入 drag mode
  *   click        菜单关闭 / 复制 / 删除 / 选中切换（detail>=2 让位给 dblclick）
  *   dblclick     命中已选中元素 → 打开属性面板
- *   contextmenu  右键弹出菜单
+ *   contextmenu  右键弹出菜单（命中可审查元素时完整拦截不透传宿主监听器；
+ *                菜单可见时右键菜单自身 = 关闭菜单不穿透）
  *   mouseup      drag mode 提交 /move-element
  *   keydown      Esc 逐级关闭（drag / drawer / panel / 审查）+ 快捷键开关
  *   scroll/resize 重绘 overlay 与 drop indicator
@@ -113,7 +114,8 @@ function findElementUnderOverlay(x: number, y: number): HTMLElement | null {
       node.className.startsWith('__vdi-')
     )
       continue;
-    if (node.getAttribute(state.attrName)) return node;
+    /* 统一走 findInspectableElement：它会在祖先链上优先返回 portal 根
+     （a-modal / a-drawer），避免点到内部 <p> 时短路返回子节点 */
     const inspected = findInspectableElement(node);
     if (inspected) return inspected;
   }
@@ -172,32 +174,39 @@ function handleEscape(): void {
 }
 
 /**
- * 落焦时把抽屉全局 focus-trap 与编辑面板隔离。
+ * 落焦时把宿主抽屉全局 focus-trap 与 overlay 浮层隔离。
  *
  * 宿主 antdv-next 的 a-drawer / a-modal 等通过 @v-c/util 的 useLockFocus
  * 在 window focusin / keydown 上注册全局回调（focus-trap + 焦点回拉）。
- * panel-mask 是 body 上覆盖在抽屉上层的独立 div，input 的 focusin 冒泡到
- * window 后会被 syncFocus 立即抢回抽屉内的第一个可聚焦节点，造成
- *「抽屉内组件编辑面板无法输入字符」的 bug（其他场景无第三方焦点陷阱，故正常）。
+ * overlay 的顶层浮层都是 body 上的独立 div，处于宿主抽屉 DOM 之外，
+ * 浮层内 input 的 focusin 冒泡到 window 后会被 syncFocus 立即抢回
+ * 抽屉内的第一个可聚焦节点，造成「浮层内无法输入字符」的 bug
+ * （其他场景无第三方焦点陷阱，故正常）。
  *
- * 这里在 capture 阶段对 state.propPanel 子树内的 focusin 调用
+ * 这里在 capture 阶段对所有已打开顶层浮层（prop panel / 编辑代码抽屉 /
+ * 组件抽屉 / 属性选择抽屉 / CodeSetter 弹窗）子树内的 focusin 调用
  * stopImmediatePropagation，拦截后续同 capture 阶段的抽屉回调；input
  * 本身的 input / beforeinput 事件流不受影响，输入恢复正常。
+ * 新增顶层浮层时需把宿主元素加进下方 guards 列表（state 上有对应字段）。
  *
- * 非 panel 区域的 focusin 不会被拦截，原有焦点行为不变。
+ * 浮层外的 focusin 不会被拦截，原有焦点行为不变。
  */
 window.addEventListener(
   'focusin',
   (e) => {
     if (!(e.target instanceof Node)) return;
-    const panel = state.propPanel;
-    if (panel && panel.contains(e.target)) {
-      e.stopImmediatePropagation();
-      return;
-    }
-    const codeDrawer = state.codeDrawer;
-    if (codeDrawer && codeDrawer.contains(e.target)) {
-      e.stopImmediatePropagation();
+    const guards = [
+      state.propPanel,
+      state.codeDrawer,
+      state.componentDrawer,
+      state.attrDrawer,
+      state.codePopout,
+    ];
+    for (const g of guards) {
+      if (g && g.contains(e.target)) {
+        e.stopImmediatePropagation();
+        return;
+      }
     }
   },
   true,
@@ -361,9 +370,24 @@ export function init(): void {
     'contextmenu',
     function (e) {
       if (!state.inspecting) return;
+      /* 菜单可见时右键点在菜单自身上：关闭菜单（与 click 处理器
+       「点菜单内部先处理菜单关闭」语义对齐），不穿透菜单命中
+       下方元素 —— 否则菜单会闪现到新位置且选中态被意外切换 */
+      if (
+        state.contextMenu!.style.display === 'block' &&
+        state.contextMenu!.contains(e.target as Node)
+      ) {
+        swallow(e);
+        state.contextMenu!.style.display = 'none';
+        return;
+      }
       const el = resolveHitElement(e);
       if (!el) return;
-      e.preventDefault();
+      /* 完整拦截（与 mousedown / click / dblclick 语义对齐）：
+       preventDefault 压原生菜单之外还必须阻断传播，否则事件
+       继续冒泡到宿主的 contextmenu 监听器（antdv a-tree 等），
+       宿主自定义右键逻辑会与 overlay 菜单叠加触发 */
+      swallow(e);
       state.hoveredElement = el;
       hover(el);
       /* 右键命中即视作选中 —— 让后续「组件面板 / 删除」等读
