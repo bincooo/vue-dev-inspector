@@ -90,6 +90,9 @@
   color: #94a3b8;
   font-family: monospace;
   margin-top: 2px;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .__vdi-menu-item {

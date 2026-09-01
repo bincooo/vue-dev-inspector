@@ -289,7 +289,9 @@ export default function (
               : undefined,
             label: 'Divider 分割线',
             icon: 'i-pixel:divider',
-            snippet: capitalLetters ? '<Divider />' : '<a-divider />',
+            snippet: capitalLetters
+              ? '<Divider plain>标题</Divider>'
+              : '<a-divider plain>标题</a-divider>',
             attrs: [
               textAttr('type', '类型', {
                 defaultValue: 'horizontal',
@@ -316,8 +318,8 @@ export default function (
             label: 'Space 间距',
             icon: 'i-ant-design:column-height-outlined',
             snippet: capitalLetters
-              ? '<Space><span>项</span></Space>'
-              : '<a-space><span>项</span></a-space>',
+              ? '<Space><span>Space项</span></Space>'
+              : '<a-space><span>Space项</span></a-space>',
             attrs: [
               textAttr('direction', '方向', {
                 defaultValue: 'horizontal',
