@@ -1040,11 +1040,46 @@ body.__vdi-dragging * {
   overflow: hidden;
 }
 
+.__vdi-code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .__vdi-code-block-title {
   font-size: 12px;
   font-weight: 600;
   color: #1d4ed8;
   letter-spacing: 0.5px;
+}
+
+.__vdi-maximize-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  flex-shrink: 0;
+}
+
+.__vdi-maximize-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.__vdi-maximize-btn:active {
+  background: #cbd5e1;
 }
 
 .__vdi-code-editor {

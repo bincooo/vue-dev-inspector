@@ -53,10 +53,146 @@ let codeBackdrop: HTMLDivElement | null = null;
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
 /** 当前抽屉打开期间创建的 BlockPanel 列表，供 closeCodeDrawer 统一 dispose。 */
 let activePanels: BlockPanel[] = [];
+/** 当前最大化的面板（null 表示无最大化）。 */
+let maximizedPanel: BlockPanel | null = null;
+
+/** 最大化指定面板：隐藏其他面板，当前面板占满空间。 */
+function maximizePanel(panel: BlockPanel): void {
+  // 如果已有其他面板最大化，先还原
+  if (maximizedPanel && maximizedPanel !== panel) {
+    restorePanel();
+  }
+
+  maximizedPanel = panel;
+
+  // 记录子节点面板最大化前的折叠状态和原始样式
+  if (panel.editBtn) {
+    panel.isCollapsed = panel.editorWrap.style.display === 'none';
+    // 记录原始 flex 和 height，用于还原
+    panel._originalEditorFlex = panel.editorWrap.style.flex;
+    panel._originalEditorHeight = panel.editorWrap.style.height;
+  }
+
+  // 获取 split-wrap 容器
+  const splitWrap = state.codeDrawer?.querySelector<HTMLDivElement>(
+    '.__vdi-code-split-wrap',
+  );
+
+  // 隐藏其他面板
+  for (const p of activePanels) {
+    if (p !== panel) {
+      p.root.style.display = 'none';
+    }
+  }
+
+  // 如果最大化的是子节点面板（在 split-wrap 外面），需要隐藏 split-wrap
+  if (panel.editBtn && splitWrap) {
+    splitWrap.style.display = 'none';
+  }
+
+  // 当前面板占满空间
+  panel.root.style.display = '';
+  panel.root.style.flex = '1 1 0';
+
+  // 子节点面板：移除 editorWrap 的固定高度限制，让它扩展
+  if (panel.editBtn) {
+    panel.editorWrap.style.flex = '1 1 auto';
+    panel.editorWrap.style.height = '';
+  }
+
+  // 子节点面板：若折叠则展开
+  if (panel.editBtn && panel.isCollapsed) {
+    panel.editorWrap.style.display = '';
+    panel.saveBtn.style.display = '';
+    if (panel.cancelBtn) panel.cancelBtn.style.display = '';
+    if (panel.editBtn) panel.editBtn.style.display = 'none';
+  }
+
+  // 更新按钮图标
+  panel.maximizeBtn.textContent = '⤡';
+  panel.maximizeBtn.title = '还原';
+
+  // 禁用 splitter
+  const splitter = state.codeDrawer?.querySelector<HTMLDivElement>(
+    '.__vdi-code-splitter',
+  );
+  if (splitter) splitter.style.display = 'none';
+
+  // 刷新 Monaco 编辑器 layout
+  requestAnimationFrame(() => {
+    panel.editor?.layout();
+  });
+}
+
+/** 还原所有面板到默认分屏布局。 */
+function restorePanel(): void {
+  if (!maximizedPanel) return;
+
+  const panel = maximizedPanel;
+  maximizedPanel = null;
+
+  // 获取 split-wrap 容器
+  const splitWrap = state.codeDrawer?.querySelector<HTMLDivElement>(
+    '.__vdi-code-split-wrap',
+  );
+
+  // 恢复所有面板显示
+  for (const p of activePanels) {
+    p.root.style.display = '';
+  }
+
+  // 恢复 split-wrap 显示
+  if (splitWrap) {
+    splitWrap.style.display = '';
+  }
+
+  // 恢复当前面板的 flex
+  panel.root.style.flex = '';
+
+  // 子节点面板：恢复 editorWrap 的原始样式
+  if (panel.editBtn) {
+    panel.editorWrap.style.flex = panel._originalEditorFlex || '';
+    panel.editorWrap.style.height = panel._originalEditorHeight || '';
+  }
+
+  // 子节点面板：若之前是折叠态则恢复
+  if (panel.editBtn && panel.isCollapsed) {
+    collapseChildText(panel);
+  }
+
+  // 恢复按钮图标
+  panel.maximizeBtn.textContent = '⛶';
+  panel.maximizeBtn.title = '最大化';
+
+  // 恢复 splitter
+  const splitter = state.codeDrawer?.querySelector<HTMLDivElement>(
+    '.__vdi-code-splitter',
+  );
+  if (splitter) splitter.style.display = '';
+
+  // 恢复 script/style 的分屏比例
+  if (splitWrap && activePanels.length >= 2) {
+    applySplitRatio(
+      splitWrap,
+      activePanels[0].root,
+      activePanels[1].root,
+      state.codeDrawerSplit,
+    );
+  }
+
+  // 刷新 Monaco 编辑器 layout
+  requestAnimationFrame(() => {
+    for (const p of activePanels) {
+      p.editor?.layout();
+    }
+  });
+}
 
 /** 关闭抽屉（先动画滑出，再 200ms 后移除 DOM，同时移除遮罩与 Monaco 编辑器）。 */
 export function closeCodeDrawer(): void {
   if (!state.codeDrawer) return;
+  // 还原最大化状态
+  restorePanel();
   if (closeTimer) clearTimeout(closeTimer);
   state.codeDrawer.style.transform = 'translateX(100%)';
   const drawer = state.codeDrawer;
@@ -165,6 +301,17 @@ export function openCodeDrawer(element: HTMLElement): void {
   installSplitter(splitter, splitWrap, scriptPanel.root, stylePanel.root);
   activePanels = [scriptPanel, stylePanel, childPanel];
 
+  // 绑定最大化按钮点击事件
+  for (const panel of activePanels) {
+    panel.maximizeBtn.onclick = () => {
+      if (maximizedPanel === panel) {
+        restorePanel();
+      } else {
+        maximizePanel(panel);
+      }
+    };
+  }
+
   // 拉取
   apiRequest<GetBlocksResponse>('/get-block', {
     method: 'POST',
@@ -201,6 +348,7 @@ export function openCodeDrawer(element: HTMLElement): void {
 interface BlockPanel {
   root: HTMLDivElement;
   titleEl: HTMLDivElement;
+  maximizeBtn: HTMLButtonElement;
   editorWrap: HTMLDivElement;
   /** 懒加载的 Monaco 编辑器实例（applyBlock / loadChildText 时由 ensureEditor 建）。 */
   editor: MonacoEditor | null;
@@ -218,6 +366,12 @@ interface BlockPanel {
   /** 子节点文本内容的前置缩进（服务端原始 content 的公共前导空白），
    *  编辑时已剥离展示；保存时按行还原回每个非空行首，保证源码缩进不丢。 */
   indent: string;
+  /** 子节点面板是否处于折叠态（用于最大化/还原时恢复状态）。 */
+  isCollapsed: boolean;
+  /** 最大化前 editorWrap 的原始 flex 样式（用于还原）。 */
+  _originalEditorFlex?: string;
+  /** 最大化前 editorWrap 的原始 height 样式（用于还原）。 */
+  _originalEditorHeight?: string;
 }
 
 /**
@@ -241,6 +395,14 @@ function buildBlockPanel(
 ): BlockPanel {
   const root = createElement('div', '__vdi-code-block');
   const titleEl = createElement('div', '__vdi-code-block-title', label);
+  const maximizeBtn = createElement<HTMLButtonElement>(
+    'button',
+    '__vdi-maximize-btn',
+    '⛶',
+  );
+  maximizeBtn.title = '最大化';
+  const header = createElement('div', '__vdi-code-block-header');
+  header.append(titleEl, maximizeBtn);
 
   // Monaco 挂载容器；空 div 即可，monaco.editor.create 会把自身 DOM 挂进来。
   const editorWrap = createElement('div', '__vdi-code-editor');
@@ -299,6 +461,8 @@ function buildBlockPanel(
     editorWrap.style.display = 'none';
     saveBtn.style.display = 'none';
     root.style.flex = '0 0 auto';
+    // 子节点面板初始隐藏最大化按钮，点击「编辑」后显示
+    maximizeBtn.style.display = 'none';
   }
 
   // 取消按钮：放弃编辑，折叠回只显示「📝 编辑」的窄条（与保存成功后的折叠一致）。
@@ -333,11 +497,12 @@ function buildBlockPanel(
 
   if (editBtn) actions.appendChild(editBtn);
 
-  root.append(titleEl, editorWrap, actions);
+  root.append(header, editorWrap, actions);
 
   const panel: BlockPanel = {
     root,
     titleEl,
+    maximizeBtn,
     editorWrap,
     editor: null,
     model: null,
@@ -348,6 +513,7 @@ function buildBlockPanel(
     editBtn,
     cancelBtn,
     indent: '',
+    isCollapsed: kind === 'childtext',
   };
   return panel;
 }
@@ -526,6 +692,8 @@ async function loadChildText(panel: BlockPanel): Promise<void> {
     panel.saveBtn.style.display = '';
     if (panel.cancelBtn) panel.cancelBtn.style.display = '';
     editBtn.style.display = 'none';
+    // 显示最大化按钮
+    panel.maximizeBtn.style.display = '';
     panel.root.style.flex = '0 0 auto';
     panel.hintEl.textContent = data?.content
       ? '对应元素子节点源码，保存后整体替换'
@@ -607,10 +775,16 @@ async function submitChildText(
  * 或「✕ 取消」按钮在放弃编辑时调用。
  */
 function collapseChildText(panel: BlockPanel): void {
+  // 如果当前面板已最大化，先还原
+  if (maximizedPanel === panel) {
+    restorePanel();
+  }
   panel.editorWrap.style.display = 'none';
   panel.saveBtn.style.display = 'none';
   if (panel.cancelBtn) panel.cancelBtn.style.display = 'none';
   if (panel.editBtn) panel.editBtn.style.display = '';
+  // 隐藏最大化按钮
+  panel.maximizeBtn.style.display = 'none';
   panel.root.style.flex = '0 0 auto';
   panel.root.style.minHeight = '';
   // 复位缩进缓存，避免下次复用面板时残留上次结果。

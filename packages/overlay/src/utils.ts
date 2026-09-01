@@ -162,12 +162,12 @@ function readSourceClassToken(el: HTMLElement): string | null {
  * 重新写回该元素（幂等 -- 写回后后续命中 `getAttribute(attrName)` 快路径，
  * 不重复解码）。
  *
- * **portal 优先**：从 target 一路走到根，收集「最近的 data-source-file 节点」
- * 与「最近的 `__vdi-src-` portal 根」。只要祖先链上存在 portal 根，就返回
- * portal 根而不是内部子节点 —— 否则点 modal/drawer 里的 `<p>` / `<a-input>`
- * 会命中内部元素，属性面板改的是段落而不是 `<a-modal>` / `<a-drawer>` 本身
- * （用户感知为「面板下修改没有生效」）。无 portal 祖先时退回最近的
- * data-source-file 节点，保持页面普通元素的既有命中语义。
+ * **内部组件优先**：从 target 一路走到根，收集「最近的 data-source-file 节点」
+ * 与「最近的 `__vdi-src-` portal 根」。如果 nearestAttr 存在且不是 portal 根
+ * 本身，优先返回 nearestAttr —— 这样用户可以选中 modal/drawer 内部的组件
+ * （如 `<a-input>`、`<a-button>` 等）。如果 nearestAttr 不存在或是 portal 根
+ * 本身（点击的是纯文本/无标记元素），则返回 portal 根。无 portal 祖先时退回
+ * 最近的 data-source-file 节点，保持页面普通元素的既有命中语义。
  */
 export function findInspectableElement(
   target: EventTarget | null,
@@ -194,6 +194,11 @@ export function findInspectableElement(
       if (nearestAttr && nearestPortal) break;
     }
     node = node.parentElement;
+  }
+  // 如果 nearestAttr 存在且不是 portal 根本身，优先返回 nearestAttr
+  // （用户点击的是 modal/drawer 内部的组件，如 <a-input>）
+  if (nearestAttr && nearestAttr !== nearestPortal) {
+    return nearestAttr;
   }
   return nearestPortal ?? nearestAttr;
 }
