@@ -312,6 +312,27 @@ export function init(): void {
       }
       if (!state.inspecting || !state.hoveredElement) return;
 
+      /* 查找父级按钮：从当前选中元素向上遍历，选中最近的父级可审查元素 */
+      if (
+        state.parentButton!.style.display === 'flex' &&
+        state.parentButton!.contains(e.target as Node)
+      ) {
+        swallow(e);
+        if (state.selectedElement) {
+          let node = state.selectedElement.parentElement;
+          while (node && node !== document.documentElement) {
+            if (node.getAttribute(state.attrName)) {
+              hide();
+              setSelectedElement(node);
+              redrawSelection();
+              return;
+            }
+            node = node.parentElement;
+          }
+        }
+        return;
+      }
+
       /* 复制按钮 */
       if (
         state.copyButton!.style.display === 'flex' &&

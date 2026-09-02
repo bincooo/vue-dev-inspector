@@ -62,6 +62,13 @@ export function createUI(): void {
     '#3b82f6',
     '复制组件',
   );
+  state.parentButton = createActionBtn(
+    '__vdi-action-btn __vdi-parent-btn',
+    '⏷',
+    '#2563eb',
+    '#3b82f6',
+    '父级组件',
+  );
   state.insertBeforeButton = makeInsertButton(() => openDrawer('before'));
   state.insertBeforeButton.title = '在同级上方插入组件';
   state.insertAfterButton = makeInsertButton(() => openDrawer('after'));
@@ -79,6 +86,7 @@ export function createUI(): void {
     state.contextMenu,
     state.deleteButton,
     state.copyButton,
+    state.parentButton,
     state.insertBeforeButton,
     state.insertAfterButton,
     state.dropIndicator,
@@ -160,6 +168,7 @@ export function positionActionButtons(): void {
   const r = getLayoutBox(state.selectedElement)!.getBoundingClientRect();
   const del = state.deleteButton!;
   const cp = state.copyButton!;
+  const parent = state.parentButton!;
   const before = state.insertBeforeButton!;
   const after = state.insertAfterButton!;
 
@@ -171,6 +180,9 @@ export function positionActionButtons(): void {
   cp.style.display = 'flex';
   cp.style.left = r.right - 36 + 'px';
   cp.style.top = r.bottom - 18 + 'px';
+  parent.style.display = 'flex';
+  parent.style.left = r.right - 54 + 'px';
+  parent.style.top = r.bottom - 18 + 'px';
   before.style.display = 'flex';
   before.style.left = r.left + r.width / 2 - half + 'px';
   before.style.top = r.top - half + 'px';

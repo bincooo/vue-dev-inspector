@@ -79,6 +79,7 @@ export const state = {
   /** 选中框右下角的「复制 / 删除」按钮 */
   deleteButton: null as HTMLDivElement | null,
   copyButton: null as HTMLDivElement | null,
+  parentButton: null as HTMLDivElement | null,
 
   /** 选中框上下边中点的「同级插入 +」按钮 */
   insertBeforeButton: null as HTMLDivElement | null,
@@ -141,6 +142,7 @@ export function actionButtons(): (HTMLDivElement | null)[] {
   return [
     state.deleteButton,
     state.copyButton,
+    state.parentButton,
     state.insertBeforeButton,
     state.insertAfterButton,
     ...state.toolButtonsEls,
