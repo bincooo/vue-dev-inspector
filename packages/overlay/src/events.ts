@@ -46,6 +46,7 @@ import { showMenu } from './menu';
 import { closePanel, openPanel } from './panel';
 import { closeDrawer } from './panel/comp-drawer';
 import { closeCodeDrawer } from './panel/code-drawer';
+import { requestUndo, requestRedo, refreshHistoryButtons } from './history';
 
 /** Heroicons (MIT) 齿轮 SVG path */
 const GEAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg"
@@ -465,8 +466,10 @@ export function init(): void {
         }),
       })
         .then((response) => {
-          if (response && response.success) logInfo('元素已移动');
-          else
+          if (response && response.success) {
+            logInfo('元素已移动');
+            refreshHistoryButtons();
+          } else
             apiError('move 失败', (response && response.error) || '未知错误');
         })
         .catch(() => apiError('move 失败', '网络错误'));
@@ -483,6 +486,29 @@ export function init(): void {
     if (isShortcut(e)) {
       e.preventDefault();
       toggle();
+      return;
+    }
+    /* Ctrl+Z / Ctrl+Shift+Z：审查模式内的全局撤销/重做。
+       事件目标在可编辑元素（input/textarea/contenteditable/Monaco 容器）
+       内时不拦截 —— 让原生文本撤销在输入框里正常生效。 */
+    if (
+      state.inspecting &&
+      e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      e.code === 'KeyZ'
+    ) {
+      const target = e.target as HTMLElement | null;
+      const editable =
+        target &&
+        target.closest(
+          'input, textarea, [contenteditable], .__vdi-code-editor',
+        ) !== null;
+      if (!editable) {
+        e.preventDefault();
+        if (e.shiftKey) requestRedo();
+        else requestUndo();
+      }
     }
   });
 
@@ -505,6 +531,16 @@ export function init(): void {
 
   /* 启动 */
   createUI();
+
+  /* 历史 bar 按钮：点击撤销/重做（swallow 防止透传到宿主页面） */
+  state.undoButton!.onclick = (e) => {
+    swallow(e);
+    requestUndo();
+  };
+  state.redoButton!.onclick = (e) => {
+    swallow(e);
+    requestRedo();
+  };
 
   /* overlay pointer-events:auto 会拦截 wheel 导致页面无法滚动。
      绑 wheel 透传：找到下方可滚动容器手动滚动 + 刷新 overlay 定位。 */

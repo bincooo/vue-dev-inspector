@@ -29,6 +29,7 @@ import {
   stripCommonIndent,
   applyIndent,
 } from '../utils';
+import { refreshHistoryButtons } from '../history';
 import type { CodeBlockData, GetBlocksResponse, ChildTextData } from '../types';
 import type { MonacoAPI, MonacoEditor, MonacoModel } from '../monaco';
 import { loadMonaco, monacoLanguageFor } from '../monaco';
@@ -634,6 +635,7 @@ async function submitBlock(
     );
     if (response && response.success) {
       if (status) status.textContent = `${labelOf(kind)} 已保存（HMR 刷新中）`;
+      refreshHistoryButtons();
     } else {
       if (status)
         status.textContent = (response && response.error) || '保存失败';
@@ -754,6 +756,7 @@ async function submitChildText(
     if (response && response.success) {
       if (status) status.textContent = '子节点源码已保存（HMR 刷新中）';
       collapseChildText(panel);
+      refreshHistoryButtons();
     } else {
       if (status)
         status.textContent = (response && response.error) || '保存失败';

@@ -76,3 +76,25 @@ export interface GetBlocksResponse {
   script?: CodeBlockData;
   style?: CodeBlockData;
 }
+
+/** 历史条目摘要（/undo、/redo 响应内嵌；file 为相对根的 posix 路径）。 */
+export interface HistoryEntryData {
+  file: string;
+  label: string;
+  at: number;
+}
+
+/** /undo、/redo 响应：success 空栈时为 false，canUndo/canRedo 为剩余条数。 */
+export interface HistoryResponse {
+  success?: boolean;
+  error?: string;
+  entry?: HistoryEntryData | null;
+  canUndo?: number;
+  canRedo?: number;
+}
+
+/** /get-history 响应：按钮禁用态刷新所需的最小状态。 */
+export interface HistoryStateResponse {
+  canUndo?: number;
+  canRedo?: number;
+}

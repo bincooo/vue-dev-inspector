@@ -130,6 +130,13 @@ export const state = {
   /** 右下角齿轮按钮（点击开启审查，开启后隐藏） */
   gearButton: null as HTMLDivElement | null,
 
+  /** 右上角「撤销 / 重做」常驻条（审查模式开启时显示，关闭时隐藏）。 */
+  historyBar: null as HTMLDivElement | null,
+  /** 撤销按钮（无可撤销条目时置灰）。 */
+  undoButton: null as HTMLDivElement | null,
+  /** 重做按钮（无可重做条目时置灰）。 */
+  redoButton: null as HTMLDivElement | null,
+
   /* ─── 拖拽（Ctrl + 鼠标按下进入，mouseup 提交 /move-element） ─── */
   dragging: false,
   dragSource: null as HTMLElement | null,

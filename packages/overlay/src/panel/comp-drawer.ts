@@ -15,6 +15,7 @@ import {
   formatPosition,
 } from '../utils';
 import { renderIcon } from '../icon';
+import { refreshHistoryButtons } from '../history';
 import type {
   ComponentConfigEntry,
   ComponentGroup,
@@ -235,6 +236,7 @@ function buildDrawer(direction: DropDirection, hint: string): void {
             .then((response) => {
               if (response && response.success) {
                 footer.textContent = '已插入 ' + item.tag + '（HMR 刷新中）';
+                refreshHistoryButtons();
               } else
                 footer.textContent = (response && response.error) || '插入失败';
             })

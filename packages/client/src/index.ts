@@ -18,3 +18,5 @@ export type {
   SfcBlock,
 } from './editor';
 export { createDevServer } from './server';
+export { writeTracked, undo, redo, getHistory } from './history';
+export type { Snapshot, HistoryEntry, HistoryResult } from './history';

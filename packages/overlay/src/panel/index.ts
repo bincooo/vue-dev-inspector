@@ -18,6 +18,7 @@ import {
 import { openAttrDrawer, closeAttrDrawer } from './attr-drawer';
 import { renderList } from './render';
 import { cleanupValueControl } from './control';
+import { refreshHistoryButtons } from '../history';
 
 /** 当前 prop panel 的属性行列表容器，供 attr-drawer 触发重渲染 */
 let currentListEl: HTMLDivElement | null = null;
@@ -156,6 +157,7 @@ function submit(): void {
       if (response && response.success) {
         closePanel();
         logSuccess('属性已更新');
+        refreshHistoryButtons();
       }
     })
     .catch((e: unknown) => {

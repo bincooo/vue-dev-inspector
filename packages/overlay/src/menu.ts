@@ -15,6 +15,7 @@ import { redrawSelection } from './inspector';
 import { openPanel } from './panel';
 import { openDrawer } from './panel/comp-drawer';
 import { openCodeDrawer } from './panel/code-drawer';
+import { refreshHistoryButtons } from './history';
 
 type MenuAction = (
   element: HTMLElement,
@@ -52,6 +53,7 @@ export function deleteElementViaApi(element: HTMLElement): Promise<unknown> {
         setSelectedElement(null);
         redrawSelection();
       }
+      refreshHistoryButtons();
     })
     .catch((e: unknown) => {
       apiError('删除失败', errMsg(e));

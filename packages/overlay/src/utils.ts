@@ -70,6 +70,10 @@ export interface ApiResponse<T = unknown> {
   data?: T;
   /** /resolve-path 响应字段：按当前 rootIndex 拼接出的绝对路径。 */
   absolutePath?: string;
+  /** /undo、/redo 响应内嵌字段（见 types.ts HistoryResponse）。 */
+  entry?: import('./types').HistoryEntryData | null;
+  canUndo?: number;
+  canRedo?: number;
 }
 
 /** API 请求超时阈值（ms）。超过即 abort，避免服务端 hang 住时请求永不返回、用户无感知。 */

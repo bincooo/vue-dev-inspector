@@ -19,6 +19,7 @@ import {
   type PropEntry,
   type SfcBlockKind,
 } from './editor';
+import { writeTracked, undo, redo, getHistory } from './history';
 import {
   API_PREFIX,
   EDITOR_PROTOCOLS,
@@ -47,6 +48,9 @@ const ROUTES: Record<string, Record<string, RouteHandler>> = {
   '/resolve-path': { POST: handleResolvePath },
   '/report-selection': { POST: handleReportSelection },
   '/get-selection': { POST: handleGetSelection },
+  '/undo': { POST: handleUndo },
+  '/redo': { POST: handleRedo },
+  '/get-history': { POST: handleGetHistory },
 };
 
 // ─── Types ────────────────────────────────────────────────
@@ -94,7 +98,9 @@ function parseBody(req: RouteRequest): Promise<unknown> {
     req.on('data', (c: Buffer) => (body += c.toString()));
     req.on('end', () => {
       try {
-        resolve(JSON.parse(body));
+        // 空请求体（如 /undo、/get-history 这类无参 POST）按 {} 处理，
+        // 避免 JSON.parse("") 抛 Unexpected end of JSON input。
+        resolve(body.trim() ? JSON.parse(body) : {});
       } catch (e) {
         reject(e);
       }
@@ -272,7 +278,7 @@ function handleUpdateProps(
     readNumber(body, 'col'),
     readPropEntries(body.props),
   );
-  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
+  writeTracked(ctx.absolutePath, result, 'update-props');
   json(res, 200, { success: true });
 }
 
@@ -293,7 +299,7 @@ function handleDeleteElement(
     json(res, 404, { error: 'Element not found' });
     return;
   }
-  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
+  writeTracked(ctx.absolutePath, result, 'delete-element');
   json(res, 200, { success: true });
 }
 
@@ -314,7 +320,7 @@ function handleDuplicateElement(
     json(res, 404, { error: 'Element not found' });
     return;
   }
-  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
+  writeTracked(ctx.absolutePath, result, 'duplicate-element');
   json(res, 200, { success: true });
 }
 
@@ -349,7 +355,8 @@ function handleInsertComponent(
   // 组件自带的 import 声明：插入模板后按需写入 <script>（幂等合并同模块具名导入）
   const importStmts = readStringArray(body, 'imports');
   if (importStmts.length) result = ensureImports(result, ctx.file, importStmts);
-  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
+  // imports 合并完成后再统一入栈写盘（同一次操作只产生一条历史）
+  writeTracked(ctx.absolutePath, result, 'insert-component');
   json(res, 200, { success: true });
 }
 
@@ -406,7 +413,7 @@ function handleMoveElement(
     });
     return;
   }
-  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
+  writeTracked(ctx.absolutePath, result, 'move-element');
   json(res, 200, { success: true });
 }
 
@@ -455,7 +462,7 @@ function handleUpdateBlock(
     json(res, 404, { error: 'Block not found' });
     return;
   }
-  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
+  writeTracked(ctx.absolutePath, result, 'update-block');
   json(res, 200, { success: true });
 }
 
@@ -503,7 +510,7 @@ function handleUpdateChildText(
     json(res, 404, { error: 'Element not found' });
     return;
   }
-  fs.writeFileSync(ctx.absolutePath, result, 'utf-8');
+  writeTracked(ctx.absolutePath, result, 'update-child-text');
   json(res, 200, { success: true });
 }
 
@@ -642,6 +649,35 @@ function handleGetSelection(
   res: MiddlewareResponse,
 ): void {
   json(res, 200, { selection: currentSelection });
+}
+
+// ─── 修改历史（undo / redo / 查询） ─────────────────────
+
+/** 撤销上一次写操作。空栈时 success:false（HTTP 仍 200，前端据此置灰按钮）。 */
+function handleUndo(
+  projectRoots: string[],
+  _body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  json(res, 200, undo(projectRoots));
+}
+
+/** 重做最近一次被撤销的操作。语义与 /undo 对称。 */
+function handleRedo(
+  projectRoots: string[],
+  _body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  json(res, 200, redo(projectRoots));
+}
+
+/** 读取历史栈状态（canUndo / canRedo / 最近若干条摘要），供按钮禁用态刷新。 */
+function handleGetHistory(
+  projectRoots: string[],
+  _body: RouteBody,
+  res: MiddlewareResponse,
+): void {
+  json(res, 200, getHistory(projectRoots));
 }
 
 // ─── Editor Open ─────────────────────────────────────────

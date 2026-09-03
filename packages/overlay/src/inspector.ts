@@ -28,6 +28,7 @@ import { openDrawer } from './panel/comp-drawer';
 import { deleteElementViaApi } from './menu';
 import { emitInspect } from './extensibility';
 import { renderIcon } from './icon';
+import { refreshHistoryButtons } from './history';
 
 export function isUni(): boolean {
   return !!(window as { uni?: unknown }).uni;
@@ -79,6 +80,29 @@ export function createUI(): void {
   );
   state.dropIndicator.style.display = 'none';
 
+  /* 右上角「撤销 / 重做」常驻条：上下两枚按钮，整条可按住拖动，
+     默认隐藏，toggle() 里随审查模式显隐 */
+  const historyBar = createElement<HTMLDivElement>('div', '__vdi-history-bar');
+  historyBar.title = '按住拖动';
+  const undoButton = createElement<HTMLDivElement>(
+    'div',
+    '__vdi-history-btn __vdi-history-btn--disabled',
+    '↩ 撤销',
+  );
+  undoButton.title = '撤销上一次修改（Ctrl+Z）';
+  const redoButton = createElement<HTMLDivElement>(
+    'div',
+    '__vdi-history-btn __vdi-history-btn--disabled',
+    '↪ 重做',
+  );
+  redoButton.title = '重做被撤销的修改（Ctrl+Shift+Z）';
+  historyBar.append(undoButton, redoButton);
+  historyBar.style.display = 'none';
+  installHistoryDrag(historyBar);
+  state.historyBar = historyBar;
+  state.undoButton = undoButton;
+  state.redoButton = redoButton;
+
   for (const el of [
     state.hoverOverlay,
     state.selectOverlay,
@@ -90,6 +114,7 @@ export function createUI(): void {
     state.insertBeforeButton,
     state.insertAfterButton,
     state.dropIndicator,
+    state.historyBar,
   ]) {
     if (el) document.body.appendChild(el);
   }
@@ -124,6 +149,97 @@ function makeInsertButton(onClick: () => void): HTMLDivElement {
   return btn;
 }
 
+/**
+ * 历史 bar 拖动：在 bar 自身（含按钮）上按住鼠标拖动整条。
+ *
+ * mousedown 记录起点，位移超过 3px 才进入拖动（区分「点一下」与「拖动」）；
+ * 拖动收尾时置 suppressNextClick，capture 阶段拦掉随之而来的 click，
+ * 让「按住挪动整条」与「点按钮撤销/重做」互不干扰。
+ *
+ * 拖动时把 CSS 定位从 `top/right` 切到 `left/top`（JS 内联写像素），
+ * 与项目「动态布局属性 JS 内联」的约定一致。位置不持久化——审查模式
+ * 关闭再开启回到默认右上角。边界夹紧在视口内（留 8px 余量），
+ * mouseup 移除 document 监听。
+ */
+function installHistoryDrag(bar: HTMLDivElement): void {
+  let dragging = false;
+  let moved = false;
+  let startX = 0;
+  let startY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+  /** 拖动阈值（px）：小于该位移视为点击，不移动 bar。 */
+  const DRAG_THRESHOLD = 3;
+  /** 拖动收尾后待消费的 click 抑制标志。 */
+  let suppressNextClick = false;
+
+  const onMove = (e: MouseEvent): void => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (!moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    moved = true;
+    const w = bar.offsetWidth || 1;
+    const h = bar.offsetHeight || 1;
+    const MARGIN = 8;
+    // 夹紧到视口内，避免拖出屏幕后 bar 无法找回
+    const left = Math.max(
+      MARGIN,
+      Math.min(window.innerWidth - w - MARGIN, startLeft + dx),
+    );
+    const top = Math.max(
+      MARGIN,
+      Math.min(window.innerHeight - h - MARGIN, startTop + dy),
+    );
+    bar.style.left = left + 'px';
+    bar.style.top = top + 'px';
+  };
+
+  const onUp = (): void => {
+    if (!dragging) return;
+    dragging = false;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    if (moved) {
+      // 拖动后落在按钮上的 click 不应触发撤销/重做，下一次 click 恢复
+      suppressNextClick = true;
+    }
+  };
+
+  bar.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = bar.getBoundingClientRect();
+    // 冻结当前几何：top/right 定位切换成 left/top，避免拖动过程跳变
+    bar.style.left = rect.left + 'px';
+    bar.style.top = rect.top + 'px';
+    bar.style.right = 'auto';
+    startLeft = rect.left;
+    startTop = rect.top;
+    startX = e.clientX;
+    startY = e.clientY;
+    moved = false;
+    dragging = true;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // capture 阶段消费被抑制的 click，阻止按钮 onclick 触发
+  bar.addEventListener(
+    'click',
+    (e) => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+    },
+    true,
+  );
+}
+
 /** 复制元素 */
 export function duplicateElement(element: HTMLElement): void {
   const pos = parsePosition(element.getAttribute(state.attrName)!)!;
@@ -136,7 +252,10 @@ export function duplicateElement(element: HTMLElement): void {
     }),
   })
     .then((response) => {
-      if (response && response.success) logInfo('元素已复制');
+      if (response && response.success) {
+        logInfo('元素已复制');
+        refreshHistoryButtons();
+      }
     })
     .catch((e: unknown) => {
       apiError('复制失败', errMsg(e));
@@ -304,6 +423,13 @@ export function toggle(force?: boolean): void {
   }
   if (state.gearButton)
     state.gearButton.style.display = state.inspecting ? 'none' : 'flex';
+
+  /* 历史 bar 随审查模式显隐；开启时同步一次按钮禁用态（栈内容不清空，
+     关掉再开仍可撤销之前的写操作） */
+  if (state.historyBar) {
+    state.historyBar.style.display = state.inspecting ? 'flex' : 'none';
+    if (state.inspecting) refreshHistoryButtons();
+  }
 
   if (state.inspecting) {
     emitInspect();
