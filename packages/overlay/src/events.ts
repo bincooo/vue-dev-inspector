@@ -403,6 +403,14 @@ export function init(): void {
         state.contextMenu!.style.display = 'none';
         return;
       }
+      /* 右键命中操作按钮（复制/删除/父级/工具按钮）：选中元素可视范围小时，
+         按钮可能盖住元素本身导致无法右键到元素。此时用当前选中元素作为
+         菜单主体，在光标位置弹出菜单 —— 让用户在小组件上也能完整操作。 */
+      if (isOverActionButton(e.target) && state.selectedElement) {
+        swallow(e);
+        showMenu(e.clientX, e.clientY, state.selectedElement);
+        return;
+      }
       const el = resolveHitElement(e);
       if (!el) return;
       /* 完整拦截（与 mousedown / click / dblclick 语义对齐）：

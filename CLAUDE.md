@@ -177,3 +177,8 @@ uview ──► { shared }
 - 提交前 husky 会通过 lint-staged 自动跑 `eslint --fix`。
 - 服务启动操作交由用户协作完成，不允许AI自己执行。
 - 在任务执行的最后执行一次`pnpm run prettier`格式化（代码风格）修改的代码。
+
+## 常规错误
+- String to replace not found in file. 避免重复执行，尝试别的解决方式
+- No changes to make: old_string and new_string are exactly the same. 文件无可任何新修改，需调整修改内容
+- Bash was called with input that could not be parsed as JSON. 输入内容不是一个合规的JSON,需注意特殊字符的转译
