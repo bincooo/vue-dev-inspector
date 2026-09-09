@@ -246,6 +246,21 @@ export function getElementProps(
     : null;
 }
 
+/**
+ * 按值内容选择属性值包裹引号（clamp 三档），产出含外层引号的合法属性值串：
+ * - 不含 `"`：双引号包裹（保持既有风格，最小 diff）
+ * - 含 `"` 不含 `'`：单引号包裹，值内双引号原样保留
+ * - `"`、`'` 都含：双引号包裹，值内 `"` 转成 `&quot;`（模板解析后等价裸 `"`）
+ *
+ * 回读端（extractProps）依赖 baseParse 已把 `&quot;` 等实体解码进 content，
+ * 两端对称，往返保真。
+ */
+function quoteAttrValue(v: string): string {
+  if (!v.includes('"')) return `"${v}"`;
+  if (!v.includes("'")) return `'${v}'`;
+  return `"${v.replace(/"/g, '&quot;')}"`;
+}
+
 /** 用 AST 定位目标元素，原子替换其属性段 [tagNameEnd, openTagEnd) */
 export function editElementProps(
   sfcSource: string,
@@ -266,7 +281,7 @@ export function editElementProps(
   const attrs = newProps
     .map((p) => ({ k: p.key.trim(), v: p.value }))
     .filter((x) => x.k !== '')
-    .map((x) => (x.v === '' ? ` ${x.k}` : ` ${x.k}="${x.v}"`))
+    .map((x) => (x.v === '' ? ` ${x.k}` : ` ${x.k}=${quoteAttrValue(x.v)}`))
     .join('');
 
   const s = new MagicString(sfcSource);

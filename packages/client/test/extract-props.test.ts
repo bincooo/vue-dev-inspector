@@ -221,3 +221,42 @@ describe('editElementProps round-trip preserves directive key', () => {
     expect(props2).toEqual([{ key: '@click.prevent', value: 'onClick' }]);
   });
 });
+
+/**
+ * 属性值含引号时的写入端 clamp 策略（见 attr-value-quote-escape change）：
+ * 不含 `"` → 双引号；含 `"` 不含 `'` → 单引号；两者都含 → 双引号 + `&quot;`。
+ * 通过 editElementProps 产出验证写盘形态，并做往返保真断言。
+ */
+describe('editElementProps quote clamp on value with quotes', () => {
+  it('value without double quote -> wrapped in double quotes', () => {
+    const sfc = buildSFC('<a-select :options="getDictOptions(\'wms\')" />');
+    const { line, col } = locate(sfc);
+    const out = editElementProps(sfc, 'Foo.vue', line, col, [
+      { key: ':options', value: "getDictOptions('wms')" },
+    ]);
+    expect(out).toContain(':options="getDictOptions(\'wms\')"');
+  });
+
+  it('value with double quote but no single quote -> wrapped in single quotes', () => {
+    const value = 'getDictOptions("wms_stock_in_order_status")';
+    const sfc = buildSFC('<a-select :options="x" />');
+    const { line, col } = locate(sfc);
+    const out = editElementProps(sfc, 'Foo.vue', line, col, [
+      { key: ':options', value },
+    ]);
+    expect(out).toContain(`:options='${value}'`);
+  });
+
+  it('value with both double and single quote -> double quotes + &quot;', () => {
+    const value = 'fn("a",\'b\')';
+    const sfc = buildSFC('<a-select :options="x" />');
+    const { line, col } = locate(sfc);
+    const out = editElementProps(sfc, 'Foo.vue', line, col, [
+      { key: ':options', value },
+    ]);
+    // 双引号包裹，仅转义内部 `"` 为 `&quot;`；单引号原样保留（spec 第三档）
+    expect(out).toContain(':options="fn(&quot;a&quot;,\'b\')"');
+    // 写盘后模板仍可被 Vue 编译器解析，不抛 SyntaxError（往返合法）
+    expect(() => parseSFC(out, { filename: 'Foo.vue' })).not.toThrow();
+  });
+});
