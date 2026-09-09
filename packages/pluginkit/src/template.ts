@@ -58,14 +58,8 @@ export function getDiskTemplateLine(
   parse: SfcParser,
   diskPath: string,
 ): number {
-  try {
-    const diskCode = fs.readFileSync(diskPath, 'utf8');
-    const { descriptor, errors } = parse(diskCode, { filename: diskPath });
-    if (errors.length || !descriptor.template) return -1;
-    return offsetToLine(diskCode, descriptor.template.loc.start.offset);
-  } catch {
-    return -1;
-  }
+  const disk = getDiskTemplate(parse, diskPath);
+  return disk ? disk.line : -1;
 }
 
 /**

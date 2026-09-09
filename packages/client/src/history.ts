@@ -115,34 +115,28 @@ function counts(): { canUndo: number; canRedo: number } {
  * 快照内容写回磁盘（HMR 兜底热更新）。
  */
 export function undo(projectRoots: string[]): HistoryResult {
-  const snapshot = undoStack.pop();
-  if (!snapshot) {
-    return { success: false, error: '无可撤销条目', entry: null, ...counts() };
-  }
-  // 盘上「撤销前内容」进重做栈；写回的 at 沿用原快照时间便于溯源
-  const current = fs.readFileSync(snapshot.absolutePath, 'utf-8');
-  redoStack.push({
-    absolutePath: snapshot.absolutePath,
-    content: current,
-    label: snapshot.label,
-    at: Date.now(),
-  });
-  fs.writeFileSync(snapshot.absolutePath, snapshot.content, 'utf-8');
-  return {
-    success: true,
-    entry: toEntry(snapshot, projectRoots),
-    ...counts(),
-  };
+  return transferSnapshot(undoStack, redoStack, projectRoots, '无可撤销条目');
 }
 
 /** 重做最近一次被撤销的操作：与 undo() 完全对称。 */
 export function redo(projectRoots: string[]): HistoryResult {
-  const snapshot = redoStack.pop();
+  return transferSnapshot(redoStack, undoStack, projectRoots, '无可重做条目');
+}
+
+/** undo/redo 共用：fromStack 弹栈 → 盘上当前内容 push 进 toStack → 快照写回磁盘。 */
+function transferSnapshot(
+  fromStack: Snapshot[],
+  toStack: Snapshot[],
+  projectRoots: string[],
+  emptyErr: string,
+): HistoryResult {
+  const snapshot = fromStack.pop();
   if (!snapshot) {
-    return { success: false, error: '无可重做条目', entry: null, ...counts() };
+    return { success: false, error: emptyErr, entry: null, ...counts() };
   }
+  // 盘上「撤销前内容」进对侧栈；写回的 at 沿用原快照时间便于溯源
   const current = fs.readFileSync(snapshot.absolutePath, 'utf-8');
-  undoStack.push({
+  toStack.push({
     absolutePath: snapshot.absolutePath,
     content: current,
     label: snapshot.label,

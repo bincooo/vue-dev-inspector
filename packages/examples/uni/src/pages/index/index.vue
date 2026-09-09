@@ -329,6 +329,7 @@ export default {
   background: #fff;
   box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.06);
   gap: 24rpx;
+  z-index: 999
 }
 .action-bar .u-button {
   flex: 1;

@@ -80,6 +80,23 @@ const isWhitespace = (ch: string | undefined): boolean =>
 
 // ─── 跳过 trivia / 字符串 / 模板 ────────────────────────────
 
+/**
+ * 从 i 起跳过一条 `//` 或 `/* *‍/` 注释，返回注释结束后的 offset。
+ * skipTrivia / skipTemplateExpr 的注释跳过分支共用。
+ */
+function skipComment(src: string, i: number): number {
+  const n = src.length;
+  if (src[i + 1] === '/') {
+    i += 2;
+    while (i < n && src[i] !== '\n') i++;
+    return i;
+  }
+  // /* 块注释
+  i += 2;
+  while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++;
+  return i + 2;
+}
+
 /** 从 i 起跳过空白与注释（含换行），返回下一个有效字符的 offset。 */
 function skipTrivia(src: string, i: number): number {
   const n = src.length;
@@ -89,15 +106,8 @@ function skipTrivia(src: string, i: number): number {
       i++;
       continue;
     }
-    if (ch === '/' && src[i + 1] === '/') {
-      i += 2;
-      while (i < n && src[i] !== '\n') i++;
-      continue;
-    }
-    if (ch === '/' && src[i + 1] === '*') {
-      i += 2;
-      while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++;
-      i += 2;
+    if (ch === '/' && (src[i + 1] === '/' || src[i + 1] === '*')) {
+      i = skipComment(src, i);
       continue;
     }
     break;
@@ -151,10 +161,9 @@ function skipTemplate(src: string, i: number): number {
 
 /** 跳过 `${ ... }` 内部表达式，返回闭 `}` 之后的 offset（brace 深度匹配）。 */
 function skipTemplateExpr(src: string, i: number): number {
-  const n = src.length;
   let depth = 1;
   let j = i;
-  while (j < n && depth > 0) {
+  while (j < src.length && depth > 0) {
     const ch = src[j];
     if (ch === '{') {
       depth++;
@@ -174,15 +183,8 @@ function skipTemplateExpr(src: string, i: number): number {
       j = skipTemplate(src, j);
       continue;
     }
-    if (ch === '/' && src[j + 1] === '/') {
-      j += 2;
-      while (j < n && src[j] !== '\n') j++;
-      continue;
-    }
-    if (ch === '/' && src[j + 1] === '*') {
-      j += 2;
-      while (j < n && !(src[j] === '*' && src[j + 1] === '/')) j++;
-      j += 2;
+    if (ch === '/' && (src[j + 1] === '/' || src[j + 1] === '*')) {
+      j = skipComment(src, j);
       continue;
     }
     j++;
@@ -545,26 +547,26 @@ export function planImports(
       (nb) =>
         !alreadyNamed.has(`${nb.imported}\0${flag(parsed.isTypeOnly, nb)}`),
     );
-    // clause-level type 的默认 / 命名空间也要按 type 语义比对
+    // clause-level type 的默认 / 命名空间也要按 type 语义比对：
+    // 绑定名存在且与现有子句 type 语义一致时视为已导入，否则返回待补的绑定名
+    const missingBinding = (
+      bindingName: string | undefined,
+      isPresent: (e: ImportBindings) => boolean,
+    ): string | undefined =>
+      bindingName && !matches.some(isPresent) ? bindingName : undefined;
     const parsedType = parsed.isTypeOnly ?? false;
-    const missingDefault =
-      parsed.defaultName &&
-      !matches.some(
-        (e) =>
-          e.defaultName === parsed.defaultName &&
-          (e.isTypeOnly ?? false) === parsedType,
-      )
-        ? parsed.defaultName
-        : undefined;
-    const missingNamespace =
-      parsed.namespaceName &&
-      !matches.some(
-        (e) =>
-          e.namespaceName === parsed.namespaceName &&
-          (e.isTypeOnly ?? false) === parsedType,
-      )
-        ? parsed.namespaceName
-        : undefined;
+    const missingDefault = missingBinding(
+      parsed.defaultName,
+      (e) =>
+        e.defaultName === parsed.defaultName &&
+        (e.isTypeOnly ?? false) === parsedType,
+    );
+    const missingNamespace = missingBinding(
+      parsed.namespaceName,
+      (e) =>
+        e.namespaceName === parsed.namespaceName &&
+        (e.isTypeOnly ?? false) === parsedType,
+    );
 
     // 全部已存在 -> 跳过（幂等）
     if (!missingNamed.length && !missingDefault && !missingNamespace) continue;

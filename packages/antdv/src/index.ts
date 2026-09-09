@@ -374,8 +374,8 @@ export default function (
             label: 'Row 行',
             icon: 'i-ant-design:table-outlined',
             snippet: capitalLetters
-              ? '<Row :gutter="8"><Col :span="11">COL1</Col><Col :span="11">COL2</Col></Row>'
-              : '<a-row :gutter="8"><a-col :span="11">COL1</a-col><a-col :span="11">COL2</a-col></a-row>',
+              ? '<Row :gutter="8" style="padding: 5px"><Col :span="12">COL1</Col><Col :span="12">COL2</Col></Row>'
+              : '<a-row :gutter="8" style="padding: 5px"><a-col :span="12">COL1</a-col><a-col :span="12">COL2</a-col></a-row>',
             attrs: [
               textAttr('gutter', '间距'),
               textAttr('justify', '水平对齐', {

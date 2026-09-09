@@ -94,7 +94,7 @@ export const state = {
   /** 「编辑代码」抽屉（与组件抽屉并存的第二个右侧滑出面板）。 */
   codeDrawer: null as HTMLDivElement | null,
   /** 抽屉宽度，跨打开会话保留（拖动条 mousedown/move 实时写回）。 */
-  codeDrawerWidth: 560,
+  codeDrawerWidth: 650,
   /** Script/CSS 上下分屏比例（0-1，script 占的比例），跨会话保留。 */
   codeDrawerSplit: 0.5,
   /** 当前打开抽屉对应的源文件（每次 openCodeDrawer 重置）。 */

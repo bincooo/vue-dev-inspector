@@ -614,34 +614,47 @@ async function submitBlock(
 ): Promise<void> {
   const ctx = state.codeDrawerContext;
   if (!ctx) return;
+  const payload: Record<string, unknown> = {
+    file: formatPosition(ctx),
+    kind,
+    content,
+  };
+  if (kind === 'style' && scoped !== undefined) payload.scoped = scoped;
+  await withSaveButton(btn, async (status) => {
+    try {
+      const response = await apiRequest<{ success?: boolean; error?: string }>(
+        '/update-block',
+        { method: 'POST', body: JSON.stringify(payload) },
+      );
+      if (response && response.success) {
+        if (status)
+          status.textContent = `${labelOf(kind)} 已保存（HMR 刷新中）`;
+        refreshHistoryButtons();
+      } else if (status) {
+        status.textContent = (response && response.error) || '保存失败';
+      }
+    } catch {
+      if (status) status.textContent = '网络错误';
+    }
+  });
+}
+
+/**
+ * 保存按钮共用骨架：查状态栏 → 禁用按钮 + 「保存中…」→ 执行 fn →
+ * finally 还原按钮。fn 自行处理 try/catch 与状态文案（成功/失败文案因场景而异）。
+ */
+async function withSaveButton(
+  btn: HTMLButtonElement,
+  fn: (status: HTMLSpanElement | null) => Promise<void>,
+): Promise<void> {
   const status =
-    state.codeDrawer?.querySelector<HTMLSpanElement>('.__vdi-code-status');
+    state.codeDrawer?.querySelector<HTMLSpanElement>('.__vdi-code-status') ??
+    null;
   const original = btn.textContent;
   btn.disabled = true;
   btn.textContent = '保存中…';
   try {
-    const payload: Record<string, unknown> = {
-      file: formatPosition(ctx),
-      kind,
-      content,
-    };
-    if (kind === 'style' && scoped !== undefined) payload.scoped = scoped;
-    const response = await apiRequest<{ success?: boolean; error?: string }>(
-      '/update-block',
-      {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      },
-    );
-    if (response && response.success) {
-      if (status) status.textContent = `${labelOf(kind)} 已保存（HMR 刷新中）`;
-      refreshHistoryButtons();
-    } else {
-      if (status)
-        status.textContent = (response && response.error) || '保存失败';
-    }
-  } catch {
-    if (status) status.textContent = '网络错误';
+    await fn(status);
   } finally {
     btn.disabled = false;
     btn.textContent = original;
@@ -735,39 +748,32 @@ async function submitChildText(
 ): Promise<void> {
   const ctx = state.codeDrawerContext;
   if (!ctx) return;
-  const status =
-    state.codeDrawer?.querySelector<HTMLSpanElement>('.__vdi-code-status');
-  const original = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = '保存中…';
-  try {
-    const response = await apiRequest<{ success?: boolean; error?: string }>(
-      '/update-child-text',
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          file: formatPosition(ctx),
-          line: ctx.line,
-          col: ctx.col,
-          content,
-        }),
-      },
-    );
-    if (response && response.success) {
-      if (status) status.textContent = '子节点源码已保存（HMR 刷新中）';
-      collapseChildText(panel);
-      refreshHistoryButtons();
-    } else {
-      if (status)
+  await withSaveButton(btn, async (status) => {
+    try {
+      const response = await apiRequest<{ success?: boolean; error?: string }>(
+        '/update-child-text',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            file: formatPosition(ctx),
+            line: ctx.line,
+            col: ctx.col,
+            content,
+          }),
+        },
+      );
+      if (response && response.success) {
+        if (status) status.textContent = '子节点源码已保存（HMR 刷新中）';
+        collapseChildText(panel);
+        refreshHistoryButtons();
+      } else if (status) {
         status.textContent = (response && response.error) || '保存失败';
+      }
+    } catch (e) {
+      if (status)
+        status.textContent = e instanceof Error ? e.message : '网络错误';
     }
-  } catch (e) {
-    if (status)
-      status.textContent = e instanceof Error ? e.message : '网络错误';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = original;
-  }
+  });
 }
 
 /**
@@ -817,6 +823,37 @@ function applySplitRatio(
   if (splitter) splitter.style.flex = `0 0 ${splitterHeight}px`;
 }
 
+/**
+ * 鼠标拖拽监听共用骨架：mousedown 启动（preventDefault + stopPropagation）→
+ * document 挂 mousemove/mouseup → onUp 解绑。onMove 在拖拽中实时回调，
+ * onEnd 在松开时回调（可选，如持久化尺寸）。dragging 期间才触发。
+ */
+function installDrag(
+  handle: HTMLDivElement,
+  onMove: (e: MouseEvent) => void,
+  onEnd?: () => void,
+): void {
+  let dragging = false;
+  const move = (e: MouseEvent) => {
+    if (!dragging) return;
+    onMove(e);
+  };
+  const up = () => {
+    if (!dragging) return;
+    dragging = false;
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    if (onEnd) onEnd();
+  };
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragging = true;
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  });
+}
+
 /** 在 splitter 上挂垂直拖拽监听，实时调整上下两块比例。 */
 function installSplitter(
   splitter: HTMLDivElement,
@@ -826,34 +863,27 @@ function installSplitter(
 ): void {
   let startY = 0;
   let startRatio = state.codeDrawerSplit;
-  let dragging = false;
   let bodyHeight = 0;
-
-  const onMove = (e: MouseEvent) => {
-    if (!dragging) return;
-    const dy = e.clientY - startY;
-    const nextRatio = startRatio + dy / bodyHeight;
-    state.codeDrawerSplit = Math.max(
-      MIN_BLOCK_RATIO,
-      Math.min(MAX_BLOCK_RATIO, nextRatio),
-    );
-    applySplitRatio(body, scriptPanel, stylePanel, state.codeDrawerSplit);
-  };
-  const onUp = () => {
-    if (!dragging) return;
-    dragging = false;
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup', onUp);
-  };
+  installDrag(
+    splitter,
+    (e) => {
+      const dy = e.clientY - startY;
+      const nextRatio = startRatio + dy / bodyHeight;
+      state.codeDrawerSplit = Math.max(
+        MIN_BLOCK_RATIO,
+        Math.min(MAX_BLOCK_RATIO, nextRatio),
+      );
+      applySplitRatio(body, scriptPanel, stylePanel, state.codeDrawerSplit);
+    },
+    () => {
+      bodyHeight = 0;
+    },
+  );
+  // mousedown 时记录初始值（用独立 listener 保持与 installDrag 职责分离）
   splitter.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
     bodyHeight = body.getBoundingClientRect().height || 1;
     startY = e.clientY;
     startRatio = state.codeDrawerSplit;
-    dragging = true;
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
   });
 }
 
@@ -868,33 +898,25 @@ function installSplitter(
 function installResize(resizer: HTMLDivElement, drawer: HTMLDivElement): void {
   let startX = 0;
   let startWidth = 0;
-  let dragging = false;
-
-  const onMove = (e: MouseEvent) => {
-    if (!dragging) return;
-    const dx = e.clientX - startX;
-    const maxWidth = Math.floor(window.innerWidth * 0.9);
-    const nextWidth = Math.max(MIN_WIDTH, Math.min(maxWidth, startWidth - dx));
-    drawer.style.width = nextWidth + 'px';
-  };
-
-  const onUp = () => {
-    if (!dragging) return;
-    dragging = false;
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup', onUp);
-    const w = parseInt(drawer.style.width || '0', 10);
-    if (!isNaN(w) && w > 0) state.codeDrawerWidth = w;
-  };
-
   resizer.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragging = true;
     startX = e.clientX;
     startWidth =
       parseInt(drawer.style.width || '0', 10) || state.codeDrawerWidth;
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
   });
+  installDrag(
+    resizer,
+    (e) => {
+      const dx = e.clientX - startX;
+      const maxWidth = Math.floor(window.innerWidth * 0.9);
+      const nextWidth = Math.max(
+        MIN_WIDTH,
+        Math.min(maxWidth, startWidth - dx),
+      );
+      drawer.style.width = nextWidth + 'px';
+    },
+    () => {
+      const w = parseInt(drawer.style.width || '0', 10);
+      if (!isNaN(w) && w > 0) state.codeDrawerWidth = w;
+    },
+  );
 }

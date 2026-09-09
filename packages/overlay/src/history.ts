@@ -48,34 +48,32 @@ function handleHistoryResponse(
   }
 }
 
-/** 撤销上一次写操作。 */
-export function requestUndo(): void {
+/**
+ * 撤销 / 重做共用请求：同一组按钮、同一响应处理，仅路径与展示名不同。
+ * 按钮缺失时直接返回（审查模式未开启或 DOM 尚未建好）。
+ */
+function requestHistory(path: string, kind: '撤销' | '重做'): void {
   const undoBtn = state.undoButton;
   const redoBtn = state.redoButton;
   if (!undoBtn || !redoBtn) return;
-  apiRequest<HistoryResponse>('/undo', {
+  apiRequest<HistoryResponse>(path, {
     method: 'POST',
     body: '{}',
   })
-    .then((res) => handleHistoryResponse('撤销', undoBtn, redoBtn, res))
+    .then((res) => handleHistoryResponse(kind, undoBtn, redoBtn, res))
     .catch((e: unknown) => {
-      apiError('撤销失败', errMsg(e));
+      apiError(`${kind}失败`, errMsg(e));
     });
+}
+
+/** 撤销上一次写操作。 */
+export function requestUndo(): void {
+  requestHistory('/undo', '撤销');
 }
 
 /** 重做最近一次被撤销的操作。 */
 export function requestRedo(): void {
-  const undoBtn = state.undoButton;
-  const redoBtn = state.redoButton;
-  if (!undoBtn || !redoBtn) return;
-  apiRequest<HistoryResponse>('/redo', {
-    method: 'POST',
-    body: '{}',
-  })
-    .then((res) => handleHistoryResponse('重做', undoBtn, redoBtn, res))
-    .catch((e: unknown) => {
-      apiError('重做失败', errMsg(e));
-    });
+  requestHistory('/redo', '重做');
 }
 
 /** 从服务端同步历史状态（开启审查模式 / 写操作成功后调用）。 */

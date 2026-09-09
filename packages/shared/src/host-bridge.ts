@@ -58,40 +58,41 @@ type PendingTask = PendingBtnTask | PendingCbTask;
 const pending: PendingTask[] = [];
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-/** 注册一组自定义工具按钮。host 未就绪时入队；立即返回反注册函数。 */
-export function addToolBtn(...btns: ActionButtonDef[]): Unregister {
+/** 按 task 类型派发到 host 对应方法，返回反注册函数。queueTask / flushPending 共用。 */
+function dispatchTask(task: PendingTask, host: VdiHost): Unregister {
+  if (task.kind === 'btn') {
+    return host.registerBtn(task.btns);
+  }
+  if (task.which === 'inspect') {
+    return host.onInspect(task.cb as EventCallback<InspectEvent>);
+  }
+  return host.onSelect(task.cb as EventCallback<SelectEvent>);
+}
+
+/** host 就绪直派发；否则入队 + 启动轮询，立即返回反注册函数。 */
+function queueTask(task: PendingTask): Unregister {
   const host = window.__VDI_HOST__;
   if (host) {
-    return host.registerBtn(btns);
+    return dispatchTask(task, host);
   }
-  const task: PendingBtnTask = { kind: 'btn', btns };
   pending.push(task);
   startPolling();
   return () => removePending(task);
+}
+
+/** 注册一组自定义工具按钮。host 未就绪时入队；立即返回反注册函数。 */
+export function addToolBtn(...btns: ActionButtonDef[]): Unregister {
+  return queueTask({ kind: 'btn', btns });
 }
 
 /** 注册进入审查模式回调。host 未就绪时入队；立即返回反注册函数。 */
 export function onInspect(cb: EventCallback<InspectEvent>): Unregister {
-  const host = window.__VDI_HOST__;
-  if (host) {
-    return host.onInspect(cb);
-  }
-  const task: PendingCbTask = { kind: 'cb', which: 'inspect', cb };
-  pending.push(task);
-  startPolling();
-  return () => removePending(task);
+  return queueTask({ kind: 'cb', which: 'inspect', cb });
 }
 
 /** 注册选中 / 取消选中回调。host 未就绪时入队；立即返回反注册函数。 */
 export function onSelect(cb: EventCallback<SelectEvent>): Unregister {
-  const host = window.__VDI_HOST__;
-  if (host) {
-    return host.onSelect(cb);
-  }
-  const task: PendingCbTask = { kind: 'cb', which: 'select', cb };
-  pending.push(task);
-  startPolling();
-  return () => removePending(task);
+  return queueTask({ kind: 'cb', which: 'select', cb });
 }
 
 function removePending(task: PendingTask): void {
@@ -125,13 +126,7 @@ function flushPending(host: VdiHost): void {
   const tasks = pending.splice(0, pending.length);
   for (const t of tasks) {
     try {
-      if (t.kind === 'btn') {
-        t.unregister = host.registerBtn(t.btns);
-      } else if (t.which === 'inspect') {
-        t.unregister = host.onInspect(t.cb as EventCallback<InspectEvent>);
-      } else {
-        t.unregister = host.onSelect(t.cb as EventCallback<SelectEvent>);
-      }
+      t.unregister = dispatchTask(t, host);
     } catch (err) {
       console.error('[vdi] host-bridge flush failed:', err);
     }

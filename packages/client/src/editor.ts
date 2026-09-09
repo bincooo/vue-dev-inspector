@@ -824,45 +824,48 @@ export function getSfcBlocks(
   // script / scriptSetup 互斥：先看 scriptSetup（runtime + compile-time 优先级）
   const scriptSrc = descriptor.scriptSetup ?? descriptor.script;
   if (scriptSrc && scriptSrc.content.length > 0) {
-    const outerStart = resolveOuterTagStart(
+    const block = resolveSfcBlock(
       sfcSource,
       'script',
+      scriptSrc.content,
       scriptSrc.loc.start.offset,
-    );
-    const outerEnd = resolveOuterTagEnd(
-      sfcSource,
-      'script',
       scriptSrc.loc.end.offset,
     );
-    if (outerStart !== -1 && outerEnd !== -1 && outerEnd > outerStart) {
-      blocks.script = {
-        kind: 'script',
-        content: scriptSrc.content,
-        start: outerStart,
-        end: outerEnd,
-      };
-    }
+    if (block) blocks.script = block;
   }
 
   if (descriptor.styles.length > 0) {
     const st = descriptor.styles[0];
-    const outerStart = resolveOuterTagStart(
+    const block = resolveSfcBlock(
       sfcSource,
       'style',
+      st.content,
       st.loc.start.offset,
+      st.loc.end.offset,
     );
-    const outerEnd = resolveOuterTagEnd(sfcSource, 'style', st.loc.end.offset);
-    if (outerStart !== -1 && outerEnd !== -1 && outerEnd > outerStart) {
-      blocks.style = {
-        kind: 'style',
-        content: st.content,
-        start: outerStart,
-        end: outerEnd,
-      };
-    }
+    if (block) blocks.style = block;
   }
 
   return blocks;
+}
+
+/**
+ * 按块内 loc 偏移定位外层开闭标签区间，组装 SfcBlock。getSfcBlocks 中
+ * script / style 两块定位逻辑完全相同，抽出消除重复。定位失败返回 null。
+ */
+function resolveSfcBlock(
+  sfcSource: string,
+  kind: SfcBlockKind,
+  content: string,
+  innerStart: number,
+  innerEnd: number,
+): SfcBlock | null {
+  const outerStart = resolveOuterTagStart(sfcSource, kind, innerStart);
+  const outerEnd = resolveOuterTagEnd(sfcSource, kind, innerEnd);
+  if (outerStart !== -1 && outerEnd !== -1 && outerEnd > outerStart) {
+    return { kind, content, start: outerStart, end: outerEnd };
+  }
+  return null;
 }
 
 /**
@@ -987,14 +990,9 @@ export function getChildText(
   line: number,
   col: number,
 ): ChildTextData | null {
-  const t = parseTemplate(sfcSource, filePath);
-  if (!t) return null;
-  const el = findElementAtLoc(t.ast, line, col, t.templateLine);
-  if (!el) return null;
-
-  const range = resolveTagRange(sfcSource, t.offset, el);
-  if (!range) return null;
-  const innerStart = range.openTagEnd + 1;
+  const c = resolveChildRange(sfcSource, filePath, line, col);
+  if (!c) return null;
+  const { t, el, innerStart } = c;
 
   if (el.isSelfClosing) {
     return { content: '', start: innerStart, end: innerStart };
@@ -1033,14 +1031,9 @@ export function updateChildText(
   col: number,
   newContent: string,
 ): string | null {
-  const t = parseTemplate(sfcSource, filePath);
-  if (!t) return null;
-  const el = findElementAtLoc(t.ast, line, col, t.templateLine);
-  if (!el) return null;
-
-  const range = resolveTagRange(sfcSource, t.offset, el);
-  if (!range) return null;
-  const innerStart = range.openTagEnd + 1;
+  const c = resolveChildRange(sfcSource, filePath, line, col);
+  if (!c) return null;
+  const { t, el, range, innerStart } = c;
   const s = new MagicString(sfcSource);
 
   if (el.isSelfClosing) {
@@ -1063,4 +1056,31 @@ export function updateChildText(
     s.overwrite(innerStart, closeTagStart, newContent);
   }
   return s.toString();
+}
+
+/**
+ * 子节点读写共用前置：解析 template → 定位 (line,col) 元素 → 求开标签区间
+ * 与子内容起点 innerStart。getChildText / updateChildText 的前置流程
+ * 逐字相同，抽出消除重复。任一步失败返回 null。
+ */
+function resolveChildRange(
+  sfcSource: string,
+  filePath: string,
+  line: number,
+  col: number,
+): {
+  t: NonNullable<ReturnType<typeof parseTemplate>>;
+  el: ElementNode;
+  range: { tagNameEnd: number; openTagEnd: number };
+  innerStart: number;
+} | null {
+  const t = parseTemplate(sfcSource, filePath);
+  if (!t) return null;
+  const el = findElementAtLoc(t.ast, line, col, t.templateLine);
+  if (!el) return null;
+
+  const range = resolveTagRange(sfcSource, t.offset, el);
+  if (!range) return null;
+  const innerStart = range.openTagEnd + 1;
+  return { t, el, range, innerStart };
 }

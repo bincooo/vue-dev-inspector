@@ -49,7 +49,7 @@ export default defineConfig({
 
       // 组件面板拓展 ——
       // 只需新增对应包并在此处 append 工厂调用。
-      componentConfig: [antdv(true)],
+      componentConfig: [antdv()],
 
       projectRoots: ['.'],
     }),
