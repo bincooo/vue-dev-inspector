@@ -819,7 +819,7 @@ export default function (
             ],
           },
           {
-            tag: capitalLetters ? 'TextArea' : 'a-text-area',
+            tag: capitalLetters ? 'TextArea' : 'a-textarea',
             imports: capitalLetters
               ? ['import { TextArea } from "antdv-next";']
               : undefined,
@@ -827,7 +827,7 @@ export default function (
             icon: 'i-ant-design:align-left-outlined',
             snippet: capitalLetters
               ? '<TextArea placeholder="请输入" :rows="4" />'
-              : '<a-text-area placeholder="请输入" :rows="4" />',
+              : '<a-textarea placeholder="请输入" :rows="4" />',
             attrs: [
               placeholderAttr(),
               disabledAttr(),

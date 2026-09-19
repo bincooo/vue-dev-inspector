@@ -688,8 +688,8 @@ const EDITOR_CLI: Record<
   (fp: string, line: number, col: number) => string
 > = {
   vscode: (fp, line, col) => `code -g "${fp}:${line}:${col}"`,
-  webstorm: (fp, line) => `webstorm "${fp}:${line}"`,
-  idea: (fp, line) => `webstorm "${fp}:${line}"`,
+  webstorm: (fp, line) => `webstorm --line ${line} "${fp}"`,
+  idea: (fp, line) => `idea --line ${line} "${fp}"`,
   atom: (fp, line, col) => `atom "${fp}:${line}:${col}"`,
   sublime: (fp, line, col) => `subl "${fp}:${line}:${col}"`,
 };

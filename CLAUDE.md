@@ -153,7 +153,7 @@ pnpm monorepo（`pnpm-workspace.yaml` 声明 `packages/*` 与 `packages/examples
 
 ```
 demo ────────► core ──┬── pluginkit ──► { shared, utils }
-uni-demo ────► uni ──┘                ├── client ──► shared
+uni-demo ────► uni ───┘               ├── client ──► shared
                                       ├── shared (root: 常量+类型; /browser: host-bridge)
                                       ├── utils (paths, cdn)
                                       └── overlay (IIFE，构建产物 cp 进 core/uni dist)

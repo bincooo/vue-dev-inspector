@@ -42,7 +42,7 @@ export default defineConfig({
       portalComponents: ['*modal', '*drawer'],
 
       // 编辑器类型
-      editor: 'vscode',
+      editor: 'webstorm',
 
       // 默认启用齿轮按钮
       toggleBtn: true,
